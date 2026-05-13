@@ -1,0 +1,38 @@
+.fb-rating__title {
+  font-size: 13px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  text-align: center;
+  color: #fff;
+}
+
+.fb-rating__options {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.fb-rating__btn {
+  font-size: 28px;
+  background: transparent;
+  border: 0;
+  padding: 4px 6px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: transform 80ms ease, background 80ms ease;
+}
+
+.fb-rating__btn:hover {
+  transform: scale(1.15);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.fb-rating__btn:focus-visible {
+  outline: 2px solid #4b9eff;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fb-rating__btn { transition: none; }
+  .fb-rating__btn:hover { transform: none; }
+}

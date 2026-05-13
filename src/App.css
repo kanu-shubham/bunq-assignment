@@ -1,0 +1,60 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  background: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app__shell {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 80px 24px;
+  text-align: center;
+}
+
+.app__title {
+  font-size: 28px;
+  margin: 0 0 12px;
+  color: #111827;
+}
+
+.app__lede {
+  font-size: 15px;
+  color: #4b5563;
+  margin: 0 0 28px;
+}
+
+.app__cta {
+  background: #1f1f1f;
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 22px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+}
+
+.app__cta:hover { background: #2c2c2c; }
+.app__cta:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

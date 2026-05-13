@@ -1,0 +1,19 @@
+.fb-thanks {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: #fff;
+  min-height: 120px;
+}
+
+.fb-thanks__check {
+  color: #fff;
+}
+
+.fb-thanks__text {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}

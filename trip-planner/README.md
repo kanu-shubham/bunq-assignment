@@ -46,6 +46,18 @@ itinerary + chat detail view.
 HITL approval inside a case mirrors into the case store, so the supervision
 table updates in real time — open two browser tabs to see it.
 
+Each case detail page has three columns plus a footer:
+
+- **Proposed itinerary** — the agent's shared state (`useCoAgent`). This is
+  what the operator is reviewing.
+- **Reasoning trace** — derived from `useCopilotChat()`. One row per AG-UI
+  message: user input, agent text, tool calls (with expandable args+result).
+  Gives operators a why-trail for every recommendation.
+- **Chat** — `<CopilotChat>` for steering the agent.
+- **Audit log** (footer) — append-only record of every agent action and
+  every operator decision, persisted to localStorage. In production this
+  is the regulatory-evidence layer.
+
 Note: every case currently routes to the same `tripPlanner` agent (demo
 concession). The supervision surface is the point — swap in a domain agent
 per `kind` (`settlement-break`, `margin-dispute`, etc.) and the operator UI

@@ -58,10 +58,26 @@ Each case detail page has three columns plus a footer:
   every operator decision, persisted to localStorage. In production this
   is the regulatory-evidence layer.
 
-Note: every case currently routes to the same `tripPlanner` agent (demo
-concession). The supervision surface is the point — swap in a domain agent
-per `kind` (`settlement-break`, `margin-dispute`, etc.) and the operator UI
-doesn't change. That's the AG-UI portability story.
+## Multiple agents, one supervision surface
+
+Two real agents are registered on Mastra:
+
+- `tripPlanner` — the original demo agent
+- `settlementBreak` — investigates failed trade settlements end-to-end:
+  looks up trade details, identifies root cause, drafts counterparty
+  outreach, asks the operator to approve sending. Uses `getTradeDetails`
+  and `draftCounterpartyMessage` backend tools, plus `updateResolution`
+  (shared state) and `confirmCounterpartyContact` (HITL) frontend
+  actions.
+
+The case-kind → agent mapping lives in `AGENT_BY_KIND` in
+`frontend/app/console/[caseId]/page.tsx`. Settlement-break cases route to
+the new agent and render a domain-specific resolution panel; other kinds
+fall back to the trip planner. The console table, reasoning trace, and
+audit log are agent-agnostic and identical across kinds — that's the
+AG-UI portability story.
+
+Try it: open `CASE-1042` (DTCC fail) and say *"Investigate T-100012"*.
 
 ## Layout
 

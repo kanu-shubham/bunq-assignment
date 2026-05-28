@@ -5,9 +5,13 @@ import {
 } from "@copilotkit/runtime";
 import { NextRequest } from "next/server";
 
-// Proxies the browser <-> Mastra AG-UI endpoint at http://localhost:4111/copilotkit
+// Proxies the browser to BOTH Mastra AG-UI endpoints. CopilotKit dispatches
+// to the right one based on the `agent` name the frontend specifies.
 const runtime = new CopilotRuntime({
-  remoteEndpoints: [{ url: "http://localhost:4111/copilotkit" }],
+  remoteEndpoints: [
+    { url: "http://localhost:4111/copilotkit/trip-planner" },
+    { url: "http://localhost:4111/copilotkit/settlement-break" },
+  ],
 });
 
 export const POST = async (req: NextRequest) => {

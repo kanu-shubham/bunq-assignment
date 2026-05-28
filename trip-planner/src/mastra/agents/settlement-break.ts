@@ -19,7 +19,9 @@ Workflow:
 6. Call updateResolution again with:
      { status: "drafted", counterpartyDraft: <the draft> }
 7. Call confirmCounterpartyContact (HITL) with a one-line summary —
-   the operator must approve before the message is sent.
+   the operator must approve before the message is sent. They may edit
+   the draft before approving; the final outgoing text is whatever is
+   in counterpartyDraft at the moment of approval.
 8. On approval, respond "Message sent to <counterparty>." On rejection,
    respond "Send canceled. Awaiting further instruction."
 

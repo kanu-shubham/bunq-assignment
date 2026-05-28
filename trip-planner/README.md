@@ -78,6 +78,12 @@ audit log are agent-agnostic and identical across kinds — that's the
 AG-UI portability story.
 
 Try it: open `CASE-1042` (DTCC fail) and say *"Investigate T-100012"*.
+When the approval card appears, click **Edit** to modify the draft inline,
+then **Approve with edits** — the audit log distinguishes edited vs as-is
+approvals, and the final text in shared state is whatever the operator left
+in the textarea. This is the edit-and-resubmit pattern serious HITL design
+needs (approve/reject alone is insufficient when the agent's draft is
+*almost* right).
 
 ## Layout
 

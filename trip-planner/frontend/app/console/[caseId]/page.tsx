@@ -151,11 +151,13 @@ function SettlementBreakPanel({ caseId }: { caseId: string }) {
     description: "Ask the operator to approve sending the drafted message to the counterparty.",
     parameters: [{ name: "summary", type: "string", required: true }],
     renderAndWaitForResponse: ({ args, respond, status }) => (
-      <ApprovalCard
+      <EditableApprovalCard
         caseId={caseId}
         title="Send to counterparty?"
         summary={(args as { summary: string }).summary}
-        respond={(v) => {
+        draft={(state ?? INITIAL_RESOLUTION).counterpartyDraft ?? ""}
+        onDraftChange={(text) => setState({ ...(state ?? INITIAL_RESOLUTION), counterpartyDraft: text })}
+        onDecide={(v) => {
           if (v === "approved") setState({ ...(state ?? INITIAL_RESOLUTION), status: "sent" });
           respond?.(v);
         }}
@@ -252,6 +254,98 @@ function ApprovalCard({
       <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{title}</p>
       <p style={{ margin: "0 0 12px", color: "#555", fontSize: 13 }}>{summary}</p>
       <button onClick={() => decide("approved")} style={btn("#16a34a")}>Approve</button>
+      <button onClick={() => decide("rejected")} style={btn("#dc2626")}>Reject</button>
+    </div>
+  );
+}
+
+// ---------- Editable approval card ----------
+// Operator can edit the draft inline before approving. Edits write to shared
+// state via onDraftChange so the agent sees the final text in subsequent turns.
+
+function EditableApprovalCard({
+  caseId, title, summary, draft, onDraftChange, onDecide, status, stepLabel, actionLabel,
+}: {
+  caseId: string;
+  title: string;
+  summary: string;
+  draft: string;
+  onDraftChange: (text: string) => void;
+  onDecide: (value: "approved" | "rejected") => void;
+  status: string;
+  stepLabel: string;
+  actionLabel: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [original] = useState(draft);
+  const wasEdited = draft !== original;
+  const charsChanged = Math.abs(draft.length - original.length);
+
+  useEffect(() => {
+    if (status === "executing" || status === "inProgress") {
+      updateCase(caseId, {
+        status: "blocked", currentStep: stepLabel, pendingApprovals: 1, blockedSince: Date.now(),
+      });
+      appendAudit(caseId, "agent", `Requested approval: ${actionLabel}`, summary);
+    } else if (status === "complete") {
+      updateCase(caseId, {
+        status: "running", currentStep: "Decision received", pendingApprovals: 0, blockedSince: null,
+      });
+    }
+  }, [status, caseId, stepLabel, actionLabel, summary]);
+
+  if (status === "complete") {
+    return <div style={{ padding: 8, color: "#444", fontSize: 13 }}>Decision recorded.</div>;
+  }
+
+  const decide = (value: "approved" | "rejected") => {
+    if (value === "approved") {
+      const label = wasEdited ? `${actionLabel} approved with edits` : `${actionLabel} approved as-is`;
+      const detail = wasEdited ? `${charsChanged} char delta` : undefined;
+      appendAudit(caseId, "operator", label, detail);
+    } else {
+      appendAudit(caseId, "operator", `${actionLabel} rejected`, summary);
+    }
+    onDecide(value);
+  };
+
+  return (
+    <div style={{ padding: 12, border: "1px solid #d4b800", borderRadius: 8, background: "#fffbe6" }}>
+      <p style={{ margin: "0 0 4px", fontWeight: 600 }}>{title}</p>
+      <p style={{ margin: "0 0 10px", color: "#555", fontSize: 13 }}>{summary}</p>
+
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+        <span style={{ fontSize: 11, color: "#888", textTransform: "uppercase", letterSpacing: 0.5 }}>
+          Outgoing draft {wasEdited && <span style={{ color: "#b45309" }}>· edited (+/- {charsChanged})</span>}
+        </span>
+        <button
+          onClick={() => setEditing((e) => !e)}
+          style={{ fontSize: 11, background: "white", border: "1px solid #ddd", padding: "2px 8px", borderRadius: 4, cursor: "pointer" }}
+        >
+          {editing ? "Preview" : "Edit"}
+        </button>
+      </div>
+
+      {editing ? (
+        <textarea
+          value={draft}
+          onChange={(e) => onDraftChange(e.target.value)}
+          rows={10}
+          style={{
+            width: "100%", boxSizing: "border-box", fontFamily: "ui-monospace, monospace",
+            fontSize: 12, padding: 8, border: "1px solid #ddd", borderRadius: 4, marginBottom: 10,
+          }}
+        />
+      ) : (
+        <pre style={{
+          margin: "0 0 10px", padding: 8, background: "white", border: "1px solid #eee",
+          borderRadius: 4, fontSize: 12, whiteSpace: "pre-wrap", maxHeight: 220, overflowY: "auto",
+        }}>{draft || <em style={{ color: "#999" }}>(empty)</em>}</pre>
+      )}
+
+      <button onClick={() => decide("approved")} style={btn(wasEdited ? "#b45309" : "#16a34a")}>
+        {wasEdited ? "Approve with edits" : "Approve as-is"}
+      </button>
       <button onClick={() => decide("rejected")} style={btn("#dc2626")}>Reject</button>
     </div>
   );

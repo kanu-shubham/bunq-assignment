@@ -27,11 +27,29 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000 and try:
+Open http://localhost:3000 — you'll land on the **Operations Console** (fleet view).
+Click any case to open its agent. Inside the case, try:
 
 - "What's the weather in Lisbon?" → tool call
 - "Add 3 days in Lisbon and 2 days in Porto" → shared state updates live
-- "Book it" → approval dialog appears, agent waits for your click
+- "Book it" → approval dialog appears, agent waits for your click.
+  The console table reflects the case as **blocked** until you respond.
+
+## Operations Console
+
+`/console` is the operator surface: a table of N concurrent agent runs,
+sorted by *blocked-longest-first*, with at-a-glance status, current step,
+pending approvals, and time-blocked. Click a row to open `/console/[caseId]`
+which scopes the chat to that case (`threadId={caseId}`) and shows the
+itinerary + chat detail view.
+
+HITL approval inside a case mirrors into the case store, so the supervision
+table updates in real time — open two browser tabs to see it.
+
+Note: every case currently routes to the same `tripPlanner` agent (demo
+concession). The supervision surface is the point — swap in a domain agent
+per `kind` (`settlement-break`, `margin-dispute`, etc.) and the operator UI
+doesn't change. That's the AG-UI portability story.
 
 ## Layout
 

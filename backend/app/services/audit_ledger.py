@@ -112,10 +112,13 @@ async def verify_chain(workflow_id: Optional[str] = None) -> dict:
         events = [dict(r) for r in rows]
 
         for i, ev in enumerate(events):
-            expected_parent = events[i - 1]["hash"] if i > 0 else "GENESIS"
-            if ev["parent_hash"] != expected_parent:
-                return {"valid": False, "broken_at": ev["id"], "reason": "parent_hash mismatch"}
+            # For the global (no workflow filter) case, verify parent linkage too.
+            if workflow_id is None:
+                expected_parent = events[i - 1]["hash"] if i > 0 else "GENESIS"
+                if ev["parent_hash"] != expected_parent:
+                    return {"valid": False, "broken_at": ev["id"], "reason": "parent_hash mismatch"}
 
+            # Always verify each event's own hash recomputes correctly.
             payload = json.loads(ev["payload"])
             recomputed = compute_hash(
                 ev["parent_hash"], ev["event_type"], payload,

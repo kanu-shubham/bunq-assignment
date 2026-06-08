@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Margin Call — Role-Aware Workbench (fake SSE demo)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: -apple-system, Segoe UI, Roboto, sans-serif;
+    background: #0d1117; color: #e6edf3; font-size: 14px;
+  }
+  header {
+    padding: 14px 20px; background: #161b22; border-bottom: 1px solid #30363d;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  header h1 { font-size: 16px; margin: 0; }
+  .role-switch { display: flex; gap: 6px; }
+  .role-switch button {
+    background: #21262d; color: #8b949e; border: 1px solid #30363d;
+    padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  .role-switch button.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+  .wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 20px; }
+  .panel { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 14px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; color: #8b949e; margin: 0 0 10px; letter-spacing: .5px; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 600; }
+  .pill.advisory { background: #1f2d3d; color: #58a6ff; }
+  .pill.risk { background: #3d2a1f; color: #d29922; }
+  .pill.state { background: #21262d; color: #8b949e; }
+  .pill.settled { background: #1a3d28; color: #3fb950; }
+  .diff { font-size: 22px; font-weight: 700; margin: 8px 0; }
+  .diff .old { color: #8b949e; text-decoration: line-through; font-size: 16px; }
+  .diff .new { color: #3fb950; }
+  .tool { padding: 8px 10px; margin: 6px 0; background: #0d1117; border: 1px solid #21262d; border-radius: 6px; font-family: ui-monospace, monospace; font-size: 12px; }
+  .tool .cite { color: #58a6ff; }
+  .tool .score { color: #8b949e; float: right; }
+  .reasoning { color: #c9d1d9; line-height: 1.5; min-height: 40px; }
+  .cursor { display: inline-block; width: 7px; height: 14px; background: #58a6ff; animation: blink 1s steps(2) infinite; vertical-align: middle; }
+  @keyframes blink { 0%,50% { opacity: 1; } 50.1%,100% { opacity: 0; } }
+  .quorum { display: flex; gap: 10px; margin: 10px 0; }
+  .sig { flex: 1; padding: 10px; border-radius: 6px; border: 1px dashed #30363d; text-align: center; }
+  .sig.signed { border: 1px solid #3fb950; background: #0f2417; }
+  .sig .role { font-weight: 700; }
+  .sig .who { font-size: 11px; color: #8b949e; }
+  .btn-approve {
+    width: 100%; padding: 12px; border-radius: 8px; border: none; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 10px;
+  }
+  .btn-approve.enabled { background: #238636; color: #fff; }
+  .btn-approve.disabled { background: #21262d; color: #6e7681; cursor: not-allowed; }
+  .blast { background: #2d1f1f; border: 1px solid #5c2626; border-radius: 6px; padding: 10px; margin-top: 10px; }
+  .blast .amt { font-size: 20px; font-weight: 700; color: #f85149; }
+  .log { font-family: ui-monospace, monospace; font-size: 11px; max-height: 220px; overflow-y: auto; }
+  .log div { padding: 3px 0; border-bottom: 1px solid #21262d; color: #8b949e; }
+  .log .ev { color: #58a6ff; }
+  .role-note { font-size: 12px; color: #8b949e; margin-top: 8px; padding: 8px; background: #0d1117; border-radius: 6px; }
+  .controls { padding: 0 20px 20px; }
+  .controls button { background: #1f6feb; color: #fff; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; margin-right: 8px; }
+  .controls button:disabled { background: #21262d; color: #6e7681; cursor: not-allowed; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Margin Call Workbench — wf_42 · CP_ACME · <span id="status" class="pill state">NEW</span></h1>
+  <div class="role-switch">
+    <span style="color:#8b949e;align-self:center;margin-right:6px;">Logged in as:</span>
+    <button data-role="ANALYST" class="active" onclick="setRole('ANALYST')">Analyst</button>
+    <button data-role="RISK" onclick="setRole('RISK')">Risk Officer</button>
+    <button data-role="MARGIN_OPS" onclick="setRole('MARGIN_OPS')">Margin Ops</button>
+  </div>
+</header>
+
+<div class="controls">
+  <button id="startBtn" onclick="startInvestigation()">▶ Click "Investigate" (start fake SSE stream)</button>
+  <span class="role-note" style="display:inline-block;">Switch roles any time — same UI, the Approve button enables only for required roles.</span>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="panel">
+      <h2>What changed · the proposal</h2>
+      <div class="diff">Call amount: <span class="old">$0</span> → <span class="new" id="callAmt">—</span></div>
+      <span class="pill advisory">AI PROPOSAL · advisory</span>
+      <span class="pill risk" id="riskPill" style="display:none;">risk 0.41</span>
+      <div class="reasoning" id="reasoning" style="margin-top:10px;"></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>Evidence (RAG · tool calls)</h2>
+      <div id="tools"></div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>Approval gate · who must sign</h2>
+      <div class="quorum">
+        <div class="sig" id="sig-RISK"><div class="role">RISK</div><div class="who">awaiting</div></div>
+        <div class="sig" id="sig-MARGIN_OPS"><div class="role">MARGIN_OPS</div><div class="who">awaiting</div></div>
+      </div>
+      <div class="blast">
+        Blast radius: <span class="amt">$6,200,000</span> margin call to <b>CP_ACME</b>
+      </div>
+      <button id="approveBtn" class="btn-approve disabled" disabled onclick="approve()">Approve as ANALYST</button>
+      <div class="role-note" id="roleNote">You are an <b>Analyst</b> — you can review everything, but you are not a required signer on this gate.</div>
+    </div>
+
+    <div class="panel" style="margin-top:16px;">
+      <h2>Live event log (fake SSE bus → this tab's mailbox)</h2>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────
+//  FAKE SSE BUS  (pub/sub) — exactly the shape described in the walkthrough
+// ──────────────────────────────────────────────────────────────────────────
+class SSEBus {
+  constructor() { this.subscribers = new Map(); this.history = new Map(); this.seq = 0; }
+  publish(workflowId, event) {
+    event._id = ++this.seq;                                  // stamp wire id
+    const hist = this.history.get(workflowId) || [];
+    hist.push(event); if (hist.length > 512) hist.shift();
+    this.history.set(workflowId, hist);
+    for (const sub of this.subscribers.get(workflowId) || []) sub(event);  // fan out
+  }
+  subscribe(workflowId, handler, lastEventId = null) {
+    const set = this.subscribers.get(workflowId) || new Set();
+    set.add(handler); this.subscribers.set(workflowId, set);
+    if (lastEventId !== null)                                // replay on reconnect
+      for (const e of this.history.get(workflowId) || []) if (e._id > lastEventId) handler(e);
+    return () => set.delete(handler);                        // unsubscribe
+  }
+}
+const bus = new SSEBus();
+
+// ──────────────────────────────────────────────────────────────────────────
+//  CLIENT STATE  (one tab) — role + workflow snapshot
+// ──────────────────────────────────────────────────────────────────────────
+let myRole = "ANALYST";
+const wf = { status: "NEW", gate: { requiredRoles: ["RISK", "MARGIN_OPS"], signatures: [] } };
+
+// this tab subscribes to wf_42 — every published event lands in dispatch()
+bus.subscribe("wf_42", dispatch);
+
+function log(event) {
+  const el = document.getElementById("log");
+  const row = document.createElement("div");
+  row.innerHTML = `<span class="ev">#${event._id} ${event.type}</span> ${event.delta || event.tool || event.to || (event.role ? "role="+event.role : "")}`;
+  el.prepend(row);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  dispatch()  — discriminated union, turns each AG-UI event into a render
+// ──────────────────────────────────────────────────────────────────────────
+function dispatch(event) {
+  log(event);
+  switch (event.type) {
+    case "WORKFLOW_STATE_CHANGED":
+      wf.status = event.to; renderStatus(); break;
+    case "TOOL_CALL_START":
+      addTool(event.id, event.tool, "running"); break;
+    case "TOOL_CALL_END":
+      patchTool(event.id, event.result); break;
+    case "TEXT_MESSAGE_CONTENT":
+      appendReasoning(event.delta); break;
+    case "PROPOSAL_READY":
+      document.getElementById("callAmt").textContent = "$6,200,000";
+      document.getElementById("riskPill").style.display = "inline-block";
+      break;
+    case "APPROVAL_REQUEST":
+      wf.gate = event.gate; wf.status = "AWAITING_APPROVAL";
+      renderStatus(); renderGate(); renderApproveButton(); break;
+    case "APPROVAL_GRANTED":
+      wf.gate = event.gate; renderGate(); renderApproveButton(); break;
+    case "AUDIT_EVENT":
+      break;
+    default: break;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  RENDER helpers
+// ──────────────────────────────────────────────────────────────────────────
+function renderStatus() {
+  const el = document.getElementById("status");
+  el.textContent = wf.status;
+  el.className = "pill " + (wf.status === "CALL_ISSUED" ? "settled" : "state");
+}
+function addTool(id, tool, status) {
+  const el = document.createElement("div");
+  el.className = "tool"; el.id = "tool-" + id;
+  el.innerHTML = `⏳ ${tool}`;
+  document.getElementById("tools").appendChild(el);
+}
+function patchTool(id, result) {
+  const el = document.getElementById("tool-" + id);
+  if (!el) return;
+  let html = `✅ ${el.textContent.replace("⏳ ", "")}`;
+  if (result && result.evidence) {
+    html += result.evidence.map(e =>
+      `<br><span class="cite">${e.source}</span> — ${e.text} <span class="score">${e.score}</span>`).join("");
+  }
+  el.innerHTML = html;
+}
+let reasoningText = "";
+function appendReasoning(delta) {
+  reasoningText += delta;
+  document.getElementById("reasoning").innerHTML = reasoningText + '<span class="cursor"></span>';
+}
+function renderGate() {
+  for (const role of ["RISK", "MARGIN_OPS"]) {
+    const sig = wf.gate.signatures.find(s => s.role === role);
+    const el = document.getElementById("sig-" + role);
+    if (sig) { el.className = "sig signed"; el.querySelector(".who").textContent = "✔ " + sig.user; }
+    else { el.className = "sig"; el.querySelector(".who").textContent = "awaiting"; }
+  }
+  if (wf.gate.signatures.length === 2) {
+    bus.publish("wf_42", { type: "WORKFLOW_STATE_CHANGED", to: "CALL_ISSUED" });
+    bus.publish("wf_42", { type: "AUDIT_EVENT", receipt: "rcpt_001" });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  ROLE-AWARE AFFORDANCE — the key idea: SAME UI, button driven by data
+// ──────────────────────────────────────────────────────────────────────────
+function renderApproveButton() {
+  const btn = document.getElementById("approveBtn");
+  const note = document.getElementById("roleNote");
+  btn.textContent = "Approve as " + myRole;
+
+  const isRequired = wf.gate.requiredRoles.includes(myRole);
+  const alreadySigned = wf.gate.signatures.some(s => s.role === myRole);
+  const gateOpen = wf.status === "AWAITING_APPROVAL";
+
+  if (isRequired && !alreadySigned && gateOpen) {
+    btn.className = "btn-approve enabled"; btn.disabled = false;
+    note.innerHTML = `You are <b>${myRole}</b> — a required signer. Your Approve button is <b>enabled</b>.`;
+  } else {
+    btn.className = "btn-approve disabled"; btn.disabled = true;
+    if (!isRequired)        note.innerHTML = `You are <b>${myRole}</b> — you can review everything, but you are <b>not a required signer</b> on this gate (button disabled).`;
+    else if (alreadySigned) note.innerHTML = `You (<b>${myRole}</b>) have <b>already signed</b>. Waiting on the other role.`;
+    else if (!gateOpen)     note.innerHTML = `Gate not open yet — run Investigate first.`;
+  }
+}
+
+function setRole(role) {
+  myRole = role;
+  document.querySelectorAll(".role-switch button").forEach(b =>
+    b.classList.toggle("active", b.dataset.role === role));
+  renderApproveButton();
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  ACTIONS  — approve publishes APPROVAL_GRANTED (server would do this)
+// ──────────────────────────────────────────────────────────────────────────
+function approve() {
+  // anti-self-approval / role check would be server-side; here we just sign
+  const gate = { ...wf.gate, signatures: [...wf.gate.signatures, { role: myRole, user: myRole.toLowerCase() + "@bank" }] };
+  bus.publish("wf_42", { type: "APPROVAL_GRANTED", gate, role: myRole });
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+//  FAKE AGENT  — drives the fake SSE stream (what LangGraph would emit)
+// ──────────────────────────────────────────────────────────────────────────
+function startInvestigation() {
+  document.getElementById("startBtn").disabled = true;
+  const P = (ms, fn) => setTimeout(fn, ms);
+
+  bus.publish("wf_42", { type: "WORKFLOW_STATE_CHANGED", to: "INVESTIGATING" });
+
+  P(400, () => bus.publish("wf_42", { type: "TOOL_CALL_START", id: "tc_1", tool: "rag.search_csa" }));
+  P(1400, () => bus.publish("wf_42", { type: "TOOL_CALL_END", id: "tc_1", result: { evidence: [
+    { source: "CSA_2019_114 §3(b)", text: "Minimum Transfer Amount: USD 1,000,000", score: 0.94 },
+    { source: "CSA_2019_114 §4(a)", text: "Eligible Collateral: cash USD, US Treasuries", score: 0.91 },
+  ] } }));
+
+  // streamed reasoning, token by token
+  const tokens = "The exposure of $46.2M against posted collateral of $40.0M leaves a $6.2M shortfall, above the $1M MTA. Recommend issuing a margin call for $6,200,000 in eligible USD cash collateral. ".split(" ");
+  tokens.forEach((t, i) => P(1800 + i * 70, () => appendReasoning(t + " ")));
+
+  P(1800 + tokens.length * 70 + 200, () => bus.publish("wf_42", { type: "PROPOSAL_READY" }));
+
+  P(1800 + tokens.length * 70 + 600, () => bus.publish("wf_42", { type: "TOOL_CALL_START", id: "tc_2", tool: "rules.validate_proposal" }));
+  P(1800 + tokens.length * 70 + 1300, () => bus.publish("wf_42", { type: "TOOL_CALL_END", id: "tc_2", result: { passed: true, riskScore: 0.41 } }));
+
+  P(1800 + tokens.length * 70 + 1800, () => bus.publish("wf_42", { type: "APPROVAL_REQUEST", gate: {
+    id: "gate_1", requiredRoles: ["RISK", "MARGIN_OPS"], quorum: "1_of_each", signatures: [],
+  } }));
+}
+
+renderStatus();
+</script>
+</body>
+</html>

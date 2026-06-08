@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>HITL Workbench — Interview Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: ui-sans-serif, system-ui, sans-serif; background: #f9fafb; color: #111827; height: 100vh; display: flex; flex-direction: column; }
+
+  /* ── HEADER ── */
+  header { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
+  header .title { font-weight: 700; font-size: 15px; }
+  header .thesis { color: #6b7280; font-size: 12px; margin-left: 10px; }
+  .role-switcher { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .role-switcher select { font-size: 13px; padding: 3px 8px; border: 1px solid #d1d5db; border-radius: 6px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #16a34a; display: inline-block; }
+  .user-label { color: #6b7280; }
+
+  /* ── BODY GRID ── */
+  .body { display: grid; grid-template-columns: 300px 1fr 270px; flex: 1; min-height: 0; }
+
+  /* ── LEFT: TASK QUEUE ── */
+  .queue-col { background: #fff; border-right: 1px solid #e5e7eb; padding: 12px; overflow-y: auto; }
+  .pane-title { font-size: 12px; font-weight: 700; color: #374151; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .pattern-tag { font-size: 9px; font-weight: 700; color: #4338ca; background: #eef2ff; padding: 2px 6px; border-radius: 4px; letter-spacing: .3px; }
+  .queue-row { width: 100%; text-align: left; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #fff; cursor: pointer; display: block; }
+  .queue-row:hover { border-color: #a5b4fc; }
+  .queue-row.selected { border-color: #4338ca; box-shadow: 0 0 0 2px #eef2ff; }
+  .wf-type { font-size: 9px; font-weight: 700; color: #6b7280; letter-spacing: .5px; }
+  .wf-title { font-size: 13px; font-weight: 600; margin: 4px 0 6px; }
+  .row-footer { display: flex; justify-content: space-between; align-items: center; }
+  .state-badge { font-size: 9px; font-weight: 700; border: 1px solid; border-radius: 4px; padding: 1px 6px; }
+  .pending-tag { font-size: 10px; color: #b45309; background: #fef3c7; padding: 1px 6px; border-radius: 999px; }
+  .risk-pill { font-size: 10px; font-weight: 700; padding: 1px 8px; border-radius: 999px; }
+  .risk-high { background: #fee2e2; color: #b91c1c; }
+  .risk-med  { background: #fef3c7; color: #b45309; }
+  .risk-low  { background: #dcfce7; color: #15803d; }
+  .row-top { display: flex; justify-content: space-between; margin-bottom: 2px; }
+
+  /* ── CENTRE: DETAIL ── */
+  .detail-col { padding: 18px; overflow-y: auto; }
+  .five-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .cell { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; background: #fff; }
+  .cell-label { font-size: 11px; font-weight: 700; color: #374151; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .cell-num { background: #4338ca; color: #fff; width: 18px; height: 18px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 10px; flex-shrink: 0; }
+  .proposal-box { border: 1px dashed #c7d2fe; background: #f5f3ff; border-radius: 8px; padding: 10px; }
+  .proposal-chip { font-size: 9px; font-weight: 700; color: #6d28d9; background: #ede9fe; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-bottom: 6px; }
+  .proposal-text { font-size: 12px; color: #374151; line-height: 1.5; }
+  .diff-table { width: 100%; font-size: 12px; border-collapse: collapse; }
+  .diff-table td { padding: 2px 4px; }
+  .diff-key { color: #6b7280; white-space: nowrap; }
+  .diff-old { color: #9ca3af; text-decoration: line-through; }
+  .diff-arrow { color: #4338ca; }
+  .diff-new { font-weight: 700; color: #15803d; }
+  .blast { font-size: 22px; font-weight: 700; color: #111827; }
+  .blast-sub { font-size: 11px; color: #6b7280; margin-top: 4px; }
+
+  /* ── APPROVAL GATE ── */
+  .gate-cell { border: 1px solid #e5e7eb; border-radius: 8px; padding: 14px; background: #fff; margin-bottom: 12px; }
+  .quorum-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+  .progress-outer { flex: 1; max-width: 180px; height: 10px; background: #e5e7eb; border-radius: 999px; overflow: hidden; }
+  .progress-inner { height: 100%; background: #16a34a; transition: width .3s; }
+  .signer-row { margin-bottom: 8px; font-size: 12px; color: #6b7280; }
+  .role-chip { font-size: 10px; font-weight: 600; border: 1px solid #d1d5db; border-radius: 999px; padding: 1px 8px; margin-right: 4px; color: #6b7280; display: inline-block; }
+  .role-chip.active { border-color: #4338ca; color: #4338ca; background: #eef2ff; }
+  .vote-list { list-style: none; margin: 8px 0; font-size: 12px; color: #6b7280; }
+  .vote-list li { margin-bottom: 3px; }
+  .btn-row { display: flex; gap: 8px; margin-top: 12px; }
+  button.btn { padding: 8px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; font-size: 13px; transition: opacity .15s; }
+  button.btn:disabled { opacity: .35; cursor: not-allowed; }
+  .btn-approve { background: #16a34a; color: #fff; }
+  .btn-deny    { background: #dc2626; color: #fff; }
+  .btn-escalate { background: #9333ea; color: #fff; }
+  .blocked-note { margin-top: 10px; font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 6px; padding: 7px 10px; }
+  .resolved-note { margin-top: 10px; font-size: 12px; color: #166534; background: #dcfce7; border: 1px solid #86efac; border-radius: 6px; padding: 7px 10px; }
+
+  /* ── RIGHT: EVENT LOG ── */
+  .event-col { background: #fff; border-left: 1px solid #e5e7eb; padding: 12px; overflow-y: auto; }
+  .event-row { font-size: 11px; display: flex; gap: 6px; align-items: flex-start; border-bottom: 1px solid #f3f4f6; padding: 4px 0; }
+  .event-time { color: #9ca3af; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .event-wf { color: #4338ca; font-family: monospace; flex-shrink: 0; }
+  .event-new { animation: flash .6s ease-out; }
+  @keyframes flash { from { background: #eff6ff; } to { background: transparent; } }
+
+  /* ── STATE MACHINE VISUALISER ── */
+  .sm-viz { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin: 0 0 14px; }
+  .sm-node { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 6px; border: 2px solid; background: #fff; transition: all .2s; }
+  .sm-node.active { color: #fff; }
+  .sm-arrow { color: #6b7280; font-size: 12px; }
+  .sm-node[data-state="OPEN"]              { border-color: #6b7280; color: #6b7280; }
+  .sm-node[data-state="OPEN"].active       { background: #6b7280; }
+  .sm-node[data-state="AWAITING_APPROVAL"] { border-color: #b45309; color: #b45309; }
+  .sm-node[data-state="AWAITING_APPROVAL"].active { background: #b45309; }
+  .sm-node[data-state="DISPUTED"]          { border-color: #be123c; color: #be123c; }
+  .sm-node[data-state="DISPUTED"].active   { background: #be123c; }
+  .sm-node[data-state="ESCALATED"]         { border-color: #9333ea; color: #9333ea; }
+  .sm-node[data-state="ESCALATED"].active  { background: #9333ea; }
+  .sm-node[data-state="RESOLVED"]          { border-color: #15803d; color: #15803d; }
+  .sm-node[data-state="RESOLVED"].active   { background: #15803d; }
+  .sm-node[data-state="REJECTED"]          { border-color: #b91c1c; color: #b91c1c; }
+  .sm-node[data-state="REJECTED"].active   { background: #b91c1c; }
+
+  /* ── MISC ── */
+  .empty { color: #9ca3af; font-size: 13px; padding: 40px; text-align: center; }
+  .subtle { color: #6b7280; font-size: 12px; }
+  .detail-title { font-size: 15px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .state-OPEN { color: #6b7280; border-color: #6b7280; }
+  .state-AWAITING_APPROVAL { color: #b45309; border-color: #b45309; }
+  .state-DISPUTED { color: #be123c; border-color: #be123c; }
+  .state-ESCALATED { color: #9333ea; border-color: #9333ea; }
+  .state-RESOLVED { color: #15803d; border-color: #15803d; }
+  .state-REJECTED { color: #b91c1c; border-color: #b91c1c; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════ HEADER ═══════════════════════════ -->
+<header>
+  <div>
+    <span class="title">HITL Workbench</span>
+    <span class="thesis">LLMs propose · rules decide · humans commit · ledgers remember</span>
+  </div>
+  <div class="role-switcher">
+    <span class="user-label">acting as <b id="user-label">alice@bank</b></span>
+    <label>role:
+      <select id="role-select" onchange="switchRole(this.value)">
+        <option value="TRADER">TRADER</option>
+        <option value="RISK">RISK</option>
+        <option value="COMPLIANCE">COMPLIANCE</option>
+        <option value="OPERATIONS" selected>OPERATIONS</option>
+        <option value="LEGAL">LEGAL</option>
+        <option value="ADMIN">ADMIN</option>
+      </select>
+    </label>
+    <span class="dot"></span><span class="subtle">live</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════ BODY ════════════════════════════ -->
+<div class="body">
+
+  <!-- LEFT: task queue -->
+  <div class="queue-col">
+    <div class="pane-title">
+      Task queue · sorted by <b>risk × SLA</b>
+      <span class="pattern-tag">PATTERN · workbench not chat</span>
+    </div>
+    <div id="queue"></div>
+  </div>
+
+  <!-- CENTRE: drill-in -->
+  <div class="detail-col" id="detail">
+    <div class="empty">← Select a workflow to see the 5-second decision view</div>
+  </div>
+
+  <!-- RIGHT: live event stream -->
+  <div class="event-col">
+    <div class="pane-title">
+      Live event stream
+      <span class="pattern-tag">PATTERN · custom SSE hook</span>
+    </div>
+    <div id="event-log"></div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════ DATA + LOGIC ═══════════════════════════ -->
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// PATTERN 1 — DISCRIMINATED UNIONS (JS version: an exhaustive map)
+// In TypeScript this would be a switch(e.type) with a `never` default.
+// Every event type MUST exist in this map — adding a new type without
+// handling it is the bug discriminated unions prevent at compile time.
+// ═══════════════════════════════════════════════════════════════════════
+const EVENT_LABELS = {
+  CONNECTED:                    "🔌 Stream connected",
+  RUN_STARTED:                  "▶️  Agent run started",
+  RUN_FINISHED:                 "⏹️  Agent run finished",
+  TEXT_MESSAGE_CONTENT:         "💬 Agent reasoning…",
+  TOOL_CALL_START:              "🛠️  Calling tool…",
+  TOOL_CALL_END:                "✅ Tool returned",
+  STATE_SNAPSHOT:               "📸 Full state snapshot",
+  STATE_DELTA:                  "➕ State delta",
+  APPROVAL_REQUEST:             "🙋 Approval requested",
+  APPROVAL_GRANTED:             "🟢 Approval granted",
+  APPROVAL_DENIED:              "🔴 Approval denied",
+  OVERRIDE_INVOKED:             "🚨 Break-glass override",
+  COUNTERPARTY_INPUT_REQUIRED:  "📨 Counterparty input needed",
+  REG_FILING_DRAFTED:           "📄 Regulatory filing drafted",
+  EVIDENCE_PINNED:              "📌 Evidence pinned",
+  WORKFLOW_STATE_CHANGED:       "🔁 Workflow state changed",
+  AUDIT_EVENT:                  "🔐 Audit entry written",
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// PATTERN 2 — THREE STATE LAYERS
+//   serverState  → single source of truth for all workflow data (TanStack)
+//   uiState      → client-only concerns: role, selectedId (Zustand)
+//   eventLog     → live SSE events bounded to last 50 (custom SSE hook)
+// ═══════════════════════════════════════════════════════════════════════
+let serverState = {
+  "wf-001": {
+    id: "wf-001", type: "SETTLEMENT", state: "AWAITING_APPROVAL",
+    title: "EUR/USD settlement — Acme Capital",
+    riskScore: 0.73,
+    createdAt: new Date(Date.now() - 3 * 3600_000).toISOString(),
+    createdBy: "bob@bank",
+    payload:   { amount: 6200000, currency: "USD", counterparty: "Acme Capital", lei: "MISSING", settlement_date: "T+2" },
+    proposal:  { amount: 6200000, currency: "USD", counterparty: "Acme Capital", lei: "REQUIRE_VERIFY", settlement_date: "T+2" },
+    reasoning: "High risk: new counterparty with no verified LEI on a $6.2M settlement. Recommend COMPLIANCE sign-off and LEI verification before committing to external rails.",
+    gate: { quorum: 2, required_roles: ["COMPLIANCE", "RISK"], status: "PENDING", approvals: [] }
+  },
+  "wf-002": {
+    id: "wf-002", type: "MARGIN_CALL", state: "AWAITING_APPROVAL",
+    title: "Margin call dispute — Northwind LP",
+    riskScore: 0.41,
+    createdAt: new Date(Date.now() - 8 * 3600_000).toISOString(),
+    createdBy: "alice@bank",          // ← created by current user → anti-self-approval demo
+    payload:   { amount: 1450000, currency: "EUR", counterparty: "Northwind LP" },
+    proposal:  { amount: 1450000, currency: "EUR", counterparty: "Northwind LP", recommendation: "partial_release" },
+    reasoning: "Dispute centres on CSA valuation timing. Recommend partial release pending reconciliation.",
+    gate: { quorum: 2, required_roles: ["RISK", "LEGAL"], status: "PENDING",
+      approvals: [{ actor: "carol@bank", role: "RISK", decision: "approve", ts: new Date(Date.now()-30000).toISOString() }]
+    }
+  },
+  "wf-003": {
+    id: "wf-003", type: "RECONCILIATION", state: "OPEN",
+    title: "Recon break — custody vs ledger",
+    riskScore: 0.18,
+    createdAt: new Date(Date.now() - 1 * 3600_000).toISOString(),
+    createdBy: "dave@bank",
+    payload:   { instrument: "US0378331005", break_qty: 12 },
+    proposal:  { instrument: "US0378331005", break_qty: 12, resolution: "adjust_ledger" },
+    reasoning: "Small quantity break, likely corporate-action timing difference. Low risk, no approval gate required.",
+    gate: null
+  },
+};
+
+let uiState = { role: "OPERATIONS", currentUser: "alice@bank", selectedId: null };
+let eventLog = [{ type: "CONNECTED", wf: null, ts: new Date().toISOString() }];
+
+// ═══════════════════════════════════════════════════════════════════════
+// PATTERN 2c — CUSTOM SSE HOOK  (simulated as setInterval here)
+// In production: EventSource + last-event-id reconnection + StreamBuffer
+// The KEY behaviour: on event, PATCH serverState in-place (patch-not-refetch).
+// ═══════════════════════════════════════════════════════════════════════
+const STREAM_SCRIPT = [
+  { type: "RUN_STARTED",       wf: "wf-001" },
+  { type: "TOOL_CALL_START",   wf: "wf-001", detail: "rules.validate_settlement" },
+  { type: "TOOL_CALL_END",     wf: "wf-001", detail: "risk=0.73" },
+  { type: "TEXT_MESSAGE_CONTENT", wf: "wf-001" },
+  { type: "APPROVAL_REQUEST",  wf: "wf-001" },
+  { type: "AUDIT_EVENT",       wf: "wf-001" },
+  { type: "EVIDENCE_PINNED",   wf: "wf-002" },
+  { type: "RUN_STARTED",       wf: "wf-003" },
+  { type: "TOOL_CALL_END",     wf: "wf-003", detail: "risk=0.18" },
+  { type: "AUDIT_EVENT",       wf: "wf-002" },
+];
+let streamIdx = 0;
+setInterval(() => {
+  if (streamIdx >= STREAM_SCRIPT.length) { streamIdx = 0; }
+  const ev = { ...STREAM_SCRIPT[streamIdx++], ts: new Date().toISOString() };
+  // PATCH SERVER STATE from event (not refetch)
+  if (ev.type === "WORKFLOW_STATE_CHANGED" && ev.wf) {
+    serverState[ev.wf].state = ev.newState;
+  }
+  // Bounded log — keep last 50
+  eventLog = [ev, ...eventLog].slice(0, 50);
+  renderEventLog();
+  if (uiState.selectedId) renderDetail(uiState.selectedId);
+}, 2800);
+
+// ═══════════════════════════════════════════════════════════════════════
+// PRIORITY SORT (workbench pattern)
+// ═══════════════════════════════════════════════════════════════════════
+function queuePriority(wf) {
+  const ageHours = (Date.now() - new Date(wf.createdAt)) / 3_600_000;
+  const slaUrgency = Math.min(ageHours / 24, 1);
+  return wf.riskScore * 0.7 + slaUrgency * 0.3;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER QUEUE
+// ═══════════════════════════════════════════════════════════════════════
+function renderQueue() {
+  const sorted = Object.values(serverState).sort((a, b) => queuePriority(b) - queuePriority(a));
+  document.getElementById("queue").innerHTML = sorted.map(wf => `
+    <button class="queue-row ${uiState.selectedId === wf.id ? 'selected' : ''}"
+            onclick="selectWorkflow('${wf.id}')">
+      <div class="row-top">
+        <span class="wf-type">${wf.type.replace("_"," ")}</span>
+        ${riskPill(wf.riskScore)}
+      </div>
+      <div class="wf-title">${wf.title}</div>
+      <div class="row-footer">
+        ${stateBadge(wf.state)}
+        ${wf.gate && wf.gate.status === "PENDING"
+          ? `<span class="pending-tag">${wf.gate.quorum - wf.gate.approvals.length} sigs needed</span>`
+          : ""}
+      </div>
+    </button>
+  `).join("");
+}
+
+function selectWorkflow(id) {
+  uiState.selectedId = id;
+  renderQueue();
+  renderDetail(id);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER DETAIL — THE 5-SECOND DECISION VIEW
+// ═══════════════════════════════════════════════════════════════════════
+function renderDetail(id) {
+  const wf = serverState[id];
+  if (!wf) return;
+
+  // STATE MACHINE VISUALISER — the UI mirrors the BACKEND state machine.
+  // XState (client) mirrors Temporal/LangGraph (backend). Both enforce that
+  // only legal transitions happen. On the client this prevents stale UI.
+  const states = ["OPEN","AWAITING_APPROVAL","DISPUTED","ESCALATED","RESOLVED","REJECTED"];
+  const smHtml = states.map((s,i) => `
+    ${i > 0 ? '<span class="sm-arrow">→</span>' : ""}
+    <span class="sm-node ${s === wf.state ? "active" : ""}" data-state="${s}">${s}</span>
+  `).join("");
+
+  document.getElementById("detail").innerHTML = `
+    <div class="detail-title">
+      ${wf.type.replace("_"," ")} · ${wf.title}
+      <span class="pattern-tag">PATTERN · 5-second decision</span>
+    </div>
+
+    <!-- STATE MACHINE VISUALISER -->
+    <div style="margin-bottom:14px">
+      <div class="pane-title">
+        Workflow state machine
+        <span class="pattern-tag">XState client mirrors Temporal/LangGraph backend</span>
+      </div>
+      <div class="sm-viz">${smHtml}</div>
+      <div class="subtle">Current: <b>${wf.state}</b> · only legal transitions allowed · guarded, not imperative</div>
+    </div>
+
+    <!-- 5-SECOND DECISION GRID -->
+    <div class="five-grid">
+      <div class="cell">
+        <div class="cell-label"><span class="cell-num">1</span> WHAT changed</div>
+        ${renderDiff(wf.payload, wf.proposal)}
+      </div>
+      <div class="cell">
+        <div class="cell-label"><span class="cell-num">2</span> WHY — AI proposal</div>
+        <div class="proposal-box">
+          <span class="proposal-chip">AI PROPOSAL · advisory only · not a decision</span>
+          <div class="proposal-text" style="margin-top:6px">${wf.reasoning}</div>
+        </div>
+      </div>
+      <div class="cell">
+        <div class="cell-label"><span class="cell-num">3</span> WHICH RULE flagged</div>
+        ${riskPill(wf.riskScore, true)}
+        <div class="subtle" style="margin-top:6px">deterministic rules engine · no ML · auditable</div>
+      </div>
+      <div class="cell">
+        <div class="cell-label"><span class="cell-num">5</span> WHAT IF wrong (blast radius)</div>
+        <div class="blast">${wf.payload.currency || ""} ${(wf.payload.amount||0).toLocaleString()}</div>
+        <div class="blast-sub">irreversible once committed · saga-compensated on failure</div>
+      </div>
+    </div>
+
+    <!-- APPROVAL GATE (cell 4) -->
+    <div class="gate-cell">
+      <div class="cell-label" style="margin-bottom:10px">
+        <span class="cell-num">4</span> WHO signs — N-of-M approval gate
+        <span class="pattern-tag">PATTERN · approval as workflow STATE not button flag</span>
+      </div>
+      ${wf.gate ? renderGate(wf) : '<div class="subtle">No approval gate on this workflow.</div>'}
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// APPROVAL GATE — PATTERN 5, 6, 7
+// canAct() mirrors the BACKEND'S five enforcement rules exactly.
+// Anti-self-approval: the UI greys the button AND explains why.
+// ═══════════════════════════════════════════════════════════════════════
+function renderGate(wf) {
+  const gate = wf.gate;
+  const approveCount = gate.approvals.filter(a => a.decision === "approve").length;
+  const alreadyVoted  = gate.approvals.some(a => a.actor === uiState.currentUser);
+  const isSelfApproval = wf.createdBy === uiState.currentUser;
+  const roleAllowed   = gate.required_roles.includes(uiState.role);
+  const stateOk       = wf.state === "AWAITING_APPROVAL";
+  const gatePending   = gate.status === "PENDING";
+
+  const canAct = stateOk && gatePending && roleAllowed && !alreadyVoted && !isSelfApproval;
+
+  const blockedReason =
+    !stateOk        ? `workflow is not in AWAITING_APPROVAL (it's ${wf.state})` :
+    !gatePending    ? `gate already resolved (${gate.status})` :
+    !roleAllowed    ? `your role (${uiState.role}) is not a required signer — need: ${gate.required_roles.join(", ")}` :
+    isSelfApproval  ? "you created this workflow — anti-self-approval enforced" :
+    alreadyVoted    ? "you have already voted on this gate" :
+    null;
+
+  const pct = Math.min((approveCount / gate.quorum) * 100, 100);
+
+  const votesHtml = gate.approvals.map(a =>
+    `<li>${a.decision==="approve"?"🟢":"🔴"} <b>${a.actor}</b> (${a.role})</li>`
+  ).join("");
+
+  const rolesHtml = gate.required_roles.map(r =>
+    `<span class="role-chip ${r === uiState.role ? 'active' : ''}">${r}</span>`
+  ).join("");
+
+  const gateResolved = gate.status !== "PENDING";
+
+  return `
+    <div class="quorum-row">
+      <div class="progress-outer"><div class="progress-inner" style="width:${pct}%"></div></div>
+      <span class="subtle">${approveCount} of ${gate.quorum} required · ${stateBadge(gateStatusToState(gate.status))}</span>
+    </div>
+    <div class="signer-row">Required roles: ${rolesHtml}</div>
+    ${gate.approvals.length ? `<ul class="vote-list">${votesHtml}</ul>` : ""}
+    <div class="btn-row">
+      <button class="btn btn-approve" onclick="vote('${wf.id}','approve')" ${!canAct?"disabled":""}>Approve</button>
+      <button class="btn btn-deny"    onclick="vote('${wf.id}','deny')"    ${!canAct?"disabled":""}>Deny</button>
+      <button class="btn btn-escalate" onclick="escalate('${wf.id}')">Escalate</button>
+    </div>
+    ${gateResolved
+      ? `<div class="resolved-note">✅ Gate resolved: ${gate.status}</div>`
+      : blockedReason
+        ? `<div class="blocked-note">🔒 Action disabled — ${blockedReason}.</div>`
+        : ""}
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// VOTE — OPTIMISTIC UPDATE + ROLLBACK shape
+// Patch cache immediately; in real code await API, rollback on error.
+// ═══════════════════════════════════════════════════════════════════════
+function vote(id, decision) {
+  const wf = serverState[id];
+  const snapshot = JSON.parse(JSON.stringify(wf.gate)); // rollback snapshot
+
+  // Optimistic patch
+  wf.gate.approvals.push({ actor: uiState.currentUser, role: uiState.role, decision, ts: new Date().toISOString() });
+  const newApprove = wf.gate.approvals.filter(a => a.decision==="approve").length;
+
+  if (decision === "deny") {
+    wf.gate.status = "DENIED";
+    wf.state = "REJECTED";
+  } else if (newApprove >= wf.gate.quorum) {
+    wf.gate.status = "APPROVED";
+    wf.state = "RESOLVED";
+  }
+
+  // Log to event stream
+  const evType = wf.gate.status === "APPROVED" ? "APPROVAL_GRANTED" :
+                 wf.gate.status === "DENIED"   ? "APPROVAL_DENIED"  : "AUDIT_EVENT";
+  pushEvent(evType, id);
+
+  // (In real code: await api.approve(id, decision).catch(() => { wf.gate = snapshot; render(); }))
+  void snapshot;
+
+  renderAll();
+}
+
+function escalate(id) {
+  serverState[id].state = "ESCALATED";
+  pushEvent("WORKFLOW_STATE_CHANGED", id);
+  renderAll();
+}
+
+function pushEvent(type, wf) {
+  eventLog = [{ type, wf, ts: new Date().toISOString() }, ...eventLog].slice(0, 50);
+  renderEventLog();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// ROLE SWITCHER (UI state layer — pure client concern)
+// Switching role immediately re-evaluates canAct() in the gate panel.
+// This is the live demo of role-aware affordances.
+// ═══════════════════════════════════════════════════════════════════════
+function switchRole(role) {
+  uiState.role = role;
+  renderAll();
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// EVENT LOG RENDER
+// ═══════════════════════════════════════════════════════════════════════
+function renderEventLog() {
+  document.getElementById("event-log").innerHTML = eventLog.map((e, i) => `
+    <div class="event-row ${i===0?'event-new':''}">
+      <span class="event-time">${new Date(e.ts).toLocaleTimeString()}</span>
+      <span>${EVENT_LABELS[e.type] || e.type}</span>
+      ${e.wf ? `<span class="event-wf">#${e.wf.slice(-3)}</span>` : ""}
+      ${e.detail ? `<span class="subtle">${e.detail}</span>` : ""}
+    </div>
+  `).join("");
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════════════════════════════
+function riskPill(score, big) {
+  const cls = score >= 0.66 ? "risk-high" : score >= 0.33 ? "risk-med" : "risk-low";
+  const label = score >= 0.66 ? "HIGH" : score >= 0.33 ? "MED" : "LOW";
+  const sz = big ? "font-size:14px;padding:4px 12px" : "";
+  return `<span class="risk-pill ${cls}" style="${sz}">${label} ${score.toFixed(2)}</span>`;
+}
+
+function stateBadge(state) {
+  return `<span class="state-badge state-${state}">${state}</span>`;
+}
+
+function gateStatusToState(s) {
+  return s === "APPROVED" ? "RESOLVED" : s === "DENIED" ? "REJECTED" : "AWAITING_APPROVAL";
+}
+
+function renderDiff(before, after) {
+  const keys = [...new Set([...Object.keys(before), ...Object.keys(after)])];
+  const rows = keys.map(k => {
+    const b = before[k], a = after[k];
+    const changed = JSON.stringify(b) !== JSON.stringify(a) && a !== undefined;
+    return `<tr>
+      <td class="diff-key">${k}</td>
+      <td class="diff-old">${b ?? "—"}</td>
+      <td class="diff-arrow">${changed ? "→" : ""}</td>
+      <td class="${changed ? 'diff-new' : ''}">${a !== undefined ? a : "—"}</td>
+    </tr>`;
+  }).join("");
+  return `<table class="diff-table"><tbody>${rows}</tbody></table>`;
+}
+
+function renderAll() {
+  renderQueue();
+  if (uiState.selectedId) renderDetail(uiState.selectedId);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════
+renderAll();
+renderEventLog();
+// Auto-select first item so the demo is immediately visible
+selectWorkflow("wf-001");
+</script>
+</body>
+</html>

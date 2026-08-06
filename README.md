@@ -1,3 +1,17 @@
+# bunq assignment
+
+Two deliverables live in this repo:
+
+1. **[ML system design — real-time ad ranking & serving](./docs/ml-adtech/README.md)** — full
+   design for a ~128M req/day, 2,000+ RPS, 25–45 ms p99 ad-tech platform: architecture, ML funnel,
+   feature store, low-latency serving, auction/pacing/budgets, backend LLD, frontend (ad SDK + ops
+   console), data & training pipeline, MLOps/CI-CD, active-active reliability, observability, and
+   privacy. Start at the [index](./docs/ml-adtech/README.md); the
+   [cheat sheet](./docs/ml-adtech/14-interview-cheatsheet.md) is the whiteboard version.
+2. **Feedback Widget** (below) — the frontend assignment, implemented and tested.
+
+---
+
 # Feedback Widget
 
 Feature-rating popup for the bunq frontend assignment.

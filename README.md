@@ -12,6 +12,8 @@ Feature-rating popup for the bunq frontend assignment.
 
 **Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 28 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot).
 
+**AI systems notes** — [`docs/ai-systems-prep.md`](./docs/ai-systems-prep.md): multi-agent workflows, production RAG, and guardrails, worked through against the pipeline this widget would feed.
+
 ## Repository layout
 
 ```

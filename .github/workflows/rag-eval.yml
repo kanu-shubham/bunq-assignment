@@ -1,0 +1,33 @@
+name: rag
+
+on:
+  push:
+    paths: ["rag/**", ".github/workflows/rag-eval.yml"]
+  pull_request:
+    paths: ["rag/**", ".github/workflows/rag-eval.yml"]
+
+jobs:
+  test-and-eval:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: rag
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e '.[dev]'
+      - run: ruff check src tests scripts
+      - run: pytest
+      # Offline eval: gates retrieval quality (recall/nDCG/MRR) and permission
+      # leaks on every change to chunking, fusion, or the golden set. Generation
+      # metrics need `--live --judge` and an API key, so they run on a schedule
+      # rather than per-PR — a per-PR job that spends model tokens gets disabled
+      # the first time someone opens ten PRs in an afternoon.
+      - run: python scripts/run_eval.py --strict --gate retrieval
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-report
+          path: rag/eval-out/

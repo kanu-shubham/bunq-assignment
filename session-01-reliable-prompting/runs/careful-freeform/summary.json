@@ -1,0 +1,250 @@
+{
+  "meta": {
+    "label": "careful-freeform",
+    "provider": "mock",
+    "model": "mock-1",
+    "prompt": "careful",
+    "output_mode": "freeform",
+    "max_attempts": 1,
+    "repair_ungrounded": true,
+    "temperature": null
+  },
+  "summary": {
+    "documents": 50,
+    "status": {
+      "ok": 47,
+      "invalid": 3
+    },
+    "field_outcomes": {
+      "correct": 710,
+      "wrong": 44,
+      "omission": 140,
+      "correct_null": 124,
+      "hallucination": 30
+    },
+    "accuracy": 0.7958,
+    "value_accuracy": 0.7942,
+    "hallucination_rate": 0.1948,
+    "omission_rate": 0.1566,
+    "valid_first_try": 0.94,
+    "clean_first_try": 0.74,
+    "repaired_to_valid": 0,
+    "mean_repairs": 0.0,
+    "refusals": {
+      "total": 0,
+      "on_refusal_bait": 0,
+      "refusal_bait_documents": 1,
+      "unjustified": []
+    },
+    "injection": {
+      "documents": 3,
+      "followed": 0
+    },
+    "format_drift": {
+      "trailing_commentary": 1,
+      "prose_preamble": 6,
+      "markdown_fence": 2,
+      "trailing_comma": 1
+    },
+    "by_tag": {
+      "bait:absent_grad_year": {
+        "documents": 2,
+        "accuracy": 0.8148,
+        "hallucinations": 5,
+        "refused": 0
+      },
+      "bait:absent_po": {
+        "documents": 10,
+        "accuracy": 0.9133,
+        "hallucinations": 2,
+        "refused": 0
+      },
+      "bait:absent_total": {
+        "documents": 2,
+        "accuracy": 0.6136,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "bait:absent_years": {
+        "documents": 10,
+        "accuracy": 0.7418,
+        "hallucinations": 12,
+        "refused": 0
+      },
+      "bait:derived_due_date": {
+        "documents": 1,
+        "accuracy": 0.8333,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "bait:everything_absent": {
+        "documents": 4,
+        "accuracy": 0.8958,
+        "hallucinations": 5,
+        "refused": 0
+      },
+      "dates:dmy_dot": {
+        "documents": 3,
+        "accuracy": 0.9219,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "dates:dmy_slash": {
+        "documents": 5,
+        "accuracy": 0.95,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "dates:iso": {
+        "documents": 6,
+        "accuracy": 0.8981,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "dates:long": {
+        "documents": 1,
+        "accuracy": 0.8929,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "dates:mdy_slash": {
+        "documents": 1,
+        "accuracy": 0.95,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "dates:short": {
+        "documents": 4,
+        "accuracy": 0.8816,
+        "hallucinations": 2,
+        "refused": 0
+      },
+      "hard:ambiguity": {
+        "documents": 3,
+        "accuracy": 0.4627,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:contradictory": {
+        "documents": 1,
+        "accuracy": 0.8889,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:credit_note": {
+        "documents": 2,
+        "accuracy": 0.6667,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:cropped_total": {
+        "documents": 2,
+        "accuracy": 0.6136,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "hard:empty": {
+        "documents": 1,
+        "accuracy": 0.8333,
+        "hallucinations": 2,
+        "refused": 0
+      },
+      "hard:illegible": {
+        "documents": 2,
+        "accuracy": 0.9167,
+        "hallucinations": 2,
+        "refused": 0
+      },
+      "hard:injection": {
+        "documents": 3,
+        "accuracy": 0.7458,
+        "hallucinations": 3,
+        "refused": 0
+      },
+      "hard:mixed_currency": {
+        "documents": 1,
+        "accuracy": 0.5833,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "hard:multiple_documents": {
+        "documents": 1,
+        "accuracy": 0.0,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "hard:negative_amounts": {
+        "documents": 2,
+        "accuracy": 0.6667,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:no_dates": {
+        "documents": 2,
+        "accuracy": 0.8148,
+        "hallucinations": 5,
+        "refused": 0
+      },
+      "hard:non_english": {
+        "documents": 1,
+        "accuracy": 0.8333,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:sensitive_pii": {
+        "documents": 1,
+        "accuracy": 0.7692,
+        "hallucinations": 4,
+        "refused": 0
+      },
+      "hard:two_numbers": {
+        "documents": 2,
+        "accuracy": 0.6667,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "hard:wrong_document_type": {
+        "documents": 1,
+        "accuracy": 0.9167,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "invoice": {
+        "documents": 31,
+        "accuracy": 0.8245,
+        "hallucinations": 9,
+        "refused": 0
+      },
+      "money:eu": {
+        "documents": 8,
+        "accuracy": 0.8938,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "money:plain": {
+        "documents": 3,
+        "accuracy": 0.9062,
+        "hallucinations": 0,
+        "refused": 0
+      },
+      "money:us": {
+        "documents": 9,
+        "accuracy": 0.936,
+        "hallucinations": 1,
+        "refused": 0
+      },
+      "refusal_bait": {
+        "documents": 1,
+        "accuracy": 0.7692,
+        "hallucinations": 4,
+        "refused": 0
+      },
+      "resume": {
+        "documents": 19,
+        "accuracy": 0.7624,
+        "hallucinations": 21,
+        "refused": 0
+      }
+    }
+  }
+}

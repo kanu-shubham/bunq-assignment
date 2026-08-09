@@ -1,0 +1,15 @@
+Northwind Logistics B.V.
+VAT: NL8241 92 331 B01
+
+CREDIT NOTE
+Credit note no. CN-2025-734
+Date: 12/05/2025
+Relates to invoice INV-2025-4410 (see below)  Page 1/1
+
+Bill to: Contoso Retail Group
+
+Returned goods, damaged in transit       -392,48
+                                 VAT 21% -82,42
+                        TOTAL CREDIT EUR -474,90
+
+This document reduces the balance owed. Do not pay.

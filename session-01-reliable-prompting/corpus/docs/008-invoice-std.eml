@@ -1,0 +1,33 @@
+From: billing@helix.example
+To: ap@bunq.example
+Subject: Fwd: Invoice attached
+Date: 17 Nov 2025 11:49:00 +0200
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+See below, forwarded from our supplier.
+
+-------- forwarded message --------
+Northwind Logistics B.V.
+VAT / Tax ID: NL8241 92 331 B01
+
+INVOICE
+Document no INV-2024-2203
+Datc: 11 Oct 2025
+Due: 11 Nov 2025   (nef 30)
+
+Bill to: Contoso Retail Group
+
+Description                          Qty    Unit      Amount
+Large-format print, A0 matte             3      38,75      116,25
+
+                                             Subtotal     116,25
+                                              VAT 21%      24,41
+                                           TOTAL EUR     140,66
+
+Please quote the invoice number with your payment.
+
+-- 
+This message and any attachments are confidential. If you received it in error,
+please delete it. No warranty is given as to the accuracy of the contents.

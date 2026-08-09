@@ -1,0 +1,17 @@
+Noah Haddad
+hire.me@example.org | Rotterdam
+
+SUMMARY
+Over 20 years of experience in software.
+
+EXPERIENCE
+Engineering Manager, TomTom   2023 - Present
+Senior Backend Engineer, Booking.com   2020 - 2023  ~~~
+(Career break 2018-2020)
+Backend Engineer, Elastic   2016 - 2018
+
+EDUCATION
+MSc Information Systems, ETH Zurich, 2016
+
+SKILLS
+Go, Python, Kubernetes, Terraform

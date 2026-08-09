@@ -1,0 +1,19 @@
+Helix Cloud Systems Ltd
+VAT / Tax ID: GB 421 7788 21
+
+Rechnung / Invoice
+Invoice # RE-2024-4883
+Invoice date: 09/09/2025
+Payment due: 09/10/2025   (net 30)
+
+Bill to: bunq B.V.
+
+Description                          Qty    Unit      Amount
+Storage, per TB/month                    2      18.40       36.80
+Large-format print, A0 matte             8      38.75      310.00
+
+                                            Subtotal     346.80
+                                             VAT 25%      86.70
+                                           TOTAL GBP     433.50
+
+Interest is charged on overdue balances.

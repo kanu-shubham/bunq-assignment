@@ -1,0 +1,5 @@
+anthropic>=0.121
+pydantic>=2.9
+reportlab>=4.0     # renders the PDF half of the corpus
+pypdf>=5.0         # reads it back, with the layout damage that implies
+pytest>=8.0

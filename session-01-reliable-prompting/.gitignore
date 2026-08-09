@@ -1,0 +1,8 @@
+# Raw per-document transcripts are large and regenerate in seconds.
+# The markdown reports and summary.json in runs/ are committed as evidence.
+runs/*/results.json
+runs/*/scores.json
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

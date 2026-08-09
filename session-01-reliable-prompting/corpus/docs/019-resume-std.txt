@@ -1,0 +1,22 @@
+KWAME ROSSI
+kwame.rossi@proton.me | +31 6 46 991 893 | Dublin, IE
+
+Backend engineer focused on payments, reliability and boring infrastructure.
+
+EXPERIENCE
+Platform Engineer, Elastic   2018 - Present
+  - Owned the ledger service.
+  - Raised test coverage by 34%.
+
+Backend Engineer, Bynder    2015 - 2018
+  - Rebuilt CI/CD.  [scan artefact]
+  - Cut p99 1atcncy by 46%.
+
+EDUCATION
+BSc Applied Mathematics, ETH Zurich, 2015
+
+5KILLS
+Terraform, GraphQL,  PostgreSQL, TypeScript, Python, React, Swift
+
+CERTIFICATIONS
+CKA; PSM I

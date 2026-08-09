@@ -1,0 +1,18 @@
+Indus Software Pvt Ltd
+VAT / Tax ID: IN 27AABCU9603R1ZX
+
+TAX INVO1CE
+Document no F-2025-1291
+Invoice date: 2025-09-07
+Due: 2025-10-22   (net 45)
+  Page 1/1
+Bill to: Lakeside Hospitality
+
+Description                          Qty    Unit       Amount
+Storage, per TB/month                    2      18.40       36.80
+
+                                            Subtotal      36.80
+                                              VAT 9%       3.31
+                                            TOTAL INR      40.11
+
+Please quofe thc invoice number with  your payment.

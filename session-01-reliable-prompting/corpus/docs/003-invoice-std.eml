@@ -1,0 +1,35 @@
+From: careers@helix.example
+To: ap@bunq.example
+Subject: Fwd: Invoice attached
+Date: 25 Sep 2025 18:18:00 +0200
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+See below, forwarded from our supplier.
+
+-------- forwarded message --------
+Northwind Logistics B.V.
+VAT / Tax ID: NL8241 92 331 B01
+
+TAX 1NVOICE
+Document no IN-2025-8081
+Date: 17.07.2025
+Due date: 01.08.2025    (net 14)
+Your reference / PO: PO102742
+
+Bill to: Contoso Retail Group
+
+Description                          Qty    Unit      Amount
+Sensor module SKU-4471                    2      63,20      126,40
+Storage, per TB/month                   12      18,40      220,80
+
+                                            Subtotal     347,20
+                                              VAT 0%        0,00
+                                           TOTAL EUR     347,20
+
+Please quote the invoice number with your payment.
+
+-- 
+This message and any attachments are confidential. If you received it in error,
+please delete it. No warranty is given as to the accuracy of the contents.

@@ -1,0 +1,292 @@
+{
+  "meta": {
+    "provider": "mock",
+    "model": "mock-1",
+    "documents": 50,
+    "repetitions": 5,
+    "prompt": "careful",
+    "output_mode": "strict",
+    "temperatures": [
+      0.0,
+      0.7
+    ]
+  },
+  "arms": [
+    {
+      "temperature": 0.0,
+      "mean_field_agreement": 1.0,
+      "identical_output_rate": 1.0,
+      "accuracy": 0.8453,
+      "hallucination_rate": 0.2289,
+      "valid_first_try": 0.98,
+      "most_unstable_fields": [],
+      "unstable_documents": []
+    },
+    {
+      "temperature": 0.7,
+      "mean_field_agreement": 0.9585,
+      "identical_output_rate": 0.32,
+      "accuracy": 0.8443,
+      "hallucination_rate": 0.2349,
+      "valid_first_try": 0.78,
+      "most_unstable_fields": [
+        [
+          "purchase_order",
+          9
+        ],
+        [
+          "due_date",
+          7
+        ],
+        [
+          "years_experience",
+          5
+        ],
+        [
+          "total_amount",
+          4
+        ],
+        [
+          "location",
+          4
+        ],
+        [
+          "vendor_tax_id",
+          3
+        ],
+        [
+          "phone",
+          1
+        ]
+      ],
+      "unstable_documents": [
+        {
+          "doc_id": "029-resume-std",
+          "distinct_outputs": 5,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "032-invoice-illegible",
+          "distinct_outputs": 5,
+          "unstable_fields": [
+            "due_date",
+            "purchase_order",
+            "total_amount",
+            "vendor_tax_id"
+          ]
+        },
+        {
+          "doc_id": "010-invoice-std",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "purchase_order",
+            "total_amount"
+          ]
+        },
+        {
+          "doc_id": "018-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "location"
+          ]
+        },
+        {
+          "doc_id": "019-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "020-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "location"
+          ]
+        },
+        {
+          "doc_id": "022-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "025-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "026-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "030-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "034-invoice-credit_note",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "doc_id": "040-invoice-wrong_kind",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "due_date",
+            "purchase_order",
+            "total_amount",
+            "vendor_tax_id"
+          ]
+        },
+        {
+          "doc_id": "041-resume-resume_no_dates",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "042-resume-resume_sensitive",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "043-resume-resume_injection",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "location",
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "044-resume-resume_contradictory",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "046-invoice-illegible",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "due_date",
+            "vendor_tax_id"
+          ]
+        },
+        {
+          "doc_id": "048-resume-resume_no_dates",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "phone",
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "015-invoice-std",
+          "distinct_outputs": 3,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "021-resume-std",
+          "distinct_outputs": 3,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "023-resume-std",
+          "distinct_outputs": 3,
+          "unstable_fields": [
+            "location"
+          ]
+        },
+        {
+          "doc_id": "027-resume-std",
+          "distinct_outputs": 3,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "031-resume-std",
+          "distinct_outputs": 3,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "038-invoice-mixed_currency",
+          "distinct_outputs": 3,
+          "unstable_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "doc_id": "039-invoice-empty",
+          "distinct_outputs": 3,
+          "unstable_fields": [
+            "total_amount"
+          ]
+        },
+        {
+          "doc_id": "007-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "008-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "009-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "012-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "due_date"
+          ]
+        },
+        {
+          "doc_id": "014-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "016-invoice-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "024-resume-std",
+          "distinct_outputs": 2,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "028-resume-std",
+          "distinct_outputs": 2,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "037-invoice-german",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "due_date"
+          ]
+        }
+      ]
+    }
+  ]
+}

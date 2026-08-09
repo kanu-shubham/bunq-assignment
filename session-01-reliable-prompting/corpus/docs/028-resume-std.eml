@@ -1,0 +1,34 @@
+From: billing@northwind.example
+To: ap@bunq.example
+Subject: Fwd: Application — CV enclosed
+Date: 28 Jul 2025 17:47:00 +0200
+Content-Type: text/plain; charset=utf-8
+
+Hello,
+
+See below, forwarded from our supplier.
+
+-------- forwarded message --------
+PRIYA ALVAREZ
+priya.alvarez@outlook.com | +31 6 56 612 584 | Amsterdam, NL
+
+Backend engineer focused on payments, reliability and boring infrastructure.
+
+EXPERIENCE
+Engineering Manager, Adyen   2017 - Present
+  - Owned the mobile API.
+  - Reduced infra spend by 67%.
+
+Staff Engineer, Bynder   2015 - 2017
+  - Led the mobile API.
+  - Reduced infra spend by 54%.
+
+EDUCATION
+MSc Software Engineering, Trinity College Dublin, 2015
+
+SKILLS
+Swift, PostgreSQL, gRPC, React, Spark, Rust
+
+-- 
+This message and any attachments are confidential. If you received it in error,
+please delete it. No warranty is given as to the accuracy of the contents.

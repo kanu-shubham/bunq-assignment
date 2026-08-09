@@ -1,0 +1,26 @@
+NOAH KOWALSKI
+noah.kowalski@gmail.com | +31 6 36 953 763 | Utrecht
+
+Backend engineer with 12+ years of experience building payment systems.
+
+EXPERIENCE
+Senior Backend Engineer, Adyen   2021 - Present
+  - Rebuilt CI/CD.
+  - Raised test coverage by 55%.
+
+Data Engineer, Backbase   2018 - 2021
+  - Owned CI/CD.
+  - Raised test coverage by 52%.
+
+Platform Engineer, Elastic   2016 - 2018
+  - Owned CI/CD.
+  - Raised test coverage by 57%.
+
+EDUCATION
+BSc Software Engineering, Trinity College Dublin, 2016
+
+SKILLS
+Spark, Kubernetes, Python,  gRPC, Go
+
+CERTIFICATIONS
+Google Cloud PDE; CKA

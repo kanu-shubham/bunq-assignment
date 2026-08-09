@@ -1,0 +1,18 @@
+Meridian Facility Services
+VAT / Tax ID: US-EIN 47-5512908
+  [scan artefact]
+TAX INVOICE
+Nr. RE-2025-5154
+Invoice date: 22/07/2025
+Payment due: 22/09/2025   (net 60)
+
+Bill to: Contoso Retail Group
+
+Description                          Qty    Unit      Amount
+Cleaning services, monthly               3     950.00    2,850.00
+
+                                            Subtotal   2,850.00
+                                              VAT 6%     171.00
+                                           TOTAL USD   3,021.00
+
+Interest is charged on overdue balances.

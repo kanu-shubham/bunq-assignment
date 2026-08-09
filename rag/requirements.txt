@@ -1,0 +1,11 @@
+# Core — everything in the README runs with just these.
+numpy>=1.24
+rank_bm25>=0.2.2      # BM25 backend; ragkit falls back to a pure-Python
+                      # implementation if it is absent, so this is optional
+
+# Tests
+pytest>=7.4
+
+# Optional: model-backed stages. Neither is exercised by any reported number.
+# anthropic>=0.40          # ClaudeQueryRewriter, ClaudeAnswerer
+# sentence-transformers>=3 # SentenceTransformerEmbedder, CrossEncoderReranker

@@ -1,0 +1,62 @@
+{"query_id": "lex-01", "split": "test", "category": "lexical", "query": "ERR_CURRENCY_MISMATCH", "gold_doc_ids": ["readme-ledger-core"], "note": "bare error code"}
+{"query_id": "lex-02", "split": "dev", "category": "lexical", "query": "what does ERR_IDEMPOTENCY_KEY_REUSE mean", "gold_doc_ids": ["adr-0012-idempotency-keys", "readme-payments-api"]}
+{"query_id": "lex-03", "split": "test", "category": "lexical", "query": "chk_transfer_balances_to_zero constraint", "gold_doc_ids": ["readme-ledger-core"]}
+{"query_id": "lex-04", "split": "test", "category": "lexical", "query": "ledger_projector_lag_seconds threshold", "gold_doc_ids": ["readme-ledger-core", "runbook-ledger-reconciliation"]}
+{"query_id": "lex-05", "split": "dev", "category": "lexical", "query": "X-Aurora-Signature header format", "gold_doc_ids": ["readme-webhook-dispatcher"]}
+{"query_id": "lex-06", "split": "test", "category": "lexical", "query": "payments.sepa_instant.enabled", "gold_doc_ids": ["readme-feature-flags", "runbook-payments-oncall"]}
+{"query_id": "lex-07", "split": "test", "category": "lexical", "query": "gbm-v14 production model", "gold_doc_ids": ["readme-fraud-scoring"]}
+{"query_id": "lex-08", "split": "test", "category": "lexical", "query": "patronictl switchover command", "gold_doc_ids": ["runbook-database-failover"]}
+{"query_id": "lex-09", "split": "dev", "category": "lexical", "query": "kyc_review_overdue_total metric", "gold_doc_ids": ["readme-identity-kyc"]}
+{"query_id": "lex-10", "split": "test", "category": "lexical", "query": "fraud_feature_staleness_seconds alert threshold", "gold_doc_ids": ["readme-fraud-scoring"]}
+{"query_id": "lex-11", "split": "test", "category": "lexical", "query": "57P01 admin shutdown retry", "gold_doc_ids": ["runbook-database-failover"]}
+{"query_id": "lex-12", "split": "dev", "category": "lexical", "query": "HTTP 426 Upgrade Required", "gold_doc_ids": ["readme-mobile-bff"]}
+{"query_id": "mor-01", "split": "test", "category": "morphology", "query": "reconciliaton break triage steps", "gold_doc_ids": ["runbook-ledger-reconciliation"], "note": "misspelled reconciliation"}
+{"query_id": "mor-02", "split": "dev", "category": "morphology", "query": "idempotencey key resue", "gold_doc_ids": ["adr-0012-idempotency-keys"], "note": "two typos"}
+{"query_id": "mor-03", "split": "test", "category": "morphology", "query": "certifcate rotaton for the scheme", "gold_doc_ids": ["runbook-certificate-rotation"], "note": "two typos"}
+{"query_id": "mor-04", "split": "test", "category": "morphology", "query": "consumers lagging on kafka partitions", "gold_doc_ids": ["runbook-kafka-consumer-lag"], "note": "morphological variant"}
+{"query_id": "mor-05", "split": "dev", "category": "morphology", "query": "notifcation deduplication in redis", "gold_doc_ids": ["readme-notification-gateway", "postmortem-2025-09-redis-eviction"]}
+{"query_id": "mor-06", "split": "test", "category": "morphology", "query": "rotating webhook signing secrets", "gold_doc_ids": ["readme-webhook-dispatcher", "policy-secrets-management"]}
+{"query_id": "mor-07", "split": "test", "category": "morphology", "query": "rebuilding projections by replaying", "gold_doc_ids": ["adr-0007-event-sourcing-ledger", "runbook-ledger-reconciliation"]}
+{"query_id": "mor-08", "split": "test", "category": "morphology", "query": "deploymnt rollbacks", "gold_doc_ids": ["runbook-deploy-rollback"], "note": "misspelled deployment"}
+{"query_id": "mor-09", "split": "dev", "category": "morphology", "query": "screenings for sanctions and PEPs", "gold_doc_ids": ["readme-identity-kyc"]}
+{"query_id": "mor-10", "split": "test", "category": "morphology", "query": "observabilty standards for logging", "gold_doc_ids": ["standard-observability"], "note": "misspelled observability"}
+{"query_id": "par-01", "split": "test", "category": "paraphrase", "query": "how many holiday days do I get each year", "gold_doc_ids": ["policy-leave-and-pto"], "note": "doc says 'annual leave'"}
+{"query_id": "par-02", "split": "dev", "category": "paraphrase", "query": "can I get money back for a train ticket", "gold_doc_ids": ["policy-expenses-and-travel"], "note": "doc says 'reimbursement'"}
+{"query_id": "par-03", "split": "test", "category": "paraphrase", "query": "what happens if I am off sick", "gold_doc_ids": ["policy-leave-and-pto"]}
+{"query_id": "par-04", "split": "test", "category": "paraphrase", "query": "who gets woken up when something breaks at night", "gold_doc_ids": ["policy-oncall-rotation"], "note": "doc says 'on-call' and 'paged'"}
+{"query_id": "par-05", "split": "dev", "category": "paraphrase", "query": "a customer says they were charged twice, has that happened before", "gold_doc_ids": ["postmortem-2025-03-sepa-duplicate-batch"]}
+{"query_id": "par-06", "split": "test", "category": "paraphrase", "query": "a customer wants all their data deleted", "gold_doc_ids": ["policy-data-retention-gdpr"], "note": "doc says 'right to erasure'"}
+{"query_id": "par-07", "split": "test", "category": "paraphrase", "query": "someone committed an API key by accident", "gold_doc_ids": ["policy-secrets-management"]}
+{"query_id": "par-08", "split": "test", "category": "paraphrase", "query": "I just joined, what should I do in my first week", "gold_doc_ids": ["guide-engineering-onboarding"]}
+{"query_id": "par-09", "split": "dev", "category": "paraphrase", "query": "how do we turn a feature off quickly in production", "gold_doc_ids": ["readme-feature-flags"], "note": "doc says 'kill switch' / 'operational flag'"}
+{"query_id": "par-10", "split": "test", "category": "paraphrase", "query": "we need to stop supporting an old version of the public API", "gold_doc_ids": ["policy-api-versioning"]}
+{"query_id": "par-11", "split": "test", "category": "paraphrase", "query": "can we move the primary database to another node", "gold_doc_ids": ["runbook-database-failover"]}
+{"query_id": "par-12", "split": "test", "category": "paraphrase", "query": "why do we use the same database technology everywhere", "gold_doc_ids": ["adr-0015-postgres-over-document-store"]}
+{"query_id": "par-13", "split": "dev", "category": "paraphrase", "query": "how do we stop sending the same push message twice", "gold_doc_ids": ["readme-notification-gateway"]}
+{"query_id": "par-14", "split": "test", "category": "paraphrase", "query": "what do I do about a test that fails randomly", "gold_doc_ids": ["standard-testing-strategy"], "note": "doc says 'flaky'"}
+{"query_id": "com-01", "split": "test", "category": "compositional", "query": "retry backoff and jitter for outbound webhook deliveries", "gold_doc_ids": ["readme-webhook-dispatcher", "postmortem-2026-01-webhook-storm"]}
+{"query_id": "com-02", "split": "dev", "category": "compositional", "query": "why must consumers be idempotent when using the outbox pattern", "gold_doc_ids": ["adr-0023-transactional-outbox"]}
+{"query_id": "com-03", "split": "test", "category": "compositional", "query": "how are duplicate batch submissions prevented now", "gold_doc_ids": ["postmortem-2025-03-sepa-duplicate-batch"]}
+{"query_id": "com-04", "split": "test", "category": "compositional", "query": "what happens when the fraud scoring service exceeds its latency budget", "gold_doc_ids": ["readme-fraud-scoring"]}
+{"query_id": "com-05", "split": "test", "category": "compositional", "query": "circuit breaker added after a vendor outage", "gold_doc_ids": ["postmortem-2025-06-kyc-vendor-outage"]}
+{"query_id": "com-06", "split": "dev", "category": "compositional", "query": "how many approvals does a change to a migration need", "gold_doc_ids": ["guide-code-review"]}
+{"query_id": "com-07", "split": "test", "category": "compositional", "query": "every alert must link to a runbook and have an action", "gold_doc_ids": ["standard-observability"]}
+{"query_id": "com-08", "split": "test", "category": "compositional", "query": "canary analysis gates before a full production rollout", "gold_doc_ids": ["runbook-deploy-rollback"]}
+{"query_id": "com-09", "split": "test", "category": "compositional", "query": "who declares a SEV1 and how often are updates sent", "gold_doc_ids": ["runbook-incident-severity"]}
+{"query_id": "com-10", "split": "dev", "category": "compositional", "query": "is a deadline required on every internal RPC call", "gold_doc_ids": ["adr-0019-grpc-internal-transport"]}
+{"query_id": "com-11", "split": "test", "category": "compositional", "query": "how do we answer what a balance was at a point in time", "gold_doc_ids": ["adr-0007-event-sourcing-ledger"]}
+{"query_id": "com-12", "split": "test", "category": "compositional", "query": "payments api rate limit and the header returned when exceeded", "gold_doc_ids": ["readme-payments-api"]}
+{"query_id": "com-13", "split": "dev", "category": "compositional", "query": "quiet hours for marketing messages", "gold_doc_ids": ["readme-notification-gateway"]}
+{"query_id": "com-14", "split": "test", "category": "compositional", "query": "paperwork for an emergency change made during an incident", "gold_doc_ids": ["policy-release-process"]}
+{"query_id": "fil-01", "split": "test", "category": "filtered", "query": "reconciliation", "gold_doc_ids": ["runbook-ledger-reconciliation"], "filters": {"doc_type": "runbook"}}
+{"query_id": "fil-02", "split": "dev", "category": "filtered", "query": "duplicates", "gold_doc_ids": ["postmortem-2025-03-sepa-duplicate-batch", "postmortem-2025-09-redis-eviction"], "filters": {"doc_type": "postmortem"}}
+{"query_id": "fil-03", "split": "test", "category": "filtered", "query": "idempotency", "gold_doc_ids": ["adr-0012-idempotency-keys"], "filters": {"doc_type": "adr"}}
+{"query_id": "fil-04", "split": "test", "category": "filtered", "query": "leave entitlement", "gold_doc_ids": ["policy-leave-and-pto"], "filters": {"team": "people"}}
+{"query_id": "fil-05", "split": "dev", "category": "filtered", "query": "retries", "gold_doc_ids": ["readme-webhook-dispatcher"], "filters": {"doc_type": "readme"}}
+{"query_id": "fil-06", "split": "test", "category": "filtered", "query": "choice of database", "gold_doc_ids": ["adr-0015-postgres-over-document-store"], "filters": {"doc_type": "adr"}}
+{"query_id": "glo-01", "split": "test", "category": "definition", "query": "what is a brownout", "gold_doc_ids": ["glossary", "policy-api-versioning"]}
+{"query_id": "glo-02", "split": "dev", "category": "definition", "query": "define step-up authentication", "gold_doc_ids": ["glossary", "readme-fraud-scoring"]}
+{"query_id": "glo-03", "split": "test", "category": "definition", "query": "what does poison message mean", "gold_doc_ids": ["glossary", "runbook-kafka-consumer-lag"]}
+{"query_id": "glo-04", "split": "test", "category": "definition", "query": "expand and contract migration pattern", "gold_doc_ids": ["glossary", "runbook-deploy-rollback"]}
+{"query_id": "glo-05", "split": "dev", "category": "definition", "query": "what is a thundering herd", "gold_doc_ids": ["glossary", "postmortem-2026-01-webhook-storm"]}
+{"query_id": "glo-06", "split": "test", "category": "definition", "query": "fail open versus fail closed", "gold_doc_ids": ["glossary", "readme-notification-gateway"]}

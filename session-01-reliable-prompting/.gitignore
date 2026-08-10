@@ -3,6 +3,7 @@
 runs/*/results.json
 runs/*/scores.json
 runs/*/sweep.json
+runs/factcheck/eval.json
 .venv/
 __pycache__/
 *.pyc

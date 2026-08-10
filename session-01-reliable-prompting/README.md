@@ -3,19 +3,20 @@
 > Learn how to design reliable prompts, identify and prevent common LLM
 > failures, and evaluate outputs systematically.
 
-Five prototypes plus a system design, all built on one corpus of 50 documents
-deliberately constructed to break extraction, and one scorer that refuses to
-collapse "invented a value" and "missed a value" into a single accuracy number.
+Five prototypes and a working fact-checking agentic system, all built on one
+corpus of 50 documents deliberately constructed to break extraction, and one
+scorer that refuses to collapse "invented a value" and "missed a value" into a
+single accuracy number.
 
 Everything runs offline against a seeded mock provider — no API key, no cost,
-72 tests — and the identical pipeline runs against Claude with
+124 tests — and the identical pipeline runs against Claude with
 `--provider anthropic`.
 
 ```bash
 python -m venv .venv && .venv/bin/pip install -r requirements.txt
 source .venv/bin/activate
 
-make all                       # corpus, tests, and all five prototypes (offline)
+make all                       # corpus, tests, five prototypes, fact-checker (offline)
 make all PROVIDER=anthropic    # the same, live
 ```
 
@@ -29,7 +30,7 @@ make all PROVIDER=anthropic    # the same, live
 | Structured outputs | `schemas.py` + the `strict` vs `freeform` arms throughout |
 | Prompting reliably | The repair loop, the grounding checker, and the naive→careful→CoT→few-shot arms |
 | Prototypes & demonstrations (5) | 1 extractor · 2 CoT vs direct · 3 few-shot k-curve · 4 self-consistency · 5 LLM-as-judge |
-| System design: fact-checking agent | [`docs/fact-checking-system.md`](docs/fact-checking-system.md) |
+| System design: fact-checking agent | [`docs/fact-checking-system.md`](docs/fact-checking-system.md) — **and the working system in [`factcheck/`](factcheck/)** |
 
 ---
 
@@ -51,8 +52,16 @@ prototypes/reasoning.py        2 — chain-of-thought
 prototypes/routing.py          3 — few-shot
 prototypes/self_consistency.py 4 — majority vote
 prototypes/judge.py            5 — LLM as judge
-docs/fact-checking-system.md   system design
-tests/                         72 tests, no network
+factcheck/                     the fact-checking agentic system (design + code)
+  schemas.py     one schema per stage; two load-bearing field orders
+  prompts.py     decompose / plan / verify (stages 5-6 have no prompt on purpose)
+  evidence.py    evidence corpus + BM25 retriever + web-search retriever
+  pipeline.py    the six stages, with both grounding checks wired in
+  aggregate.py   stages 5 and 6 — weighted vote and gating, no model calls
+  evalset.py     labelled claims and documents, scored by slice
+  cli.py         check / eval / sources
+docs/fact-checking-system.md   the design this implements
+tests/                         124 tests, no network
 corpus/  runs/                 generated documents and committed reports
 ```
 
@@ -319,19 +328,78 @@ extractor, and its agreement with the first proves nothing about either.
 
 ---
 
-## System design — fact-checking agentic system
+## Fact-checking agentic system — design *and* implementation
 
-[`docs/fact-checking-system.md`](docs/fact-checking-system.md): a six-stage
-pipeline — decompose → plan queries → retrieve → verify → aggregate → gate —
-with a table mapping every technique above onto the stage it defends, a
-per-stage evaluation plan, and a build order that de-risks fastest.
+[`docs/fact-checking-system.md`](docs/fact-checking-system.md) is the design;
+[`factcheck/`](factcheck/) is the working system, with 52 tests and a labelled
+eval set.
 
-The two design commitments it argues for: **aggregate in code, not in a prompt**
-(the inputs are labelled verdicts with confidences; that is a scoring function,
-and a deterministic one cannot be talked into anything), and **distinguish "we
-checked and found no support" from "we could not check"** — collapsing those is
-the most damaging simplification available, because one is a finding about the
-claim and the other is a finding about the system.
+```
+decompose → plan queries → retrieve → verify → aggregate → gate
+```
+
+```bash
+python -m factcheck.cli check --document DOC-wrong   # check one input
+python -m factcheck.cli eval --ablate                # score it, and price each stage
+```
+
+Two design commitments the code makes good on:
+
+**Aggregate in code, not in a prompt.** Stages 5 and 6 have no prompts at all.
+The inputs are labelled relations with confidences and source weights — that is
+a scoring function, and a deterministic one is auditable, free, and cannot be
+talked into anything by a retrieved page. Every injection path in the system
+ends at stage 4.
+
+**Distinguish "we checked and found no support" from "we could not check."**
+One is a finding about the claim, the other a finding about the system, and a
+reader who cannot tell them apart will trust the wrong one.
+
+Three defences are wired into the pipeline rather than left to the prompt: a
+claim whose `source_span` is not in the input is discarded before it costs a
+retrieval; a verdict whose `quoted_evidence` is not in the passage is kept for
+the audit trail with zero weight; and a retrieved page that addresses the
+checker is weighted to zero *and counted*, so the number can be watched.
+
+### What the eval found
+
+| metric | value |
+| --- | --- |
+| verdict accuracy | 54.2% |
+| **dangerous errors** (refuted claim reported as supported) | **4 / 24** |
+| abstention precision | 33.3% |
+| verdicts discarded for an ungrounded quote | 2 |
+
+| slice | accuracy |
+| --- | --- |
+| `adversarial` | 100% |
+| `stale_source` | 100% |
+| `time_bound` | 100% |
+| `not_checkable` | 100% |
+| `no_evidence` | 67% |
+| `supported` | 40% |
+| `refuted` | 0% |
+| `near_miss` | **0%** |
+
+The eval's job is to fail, and it did. The two failures are the classic ones:
+the offline verifier matches entity and figure without conditioning on the
+**period** (so "revenue of EUR 4.1 billion for 2023" reads as supported against
+the 2024 report), and it is **blind to negation** ("met its target" vs "did not
+meet its stated target" share every salient token). Both are exactly what the
+`near_miss` and `refuted` slices exist to catch.
+
+Meanwhile every deterministic defence held. No claim asserted only by the
+adversarial page was reported as supported — even though the simulated verifier
+obeys the injection about half the time, because the defence is the zero weight
+at stage 5, not the verifier's judgement.
+
+Ablations price the stages: dropping to one passage per claim costs ~17 points
+of accuracy and most of the abstention precision; removing query planning costs
+~4. A stage that does not move these numbers is a stage to delete, not tune.
+
+**The lesson that generalises: the parts that held under adversarial input are
+the parts written in code.** Every prompt-level defence was violated by the
+simulated model at some rate; none of the code-level ones were.
 
 ---
 
@@ -364,6 +432,9 @@ python -m extraction.cli reasoning --provider anthropic --thinking disabled
 python -m extraction.cli route     --provider anthropic --shots 0,2,8
 python -m extraction.cli vote      --provider anthropic --model claude-sonnet-4-6 --samples 5
 python -m extraction.cli judge     --provider anthropic --judge-repeats 3
+
+python -m factcheck.cli eval  --provider anthropic --ablate
+python -m factcheck.cli eval  --provider anthropic --retriever web   # live web search
 ```
 
 Useful flags: `--limit 10` while iterating, `--only hard:injection` to run one

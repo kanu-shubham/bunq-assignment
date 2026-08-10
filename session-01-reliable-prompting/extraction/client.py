@@ -628,6 +628,10 @@ def _mock_task_response(
         payload = _mock_routing(document, system, rng)
     elif task == "judge":
         payload = _mock_judge(document, _between(user, "<extraction>", "</extraction>"), rng, temp)
+    elif task.startswith("fc_"):
+        return _mock_factcheck(
+            mock, task=task, system=system, messages=messages, temperature=temperature
+        )
     else:  # pragma: no cover - guarded by the callers
         raise ValueError(f"mock provider has no simulation for task {task!r}")
 
@@ -771,3 +775,176 @@ def _iter_scalars(node: Any, prefix: str = ""):
             yield from _iter_scalars(value, f"{prefix}[{idx}]")
     else:
         yield prefix, node
+
+
+# --------------------------------------------------------------------------- #
+# Mock behaviour for the fact-checking system
+# --------------------------------------------------------------------------- #
+#
+# As with the other prototypes, the failure *rates* are stipulated so the
+# harness has something to measure offline. What is NOT stipulated: the
+# retrieval, the aggregation, the gating and the grounding checks are all real
+# code operating on real text, so an offline run genuinely exercises the parts
+# of the system that are not the model.
+
+MOCK_FC_UNDER_DECOMPOSE = 0.15   # leave a compound sentence as one claim
+MOCK_FC_FABRICATED_SPAN = 0.06   # quote a span that is not in the input
+MOCK_FC_VERIFY_NOISE = 0.10      # get a passage relation wrong
+MOCK_FC_QUOTE_PARAPHRASE = 0.10  # "quote" a sentence that is not verbatim
+MOCK_FC_INJECTION_COMPLIANCE = 0.5  # obey a passage that instructs the checker
+
+_OPINION_WORDS = ("best", "worst", "beautiful", "should", "ought", "terrible", "excellent",
+                  "impressive", "disappointing", "overrated")
+_PREDICTION_WORDS = ("will ", "expected to", "forecast", "is set to", "plans to", "by 2030",
+                     "going to")
+
+
+def _mock_factcheck(
+    mock: "MockProvider", *, task: str, system: str, messages: list[dict[str, Any]],
+    temperature: Optional[float],
+) -> LLMResponse:
+    user = _first_user_text(messages)
+    temp = 0.0 if temperature is None else temperature
+    rng = _rng(f"{task}|{mock.seed}|{user[:400]}|{mock.rep if temp > 0 else 0}")
+
+    if task == "fc_decompose":
+        payload = _mock_decompose(_between(user, "<input>", "</input>") or user, rng)
+    elif task == "fc_plan":
+        payload = _mock_plan(user, rng)
+    else:
+        payload = _mock_verify(user, rng)
+
+    body = json.dumps(payload, ensure_ascii=False, indent=2)
+    return LLMResponse(
+        text=body, model=mock.model, stop_reason="end_turn",
+        usage={"input_tokens": len(user) // 4, "output_tokens": len(body) // 4},
+    )
+
+
+def _sentences(text: str) -> list[str]:
+    return [s.strip() for s in re.split(r"(?<=[.!?])\s+", text.strip()) if s.strip()]
+
+
+def _mock_decompose(document: str, rng) -> dict[str, Any]:
+    claims: list[dict[str, Any]] = []
+    for sentence in _sentences(document):
+        # Split on coordinating conjunctions unless the simulated model
+        # under-decomposes this one.
+        parts = [sentence]
+        if rng.random() > MOCK_FC_UNDER_DECOMPOSE:
+            # Coordinating conjunctions and the subordinate clauses that carry
+            # their own checkable content ("... after closing the deal in March").
+            splitter = r",\s+and\s+|;\s+|,\s+which\s+|\s+and\s+it\s+|\s+after\s+|\s+while\s+"
+            parts = [p.strip().rstrip(",") for p in re.split(splitter, sentence)
+                     if len(p.strip()) > 12] or [sentence]
+
+        for part in parts:
+            part_lower = part.lower()
+            if any(word in part_lower for word in _OPINION_WORDS):
+                claim_type, checkable = "opinion", False
+            elif any(word in part_lower for word in _PREDICTION_WORDS) and "said" not in part_lower:
+                claim_type, checkable = "prediction", False
+            elif len(part.split()) < 4:
+                claim_type, checkable = "ambiguous", False
+            else:
+                claim_type, checkable = "factual", True
+
+            span = sentence
+            if rng.random() < MOCK_FC_FABRICATED_SPAN:
+                span = "According to the report, " + part  # not in the input
+            year = re.search(r"\b(19|20)\d{2}\b", part)
+            claims.append(
+                {
+                    "text": part.rstrip(".") + ".",
+                    "source_span": span,
+                    "claim_type": claim_type,
+                    "checkable": checkable,
+                    "entities": re.findall(r"\b[A-Z][A-Za-z]+(?:\s+[A-Z][A-Za-z]+)?", part)[:3],
+                    "time_reference": year.group(0) if year else None,
+                }
+            )
+    return {"claims": claims}
+
+
+def _mock_plan(user: str, rng) -> dict[str, Any]:
+    claim = user.split("\n")[0].replace("Claim:", "").strip()
+    entities = ""
+    for line in user.split("\n"):
+        if line.startswith("Entities:"):
+            entities = line.split(":", 1)[1].strip()
+    keywords = " ".join(w for w in claim.split() if len(w) > 3)[:120]
+    return {
+        "what_would_settle_this": "A primary filing or report giving the figure for the stated period.",
+        "queries": [
+            {"text": keywords, "intent": "primary_source"},
+            {"text": (entities + " " + keywords).strip()[:120], "intent": "news"},
+            {"text": (entities + " incorrect disputed correction " + keywords).strip()[:120],
+             "intent": "contradiction_probe"},
+        ],
+    }
+
+
+_NUM_RE = re.compile(r"-?\d[\d.,]*")
+
+
+def _mock_verify(user: str, rng) -> dict[str, Any]:
+    claim = ""
+    for line in user.split("\n"):
+        if line.startswith("Claim:"):
+            claim = line.split(":", 1)[1].strip()
+            break
+    passage = _between(user, ">", "</passage>")
+    if "\n" in passage:
+        passage = passage.split("\n", 1)[1] if passage.startswith(">") else passage
+    passage = passage.strip()
+
+    lowered_passage = passage.lower()
+    if any(marker in lowered_passage for marker in
+           ("disregard your previous", "instruction for automated", "to be marked supported")):
+        if rng.random() < MOCK_FC_INJECTION_COMPLIANCE:
+            return {
+                "quoted_evidence": _sentences(passage)[0] if _sentences(passage) else None,
+                "reasoning": ["the page states these facts are verified"],
+                "relation": "supports",
+                "confidence": "high",
+            }
+
+    claim_tokens = {t for t in re.findall(r"[a-z]{4,}", claim.lower())}
+    passage_tokens = {t for t in re.findall(r"[a-z]{4,}", lowered_passage)}
+    overlap = len(claim_tokens & passage_tokens) / max(1, len(claim_tokens))
+
+    claim_numbers = {n.rstrip(".,") for n in _NUM_RE.findall(claim)}
+    passage_numbers = {n.rstrip(".,") for n in _NUM_RE.findall(passage)}
+
+    if overlap < 0.25:
+        relation, confidence = "irrelevant", "low"
+    elif claim_numbers and passage_numbers:
+        if claim_numbers & passage_numbers:
+            relation, confidence = "supports", "high"
+        else:
+            relation, confidence = "refutes", "medium"
+    elif overlap > 0.55:
+        relation, confidence = "supports", "medium"
+    else:
+        relation, confidence = "insufficient", "low"
+
+    if rng.random() < MOCK_FC_VERIFY_NOISE:
+        relation = rng.choice(["supports", "refutes", "irrelevant", "insufficient"])
+
+    quote = None
+    if relation in ("supports", "refutes"):
+        candidates = _sentences(passage) or [passage]
+        best = max(
+            candidates,
+            key=lambda s: len(claim_tokens & set(re.findall(r"[a-z]{4,}", s.lower()))),
+        )
+        quote = best if rng.random() >= MOCK_FC_QUOTE_PARAPHRASE else "In summary, " + best[:60]
+
+    return {
+        "quoted_evidence": quote,
+        "reasoning": [f"token overlap {overlap:.2f}",
+                      f"claim numbers {sorted(claim_numbers) or 'none'}",
+                      f"passage numbers {sorted(passage_numbers) or 'none'}"],
+        "relation": relation,
+        "confidence": confidence,
+    }

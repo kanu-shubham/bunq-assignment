@@ -1,5 +1,26 @@
 # System design — a fact-checking agentic system
 
+> **This design is implemented.** The code is in [`../factcheck/`](../factcheck/),
+> with 52 tests and a labelled eval set. Run it:
+>
+> ```bash
+> python -m factcheck.cli check --document DOC-wrong    # check one input
+> python -m factcheck.cli eval --ablate                 # score it, and price each stage
+> python -m factcheck.cli sources                       # the evidence corpus
+> ```
+>
+> Where the implementation and this document differ, the code wins and this note
+> says so. The per-stage map:
+>
+> | Stage | Code |
+> | --- | --- |
+> | schemas for every stage | `factcheck/schemas.py` |
+> | 1 decompose · 2 plan · 3 retrieve · 4 verify | `factcheck/pipeline.py` |
+> | prompts for the three model stages | `factcheck/prompts.py` |
+> | evidence corpus + BM25 and web retrievers | `factcheck/evidence.py` |
+> | 5 aggregate · 6 gate (no model calls) | `factcheck/aggregate.py` |
+> | labelled eval set and scoring | `factcheck/evalset.py` |
+
 A design for a system that takes a piece of text, decides which of its claims
 are checkable, checks them against evidence it retrieves, and returns a verdict
 per claim with citations. Written as the capstone for Session 1: every
@@ -114,7 +135,7 @@ relevant, different source types (primary document, news, reference).
   bias with no way to see it.
 
 *Techniques used:* structured outputs (P1); the CoT ordering lesson from P2 —
-the schema puts `reasoning_about_what_would_settle_this` before the queries, so
+the schema puts `what_would_settle_this` before the queries, so
 the queries follow the plan rather than the plan being written to fit queries
 already chosen.
 
@@ -277,7 +298,37 @@ tiering from the start:
 
 ---
 
-## 7. What I would build first
+## 7. What the implementation found
+
+The eval (`runs/factcheck/report.md`) is doing its job, which is to fail:
+
+- **`near_miss` is the slice that breaks it.** A verifier that matches on entity
+  and figure without conditioning on the *period* reads "revenue of EUR 4.1
+  billion for 2023" against the 2024 annual report and calls it supported. The
+  prompt says to treat a right figure from a wrong period as `insufficient`; the
+  offline verifier does not, and the slice exists precisely to catch that.
+- **Negation is the other one.** "met its target of a 15 percent reduction"
+  against a passage reading "did not meet its stated target of a 15 percent
+  reduction" shares every salient token, and a token-overlap verifier says
+  supported. This is the classic failure and it needs a verifier that reasons
+  rather than matches.
+- **The deterministic defences all held.** No claim asserted only by the
+  adversarial page was reported as supported, even though the simulated verifier
+  complies with the injection about half the time: the defence is the zero
+  weight at stage 5, not the verifier's judgement. Ungrounded quotes were
+  discarded and counted. Stale-source claims were refuted correctly by the
+  primary-source weighting.
+- **The ablations price the stages.** Dropping to one passage per claim costs
+  ~17 points of accuracy and most of the abstention precision; removing query
+  planning costs ~4. That is the evidence for keeping stage 2, and it is a much
+  weaker case than for stage 3.
+
+The lesson generalises past this system: **the parts that held under an
+adversarial input are the parts written in code.** Every prompt-level defence
+was violated by the simulated model at some rate; none of the code-level ones
+were.
+
+## 8. What I would build first
 
 Not all six stages. The order that de-risks fastest:
 

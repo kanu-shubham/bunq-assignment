@@ -1,7 +1,7 @@
 PY ?= python
 PROVIDER ?= mock
 
-.PHONY: setup corpus test extract compare sweep reasoning route vote judge prototypes all clean
+.PHONY: setup corpus test extract compare sweep reasoning route vote judge prototypes factcheck factcheck-demo all clean
 
 setup:
 	$(PY) -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -37,8 +37,14 @@ judge:
 prototypes:
 	$(PY) -m extraction.cli all --provider $(PROVIDER)
 
-# Corpus -> tests -> every prototype in syllabus order.
-all: corpus test prototypes
+factcheck:
+	$(PY) -m factcheck.cli eval --provider $(PROVIDER) --ablate
+
+factcheck-demo:
+	$(PY) -m factcheck.cli check --provider $(PROVIDER) --document DOC-wrong
+
+# Corpus -> tests -> every prototype -> the fact-checking system.
+all: corpus test prototypes factcheck
 
 clean:
 	rm -rf runs corpus .pytest_cache

@@ -87,13 +87,34 @@ and sorted by that score. It **dropped correct documents out of the top ten
 entirely** on paraphrase queries — rank 1 → not-in-top-10 for *"why do we use the
 same database technology everywhere"*.
 
-The cause is structural, not a bug. Lexically-derived features correlate with
-BM25, so re-deciding on them alone throws away the dense half of the hybrid
-precisely where dense was carrying the result. The fix is that re-ranking must be
-**a refinement of retrieval, not a replacement for it**: the final score is an
-interpolation of the first-stage rank and the cross-encoder score, both min-max
-normalised within the candidate list (`CrossEncoderWeights.prior_weight`, swept
-on dev). Even so — see finding 3 — it still does not earn its latency here.
+The cause is structural, not a bug, and one query shows it exactly. For *"why do
+we use the same database technology everywhere"* the first stage ranks the
+correct ADR first, and the cross-encoder scores it **lowest of the top four**:
+
+| first-stage rank | document | ce score | coverage | phrase | proximity |
+|---|---|---|---|---|---|
+| 1 | `adr-0015-postgres-over-document-store` **(gold)** | **1.49** | 0.30 | 0.00 | 0.11 |
+| 2 | `readme-audit-trail` | 3.27 | 0.38 | 0.40 | 0.57 |
+| 3 | `readme-statement-service` | 3.00 | 0.38 | 0.40 | 0.57 |
+| 4 | `readme-support-inbox` | 3.27 | 0.38 | 0.40 | 0.57 |
+
+The distractors are service READMEs containing the literal string "state lives in
+PostgreSQL" — so they score on phrase match and term proximity. The ADR *argues
+about the decision* in different words ("datastore", "four database
+technologies", "default"), so it matches on none of them. Lexically-derived
+features correlate with BM25, so re-deciding on them alone throws away the dense
+half of the hybrid precisely where dense was carrying the result.
+
+Re-ranking therefore has to be **a refinement of retrieval, not a replacement for
+it**: the final score interpolates the first-stage rank with the cross-encoder
+score, both min-max normalised within the candidate list
+(`CrossEncoderWeights.prior_weight`, swept on dev).
+
+**That reduced the aggregate damage but did not fix this query.** At the shipped
+`prior_weight=0.4` the gold document is still outside the top ten; only at 1.0 —
+which is to say, ignoring the reranker entirely — does it come back to rank 1.
+Which is finding 3: on this corpus the reranker is net-negative, and this is one
+of the queries paying for it.
 
 ### 2. Dev-set gains are not gains
 

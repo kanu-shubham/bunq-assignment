@@ -181,8 +181,12 @@ def salvage_json(text: str) -> tuple[Optional[dict[str, Any]], list[str]]:
 
 
 def validate(payload: dict[str, Any], kind: str) -> tuple[Optional[dict[str, Any]], list[str]]:
-    """Validate against the Pydantic model, returning normalised data or errors."""
-    model = model_for(kind)
+    """Validate a document extraction against the model for `kind`."""
+    return validate_with(payload, model_for(kind))
+
+
+def validate_with(payload: dict[str, Any], model: Any) -> tuple[Optional[dict[str, Any]], list[str]]:
+    """Validate against a Pydantic model, returning normalised data or errors."""
     try:
         instance = model.model_validate(payload)
     except ValidationError as exc:
@@ -224,14 +228,47 @@ def extract(
     config: ExtractConfig,
     injection_canary: Optional[str] = None,
 ) -> ExtractionResult:
+    """Field extraction: the document-shaped wrapper around `run_structured`."""
     model_cls = model_for(kind)
     schema = json_schema_for(model_cls)
-    system = prompts.system_prompt(config.prompt, output_mode=config.output_mode, schema=schema)
-    output_config = format_config(model_cls) if config.output_mode == "strict" else None
+    return run_structured(
+        item_id=doc_id,
+        model_cls=model_cls,
+        system=prompts.system_prompt(config.prompt, output_mode=config.output_mode, schema=schema),
+        user=prompts.user_prompt(kind, document_text),
+        provider=provider,
+        config=config,
+        noun=kind,
+        grounding_text=document_text,
+        injection_canary=injection_canary,
+        task="extraction",
+    )
 
-    conversation: list[dict[str, Any]] = [
-        {"role": "user", "content": prompts.user_prompt(kind, document_text)}
-    ]
+
+def run_structured(
+    *,
+    item_id: str,
+    model_cls: Any,
+    system: str,
+    user: str,
+    provider: Provider,
+    config: ExtractConfig,
+    noun: str,
+    grounding_text: Optional[str] = None,
+    injection_canary: Optional[str] = None,
+    task: str = "extraction",
+) -> ExtractionResult:
+    """Call, salvage, validate, repair — for any Pydantic-shaped task.
+
+    Every prototype in this session goes through here, so the reliability
+    machinery (drift salvage, validator-quoting repair turns, refusal handling)
+    is written once and measured the same way everywhere.
+
+    `grounding_text` opts a task into the grounding check; tasks whose output is
+    a judgement rather than a quotation (routing, judging) leave it unset.
+    """
+    output_config = format_config(model_cls) if config.output_mode == "strict" else None
+    conversation: list[dict[str, Any]] = [{"role": "user", "content": user}]
     attempts: list[Attempt] = []
     payload: Optional[dict[str, Any]] = None
     status = "invalid"
@@ -243,6 +280,7 @@ def extract(
             messages=conversation,
             output_config=output_config,
             temperature=config.temperature,
+            task=task,
         )
         attempt = Attempt(index=index, kind=attempt_kind, raw_text=response.text, usage=response.usage)
 
@@ -264,13 +302,13 @@ def extract(
         if candidate is None:
             attempt.errors = ["response did not contain a JSON object"]
         else:
-            validated, errors = validate(candidate, kind)
+            validated, errors = validate_with(candidate, model_cls)
             attempt.errors = errors
             if not errors:
                 payload = validated
 
-        if payload is not None and config.repair_ungrounded:
-            report = grounding.check(payload, document_text)
+        if payload is not None and config.repair_ungrounded and grounding_text is not None:
+            report = grounding.check(payload, grounding_text)
             attempt.ungrounded = report.ungrounded
 
         attempts.append(attempt)
@@ -287,12 +325,12 @@ def extract(
         conversation = conversation + [{"role": "assistant", "content": response.text or "(empty)"}]
         if payload is None:
             conversation.append(
-                {"role": "user", "content": prompts.repair_prompt(response.text, attempt.errors, kind=kind)}
+                {"role": "user", "content": prompts.repair_prompt(response.text, attempt.errors, kind=noun)}
             )
             attempt_kind = "schema_repair"
         else:
             conversation.append(
-                {"role": "user", "content": prompts.grounding_repair_prompt(attempt.ungrounded, kind=kind)}
+                {"role": "user", "content": prompts.grounding_repair_prompt(attempt.ungrounded, kind=noun)}
             )
             attempt_kind = "grounding_repair"
             payload = None  # re-earned on the next pass
@@ -301,8 +339,8 @@ def extract(
         status = "invalid"
 
     return ExtractionResult(
-        doc_id=doc_id,
-        kind=kind,
+        doc_id=item_id,
+        kind=noun,
         status=status,
         payload=payload,
         attempts=attempts,
@@ -315,5 +353,6 @@ def extract(
             "repair_ungrounded": config.repair_ungrounded,
             "temperature": config.temperature,
             "provider": getattr(provider, "name", "?"),
+            "task": task,
         },
     )

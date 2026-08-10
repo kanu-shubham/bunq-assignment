@@ -1,7 +1,7 @@
 PY ?= python
 PROVIDER ?= mock
 
-.PHONY: setup corpus test extract compare sweep all clean
+.PHONY: setup corpus test extract compare sweep reasoning route vote judge prototypes all clean
 
 setup:
 	$(PY) -m venv .venv && .venv/bin/pip install -q -r requirements.txt
@@ -22,8 +22,23 @@ compare:
 sweep:
 	$(PY) -m extraction.cli sweep --provider $(PROVIDER) --repetitions 5
 
-# Everything, offline: corpus -> tests -> four prompt arms -> temperature sweep.
-all: corpus test compare sweep
+reasoning:
+	$(PY) -m extraction.cli reasoning --provider $(PROVIDER)
+
+route:
+	$(PY) -m extraction.cli route --provider $(PROVIDER)
+
+vote:
+	$(PY) -m extraction.cli vote --provider $(PROVIDER)
+
+judge:
+	$(PY) -m extraction.cli judge --provider $(PROVIDER)
+
+prototypes:
+	$(PY) -m extraction.cli all --provider $(PROVIDER)
+
+# Corpus -> tests -> every prototype in syllabus order.
+all: corpus test prototypes
 
 clean:
 	rm -rf runs corpus .pytest_cache

@@ -126,24 +126,75 @@ def score_document(
         doc_id=doc_id, kind=kind, tags=list(tags), status=status,
         followed_injection=followed_injection, repairs_used=repairs_used, refusal_ok=refusal_ok,
     )
-    truth_flat = flatten(truth)
-    pred_flat = flatten(payload)
+    score.detail = score_flat(flatten(truth), flatten(payload))
+    score.outcomes.update(score.detail.values())
+    return score
 
+
+def score_flat(truth_flat: dict[str, Any], pred_flat: dict[str, Any]) -> dict[str, str]:
+    """Field-path -> outcome, for two already-flattened objects.
+
+    Split out from `score_document` so the self-consistency prototype can score a
+    *voted* result that never existed as a single model response.
+    """
+    detail: dict[str, str] = {}
     for key in sorted(set(truth_flat) | set(pred_flat)):
         t, p = truth_flat.get(key), pred_flat.get(key)
         if _absent(t) and _absent(p):
-            outcome = "correct_null"
+            detail[key] = "correct_null"
         elif _absent(t):
-            outcome = "hallucination"
+            detail[key] = "hallucination"
         elif _absent(p):
-            outcome = "omission"
+            detail[key] = "omission"
         elif values_match(key, t, p):
-            outcome = "correct"
+            detail[key] = "correct"
         else:
-            outcome = "wrong"
-        score.outcomes[outcome] += 1
-        score.detail[key] = outcome
-    return score
+            detail[key] = "wrong"
+    return detail
+
+
+def canonical_value(key: str, value: Any) -> Any:
+    """A hashable, comparison-stable form of a field value, for vote counting."""
+    if value is None or value == "" or value == () or value == []:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, tuple):
+        return tuple(sorted(value))
+    if isinstance(value, (int, float)):
+        return round(float(value), 2)
+    text = str(value)
+    if key.endswith(("date", "_year")):
+        return parse_date(text) or norm_text(text)
+    number = parse_number(text) if any(ch.isdigit() for ch in text) else None
+    if number is not None and not any(ch.isalpha() for ch in text):
+        return round(number, 2)
+    return norm_text(text)
+
+
+def vote(payloads: list[Optional[dict[str, Any]]]) -> tuple[dict[str, Any], dict[str, float]]:
+    """Majority vote across N samples of the same document.
+
+    Returns the voted flat object and, per field, the share of samples backing
+    the winning value — the margin. A low margin is the cheapest confidence
+    signal available: it costs no extra prompt engineering and it is derived
+    from the model's own disagreement with itself.
+    """
+    flats = [flatten(p) for p in payloads]
+    if not flats:
+        return {}, {}
+    keys = sorted({k for flat in flats for k in flat})
+    voted: dict[str, Any] = {}
+    margins: dict[str, float] = {}
+
+    for key in keys:
+        buckets: dict[Any, list[Any]] = defaultdict(list)
+        for flat in flats:
+            buckets[canonical_value(key, flat.get(key))].append(flat.get(key))
+        winner, members = max(buckets.items(), key=lambda kv: (len(kv[1]), kv[0] is not None))
+        voted[key] = members[0] if winner is not None else None
+        margins[key] = len(members) / len(flats)
+    return voted, margins
 
 
 # --------------------------------------------------------------------------- #

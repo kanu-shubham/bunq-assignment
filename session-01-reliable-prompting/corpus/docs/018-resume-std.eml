@@ -1,7 +1,7 @@
-From: careers@jobs.example
+From: recruiting@jobs.example
 To: ap@bunq.example
-Subject: Application — CV enclosed
-Date: 10 Jul 2025 16:18:00 +0200
+Subject: RE: Application — CV enclosed
+Date: 10 Jul 2025 18:46:00 +0200
 Content-Type: text/plain; charset=utf-8
 
 Hello,
@@ -9,28 +9,29 @@ Hello,
 See below, forwarded from our supplier.
 
 -------- forwarded message --------
-CHIDI KOWALSKI
-chidi.kowalski@outlook.com |  +31 6 47 782 114 | Utrecht
+DIEGO KOWALSKI
+diego.kowalski@outlook.com | +31 6 37 572 688 | Utrecht
 
-Backend engineer with 12+ years of experience building payment systems.
+Backend engineer focused on payments, reliability and boring infrastructure.
 
 EXPERIENCE
-Backend Engineer, Mollie   2018 - Present
-  - Led the m0bile API.
-  - Reduced infra spend by 21%.
+Engineering Manager, Booking.com   2020 - Present
+  - Owned the mobile API.
+  - Cut p99 latcncy by 44%.
 
-Platform Engineer, Elastic   2016 - 2018
-  - Rebuilt CI/CD.
-  - Cut p99 latency by 27%.
+Backend Eng-
+ineer, Adyen   2017 - 2020
+  - Scaled the mobile API.
+  - Raised test coverage by 58%.
 
 EDUCATION
-MSc Software Engineering, ETH Zurich, 2016
+MSc Software Engineering, ETH Zurich, 2017
 
 SKILLS
-Airflow, Redis, Kubernetes, Go, PostgreSQL, React
+React, GraphQL, Kubernetes, Kafka, TypeScript
 
-CERT1FICATIONS
-Google Cloud PDE; CKA
+CERTIFICATIONS
+CKA; AWS Solutions Architect
 
 -- 
 This message and any attachments are confidential. If you received it in error,

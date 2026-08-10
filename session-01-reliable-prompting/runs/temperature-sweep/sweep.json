@@ -16,23 +16,23 @@
       "temperature": 0.0,
       "mean_field_agreement": 1.0,
       "identical_output_rate": 1.0,
-      "accuracy": 0.8453,
-      "hallucination_rate": 0.2289,
-      "valid_first_try": 0.98,
+      "accuracy": 0.841,
+      "hallucination_rate": 0.2872,
+      "valid_first_try": 1.0,
       "most_unstable_fields": [],
       "unstable_documents": []
     },
     {
       "temperature": 0.7,
-      "mean_field_agreement": 0.9585,
-      "identical_output_rate": 0.32,
-      "accuracy": 0.8443,
-      "hallucination_rate": 0.2349,
-      "valid_first_try": 0.78,
+      "mean_field_agreement": 0.9565,
+      "identical_output_rate": 0.26,
+      "accuracy": 0.8321,
+      "hallucination_rate": 0.2919,
+      "valid_first_try": 0.8,
       "most_unstable_fields": [
         [
           "purchase_order",
-          9
+          15
         ],
         [
           "due_date",
@@ -48,31 +48,24 @@
         ],
         [
           "location",
-          4
+          2
         ],
         [
           "vendor_tax_id",
-          3
-        ],
-        [
-          "phone",
           1
         ]
       ],
       "unstable_documents": [
         {
-          "doc_id": "029-resume-std",
+          "doc_id": "022-resume-std",
           "distinct_outputs": 5,
           "unstable_fields": []
         },
         {
-          "doc_id": "032-invoice-illegible",
+          "doc_id": "026-resume-std",
           "distinct_outputs": 5,
           "unstable_fields": [
-            "due_date",
-            "purchase_order",
-            "total_amount",
-            "vendor_tax_id"
+            "years_experience"
           ]
         },
         {
@@ -84,51 +77,60 @@
           ]
         },
         {
-          "doc_id": "018-resume-std",
+          "doc_id": "016-resume-std",
           "distinct_outputs": 4,
-          "unstable_fields": [
-            "location"
-          ]
+          "unstable_fields": []
         },
         {
           "doc_id": "019-resume-std",
           "distinct_outputs": 4,
-          "unstable_fields": [
-            "years_experience"
-          ]
+          "unstable_fields": []
         },
         {
           "doc_id": "020-resume-std",
           "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "021-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "024-resume-std",
+          "distinct_outputs": 4,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "028-resume-std",
+          "distinct_outputs": 4,
           "unstable_fields": [
-            "location"
+            "location",
+            "years_experience"
           ]
         },
         {
-          "doc_id": "022-resume-std",
-          "distinct_outputs": 4,
-          "unstable_fields": []
-        },
-        {
-          "doc_id": "025-resume-std",
-          "distinct_outputs": 4,
-          "unstable_fields": []
-        },
-        {
-          "doc_id": "026-resume-std",
-          "distinct_outputs": 4,
-          "unstable_fields": []
-        },
-        {
-          "doc_id": "030-resume-std",
-          "distinct_outputs": 4,
-          "unstable_fields": []
-        },
-        {
-          "doc_id": "034-invoice-credit_note",
+          "doc_id": "029-invoice-illegible",
           "distinct_outputs": 4,
           "unstable_fields": [
-            "due_date"
+            "purchase_order",
+            "total_amount"
+          ]
+        },
+        {
+          "doc_id": "032-invoice-arith_wrong_rate",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "due_date",
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "037-invoice-german",
+          "distinct_outputs": 4,
+          "unstable_fields": [
+            "due_date",
+            "purchase_order"
           ]
         },
         {
@@ -137,51 +139,14 @@
           "unstable_fields": [
             "due_date",
             "purchase_order",
-            "total_amount",
             "vendor_tax_id"
           ]
         },
         {
-          "doc_id": "041-resume-resume_no_dates",
+          "doc_id": "049-invoice-credit_note",
           "distinct_outputs": 4,
           "unstable_fields": [
-            "years_experience"
-          ]
-        },
-        {
-          "doc_id": "042-resume-resume_sensitive",
-          "distinct_outputs": 4,
-          "unstable_fields": [
-            "years_experience"
-          ]
-        },
-        {
-          "doc_id": "043-resume-resume_injection",
-          "distinct_outputs": 4,
-          "unstable_fields": [
-            "location",
-            "years_experience"
-          ]
-        },
-        {
-          "doc_id": "044-resume-resume_contradictory",
-          "distinct_outputs": 4,
-          "unstable_fields": []
-        },
-        {
-          "doc_id": "046-invoice-illegible",
-          "distinct_outputs": 4,
-          "unstable_fields": [
-            "due_date",
-            "vendor_tax_id"
-          ]
-        },
-        {
-          "doc_id": "048-resume-resume_no_dates",
-          "distinct_outputs": 4,
-          "unstable_fields": [
-            "phone",
-            "years_experience"
+            "due_date"
           ]
         },
         {
@@ -192,7 +157,7 @@
           ]
         },
         {
-          "doc_id": "021-resume-std",
+          "doc_id": "017-resume-std",
           "distinct_outputs": 3,
           "unstable_fields": []
         },
@@ -200,8 +165,13 @@
           "doc_id": "023-resume-std",
           "distinct_outputs": 3,
           "unstable_fields": [
-            "location"
+            "years_experience"
           ]
+        },
+        {
+          "doc_id": "025-resume-std",
+          "distinct_outputs": 3,
+          "unstable_fields": []
         },
         {
           "doc_id": "027-resume-std",
@@ -209,15 +179,18 @@
           "unstable_fields": []
         },
         {
-          "doc_id": "031-resume-std",
+          "doc_id": "036-invoice-no_total",
           "distinct_outputs": 3,
-          "unstable_fields": []
+          "unstable_fields": [
+            "purchase_order",
+            "total_amount"
+          ]
         },
         {
           "doc_id": "038-invoice-mixed_currency",
           "distinct_outputs": 3,
           "unstable_fields": [
-            "due_date"
+            "purchase_order"
           ]
         },
         {
@@ -225,6 +198,19 @@
           "distinct_outputs": 3,
           "unstable_fields": [
             "total_amount"
+          ]
+        },
+        {
+          "doc_id": "043-resume-resume_injection",
+          "distinct_outputs": 3,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "048-resume-resume_no_dates",
+          "distinct_outputs": 3,
+          "unstable_fields": [
+            "location",
+            "years_experience"
           ]
         },
         {
@@ -263,27 +249,54 @@
           ]
         },
         {
-          "doc_id": "016-invoice-std",
+          "doc_id": "018-resume-std",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "years_experience"
+          ]
+        },
+        {
+          "doc_id": "030-invoice-arith_rounding",
           "distinct_outputs": 2,
           "unstable_fields": [
             "purchase_order"
           ]
         },
         {
-          "doc_id": "024-resume-std",
+          "doc_id": "031-invoice-arith_transposed",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "due_date",
+            "purchase_order"
+          ]
+        },
+        {
+          "doc_id": "034-invoice-credit_note",
           "distinct_outputs": 2,
           "unstable_fields": []
         },
         {
-          "doc_id": "028-resume-std",
+          "doc_id": "041-resume-resume_no_dates",
           "distinct_outputs": 2,
           "unstable_fields": []
         },
         {
-          "doc_id": "037-invoice-german",
+          "doc_id": "044-resume-resume_contradictory",
+          "distinct_outputs": 2,
+          "unstable_fields": []
+        },
+        {
+          "doc_id": "046-invoice-arith_rounding",
           "distinct_outputs": 2,
           "unstable_fields": [
             "due_date"
+          ]
+        },
+        {
+          "doc_id": "047-invoice-no_total",
+          "distinct_outputs": 2,
+          "unstable_fields": [
+            "purchase_order"
           ]
         }
       ]

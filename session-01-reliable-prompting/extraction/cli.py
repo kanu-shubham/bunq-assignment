@@ -5,6 +5,11 @@
     python -m extraction.cli extract --provider anthropic --prompt careful
     python -m extraction.cli compare --provider mock
     python -m extraction.cli sweep --provider mock --repetitions 5
+    python -m extraction.cli reasoning --provider mock      # prototype 2
+    python -m extraction.cli route --provider mock          # prototype 3
+    python -m extraction.cli vote --provider mock           # prototype 4
+    python -m extraction.cli judge --provider mock          # prototype 5
+    python -m extraction.cli all --provider mock            # everything, in order
 """
 
 from __future__ import annotations
@@ -22,11 +27,14 @@ from . import scoring
 from .client import (
     DEFAULT_MODEL,
     DEFAULT_TEMPERATURE_MODEL,
+    NO_SAMPLING_PARAMS,
+    REJECTS_NONDEFAULT_SAMPLING,
     AnthropicProvider,
     MockProvider,
     has_credentials,
 )
 from .corpus import Document, generate_corpus, load_corpus, write_corpus
+from .prompts import SYSTEM_PROMPTS as PROMPT_CHOICES
 from .pipeline import ExtractConfig, ExtractionResult, extract
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -249,9 +257,80 @@ def cmd_compare(args: argparse.Namespace) -> int:
 
 
 def cmd_sweep(args: argparse.Namespace) -> int:
-    from experiments.temperature import run_sweep  # noqa: PLC0415 - optional import path
+    from experiments.temperature import run_sweep
 
     return run_sweep(args)
+
+
+def cmd_reasoning(args: argparse.Namespace) -> int:
+    from prototypes.reasoning import run
+
+    return run(args)
+
+
+def cmd_route(args: argparse.Namespace) -> int:
+    from prototypes.routing import run
+
+    return run(args)
+
+
+def cmd_vote(args: argparse.Namespace) -> int:
+    from prototypes.self_consistency import run
+
+    return run(args)
+
+
+def cmd_judge(args: argparse.Namespace) -> int:
+    from prototypes.judge import run
+
+    return run(args)
+
+
+def _temperature_capable(args: argparse.Namespace) -> bool:
+    if args.provider == "mock":
+        return True
+    return args.model not in NO_SAMPLING_PARAMS and args.model not in REJECTS_NONDEFAULT_SAMPLING
+
+
+def _with(args: argparse.Namespace, **overrides) -> argparse.Namespace:
+    return argparse.Namespace(**{**vars(args), **overrides})
+
+
+def cmd_all(args: argparse.Namespace) -> int:
+    """Every prototype, in syllabus order, into runs/.
+
+    Two steps need a temperature the extraction default does not use: the sweep
+    compares 0 against 0.7, and the vote needs variance to cancel. On a model
+    whose sampling parameters were removed, both fall back to the
+    temperature-capable model rather than failing the run.
+    """
+    sampling = _temperature_capable(args)
+    sweep_args = args if sampling else _with(args, model=DEFAULT_TEMPERATURE_MODEL)
+    vote_args = _with(args, temperature=0.7 if sampling else None,
+                      model=args.model if sampling else DEFAULT_TEMPERATURE_MODEL)
+    if not sampling:
+        print(
+            f"note: {args.model} does not accept a temperature, so the sweep and the vote "
+            f"run on {DEFAULT_TEMPERATURE_MODEL}",
+            file=sys.stderr,
+        )
+
+    steps = [
+        ("prompt arms (prototype 1)", cmd_compare, args),
+        ("temperature sweep (stochasticity)", cmd_sweep, sweep_args),
+        ("chain-of-thought (prototype 2)", cmd_reasoning, args),
+        ("few-shot routing (prototype 3)", cmd_route, args),
+        ("self-consistency (prototype 4)", cmd_vote, vote_args),
+        ("llm-as-judge (prototype 5)", cmd_judge, _with(args, prompt="naive")),
+    ]
+    for label, fn, step_args in steps:
+        print(f"\n########## {label} ##########", file=sys.stderr)
+        code = fn(step_args)
+        if code != 0:
+            print(f"stopped: {label} exited {code}", file=sys.stderr)
+            return code
+    print(f"\nall artefacts under {RUNS_DIR}", file=sys.stderr)
+    return 0
 
 
 # --------------------------------------------------------------------------- #
@@ -284,7 +363,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     run = sub.add_parser("extract", help="run one extraction configuration over the corpus")
     common(run)
-    run.add_argument("--prompt", choices=["naive", "careful"], default="careful")
+    run.add_argument("--prompt", choices=sorted(PROMPT_CHOICES), default="careful")
     run.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
     run.add_argument("--max-attempts", type=int, default=3)
     run.add_argument("--no-grounding-repair", action="store_true",
@@ -303,7 +382,7 @@ def build_parser() -> argparse.ArgumentParser:
     sweep = sub.add_parser("sweep", help="temperature 0 vs 0.7")
     common(sweep)
     sweep.set_defaults(model=DEFAULT_TEMPERATURE_MODEL)
-    sweep.add_argument("--prompt", choices=["naive", "careful"], default="careful")
+    sweep.add_argument("--prompt", choices=sorted(PROMPT_CHOICES), default="careful")
     sweep.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
     sweep.add_argument("--max-attempts", type=int, default=3)
     sweep.add_argument("--no-grounding-repair", action="store_true")
@@ -311,6 +390,60 @@ def build_parser() -> argparse.ArgumentParser:
     sweep.add_argument("--temperatures", default="0,0.7",
                        help="comma-separated list of temperatures to compare")
     sweep.set_defaults(func=cmd_sweep)
+
+    reasoning = sub.add_parser("reasoning", help="prototype 2: chain-of-thought vs direct answer")
+    common(reasoning)
+    reasoning.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
+    reasoning.add_argument("--max-attempts", type=int, default=3)
+    reasoning.add_argument("--temperature", type=float, default=None)
+    reasoning.set_defaults(func=cmd_reasoning)
+
+    route = sub.add_parser("route", help="prototype 3: few-shot vs zero-shot classification")
+    common(route)
+    route.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
+    route.add_argument("--max-attempts", type=int, default=3)
+    route.add_argument("--temperature", type=float, default=None)
+    route.add_argument("--shots", default="0,1,2,4,8", help="comma-separated k values to sweep")
+    route.set_defaults(func=cmd_route)
+
+    vote = sub.add_parser("vote", help="prototype 4: majority vote over n samples")
+    common(vote)
+    vote.add_argument("--prompt", choices=sorted(PROMPT_CHOICES), default="careful")
+    vote.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
+    vote.add_argument("--max-attempts", type=int, default=3)
+    vote.add_argument("--no-grounding-repair", action="store_true")
+    vote.add_argument("--temperature", type=float, default=0.7,
+                      help="voting needs variance to cancel; 0 makes every sample identical")
+    vote.add_argument("--samples", type=int, default=5)
+    vote.add_argument("--abstain-below", type=float, default=0.8,
+                      help="route fields whose vote margin is below this for human review")
+    vote.set_defaults(func=cmd_vote)
+
+    judge = sub.add_parser("judge", help="prototype 5: LLM as judge, scored against ground truth")
+    common(judge)
+    judge.add_argument("--prompt", choices=sorted(PROMPT_CHOICES), default="naive",
+                       help="the extraction being judged; naive leaves more real errors to find")
+    judge.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
+    judge.add_argument("--max-attempts", type=int, default=3)
+    judge.add_argument("--temperature", type=float, default=None)
+    judge.add_argument("--judge-repeats", type=int, default=2,
+                       help="judge each extraction N times to measure the judge's own flip rate")
+    judge.set_defaults(func=cmd_judge)
+
+    every = sub.add_parser("all", help="run every prototype in syllabus order")
+    common(every)
+    every.add_argument("--prompt", choices=sorted(PROMPT_CHOICES), default="careful")
+    every.add_argument("--output-mode", choices=["strict", "freeform"], default="strict")
+    every.add_argument("--max-attempts", type=int, default=3)
+    every.add_argument("--no-grounding-repair", action="store_true")
+    every.add_argument("--temperature", type=float, default=None)
+    every.add_argument("--repetitions", type=int, default=5)
+    every.add_argument("--temperatures", default="0,0.7")
+    every.add_argument("--shots", default="0,1,2,4,8")
+    every.add_argument("--samples", type=int, default=5)
+    every.add_argument("--abstain-below", type=float, default=0.8)
+    every.add_argument("--judge-repeats", type=int, default=2)
+    every.set_defaults(func=cmd_all)
 
     return parser
 

@@ -121,6 +121,94 @@ class Resume(StrictModel):
     certifications: list[str] = Field(default_factory=list)
 
 
+# --------------------------------------------------------------------------- #
+# Prototype 2 — arithmetic audit (chain-of-thought vs direct answer)
+# --------------------------------------------------------------------------- #
+
+
+class DirectAudit(StrictModel):
+    """Answer-only arithmetic audit. The model has nowhere to put the working."""
+
+    subtotal: Optional[float] = Field(None, description="Net total as printed.")
+    tax_amount: Optional[float] = Field(None, description="Tax as printed.")
+    total_amount: Optional[float] = Field(None, description="Gross total as printed.")
+    reconciles: Optional[bool] = Field(
+        None,
+        description=(
+            "True when the printed total equals subtotal + tax to the cent. "
+            "Null when the document does not show all three numbers."
+        ),
+    )
+    discrepancy: Optional[float] = Field(
+        None, description="total_amount minus (subtotal + tax_amount); null when it cannot be computed."
+    )
+
+
+class CoTAudit(StrictModel):
+    """The same audit with the working made part of the output.
+
+    Field order is load-bearing. Structured outputs are generated in schema
+    order, so `steps` and `computed_total` must be declared *before*
+    `reconciles` — put the verdict first and the "reasoning" becomes a
+    post-hoc rationalisation of an answer the model already committed to.
+    """
+
+    steps: list[str] = Field(
+        default_factory=list,
+        description="Each arithmetic step, one per entry, before stating a verdict.",
+    )
+    subtotal: Optional[float] = Field(None, description="Net total as printed.")
+    tax_amount: Optional[float] = Field(None, description="Tax as printed.")
+    total_amount: Optional[float] = Field(None, description="Gross total as printed.")
+    computed_total: Optional[float] = Field(None, description="subtotal + tax_amount.")
+    discrepancy: Optional[float] = Field(None, description="total_amount minus computed_total.")
+    reconciles: Optional[bool] = Field(
+        None,
+        description=(
+            "True when the discrepancy is zero to the cent. "
+            "Null when the document does not show all three numbers."
+        ),
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Prototype 3 — document routing (few-shot vs zero-shot)
+# --------------------------------------------------------------------------- #
+
+DocumentClass = Literal["invoice", "credit_note", "resume", "delivery_note", "unreadable"]
+
+
+class RoutingDecision(StrictModel):
+    document_class: Optional[DocumentClass] = Field(
+        None, description="The single class that best describes the document."
+    )
+    confidence: Optional[Literal["low", "medium", "high"]] = Field(
+        None, description="How clearly the document fits the chosen class."
+    )
+
+
+# --------------------------------------------------------------------------- #
+# Prototype 5 — LLM as judge
+# --------------------------------------------------------------------------- #
+
+
+class FieldVerdict(StrictModel):
+    field: str = Field(description="Dotted path of the field being judged.")
+    verdict: Literal["supported", "contradicted", "not_in_document"] = Field(
+        description=(
+            "supported: the document shows this value. contradicted: the document shows "
+            "a different value. not_in_document: the document does not show it at all."
+        )
+    )
+    evidence: Optional[str] = Field(
+        None, description="The quoted line from the document that decides it, when there is one."
+    )
+
+
+class JudgeReport(StrictModel):
+    verdicts: list[FieldVerdict] = Field(default_factory=list)
+
+
 SCHEMAS: dict[str, type[StrictModel]] = {"invoice": Invoice, "resume": Resume}
 
 

@@ -1,0 +1,210 @@
+{
+  "meta": {
+    "provider": "mock",
+    "model": "mock-1",
+    "documents": 50,
+    "shots": [
+      0,
+      1,
+      2,
+      4,
+      8
+    ],
+    "classes": [
+      "invoice",
+      "credit_note",
+      "resume",
+      "delivery_note",
+      "unreadable"
+    ]
+  },
+  "arms": [
+    {
+      "k": 0,
+      "prompt_chars": 541,
+      "accuracy": 0.88,
+      "valid_first_try": 1.0,
+      "per_class": {
+        "invoice": {
+          "support": 27,
+          "recall": 0.8519,
+          "confused_with": {
+            "delivery_note": 2,
+            "credit_note": 2
+          }
+        },
+        "credit_note": {
+          "support": 2,
+          "recall": 0.0,
+          "confused_with": {
+            "invoice": 2
+          }
+        },
+        "resume": {
+          "support": 18,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "delivery_note": {
+          "support": 1,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "unreadable": {
+          "support": 2,
+          "recall": 1.0,
+          "confused_with": {}
+        }
+      }
+    },
+    {
+      "k": 1,
+      "prompt_chars": 659,
+      "accuracy": 0.92,
+      "valid_first_try": 1.0,
+      "per_class": {
+        "invoice": {
+          "support": 27,
+          "recall": 0.8889,
+          "confused_with": {
+            "credit_note": 2,
+            "delivery_note": 1
+          }
+        },
+        "credit_note": {
+          "support": 2,
+          "recall": 0.5,
+          "confused_with": {
+            "invoice": 1
+          }
+        },
+        "resume": {
+          "support": 18,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "delivery_note": {
+          "support": 1,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "unreadable": {
+          "support": 2,
+          "recall": 1.0,
+          "confused_with": {}
+        }
+      }
+    },
+    {
+      "k": 2,
+      "prompt_chars": 803,
+      "accuracy": 0.96,
+      "valid_first_try": 1.0,
+      "per_class": {
+        "invoice": {
+          "support": 27,
+          "recall": 0.963,
+          "confused_with": {
+            "credit_note": 1
+          }
+        },
+        "credit_note": {
+          "support": 2,
+          "recall": 0.5,
+          "confused_with": {
+            "invoice": 1
+          }
+        },
+        "resume": {
+          "support": 18,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "delivery_note": {
+          "support": 1,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "unreadable": {
+          "support": 2,
+          "recall": 1.0,
+          "confused_with": {}
+        }
+      }
+    },
+    {
+      "k": 4,
+      "prompt_chars": 1080,
+      "accuracy": 0.96,
+      "valid_first_try": 1.0,
+      "per_class": {
+        "invoice": {
+          "support": 27,
+          "recall": 0.963,
+          "confused_with": {
+            "credit_note": 1
+          }
+        },
+        "credit_note": {
+          "support": 2,
+          "recall": 0.5,
+          "confused_with": {
+            "invoice": 1
+          }
+        },
+        "resume": {
+          "support": 18,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "delivery_note": {
+          "support": 1,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "unreadable": {
+          "support": 2,
+          "recall": 1.0,
+          "confused_with": {}
+        }
+      }
+    },
+    {
+      "k": 8,
+      "prompt_chars": 1619,
+      "accuracy": 0.96,
+      "valid_first_try": 1.0,
+      "per_class": {
+        "invoice": {
+          "support": 27,
+          "recall": 0.963,
+          "confused_with": {
+            "credit_note": 1
+          }
+        },
+        "credit_note": {
+          "support": 2,
+          "recall": 0.5,
+          "confused_with": {
+            "invoice": 1
+          }
+        },
+        "resume": {
+          "support": 18,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "delivery_note": {
+          "support": 1,
+          "recall": 1.0,
+          "confused_with": {}
+        },
+        "unreadable": {
+          "support": 2,
+          "recall": 1.0,
+          "confused_with": {}
+        }
+      }
+    }
+  ]
+}

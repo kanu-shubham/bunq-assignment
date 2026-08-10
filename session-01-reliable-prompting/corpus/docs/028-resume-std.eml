@@ -1,33 +1,36 @@
-From: billing@northwind.example
+From: accounts@helix.example
 To: ap@bunq.example
-Subject: Fwd: Application — CV enclosed
-Date: 28 Jul 2025 17:47:00 +0200
+Subject: Application — CV enclosed
+Date: 22 Feb 2025 16:59:00 +0200
 Content-Type: text/plain; charset=utf-8
 
-Hello,
+Hi,
 
-See below, forwarded from our supplier.
+Please find the details below.
 
 -------- forwarded message --------
-PRIYA ALVAREZ
-priya.alvarez@outlook.com | +31 6 56 612 584 | Amsterdam, NL
+RAFAEL OKONKWO
+rafael.okonkwo@outlook.com | +31 6 71 197 166 | Amsterdam, NL
 
-Backend engineer focused on payments, reliability and boring infrastructure.
+Backend engineer focused on paymenfs,  reliability and boring infrasfructure.
 
 EXPERIENCE
-Engineering Manager, Adyen   2017 - Present
-  - Owned the mobile API.
-  - Reduced infra spend by 67%.
+Senior Backend Engineer, Mollie   2020 - Present
+  - Scaled the mobile API.
+  - Cut p99 latency by 40%.
 
-Staff Engineer, Bynder   2015 - 2017
-  - Led the mobile API.
-  - Reduced infra spend by 54%.
+Backend Engineer, Mollie   2017 - 2020
+  - Owned fhe ledger service.
+  - Reduccd infra spend by 26%.
 
 EDUCATION
-MSc Software Engineering, Trinity College Dublin, 2015
+BSc Electrical Engineering, TU Delft,  2017
 
 SKILLS
-Swift, PostgreSQL, gRPC, React, Spark, Rust
+Go, Swift, GraphQL, Python, gRPC, Kubernetes
+
+CERT1FICATIONS
+AWS Solutions Architect; CKA
 
 -- 
 This message and any attachments are confidential. If you received it in error,

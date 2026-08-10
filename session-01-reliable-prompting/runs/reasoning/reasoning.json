@@ -1,0 +1,399 @@
+{
+  "meta": {
+    "provider": "mock",
+    "model": "mock-1",
+    "documents": 32,
+    "output_mode": "strict",
+    "thinking": "adaptive",
+    "effort": "medium"
+  },
+  "arms": [
+    {
+      "arm": "direct",
+      "documents": 32,
+      "accuracy": 0.5312,
+      "false_ok": 1,
+      "false_alarm": 8,
+      "invented_verdict": 2,
+      "valid_first_try": 1.0,
+      "mean_repairs": 0.0,
+      "by_bucket": {
+        "missing": {
+          "n": 5,
+          "accuracy": 0.6
+        },
+        "obvious": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "reconciles": {
+          "n": 23,
+          "accuracy": 0.5217
+        },
+        "subtle": {
+          "n": 2,
+          "accuracy": 0.0
+        }
+      },
+      "mistakes": [
+        {
+          "doc_id": "003-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "dates:dmy_dot",
+            "invoice",
+            "money:eu"
+          ]
+        },
+        {
+          "doc_id": "005-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "dates:iso",
+            "invoice",
+            "money:us"
+          ]
+        },
+        {
+          "doc_id": "006-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "bait:absent_po",
+            "dates:long",
+            "invoice",
+            "money:plain"
+          ]
+        },
+        {
+          "doc_id": "007-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "bait:absent_po",
+            "dates:iso",
+            "invoice",
+            "money:eu"
+          ]
+        },
+        {
+          "doc_id": "009-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "bait:absent_po",
+            "dates:iso",
+            "invoice",
+            "money:us"
+          ]
+        },
+        {
+          "doc_id": "015-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "bait:absent_po",
+            "dates:short",
+            "invoice",
+            "money:eu"
+          ]
+        },
+        {
+          "doc_id": "029-invoice-illegible",
+          "bucket": "missing",
+          "expected": null,
+          "got": true,
+          "discrepancy": null,
+          "tags": [
+            "bait:everything_absent",
+            "hard:illegible",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "030-invoice-arith_rounding",
+          "bucket": "subtle",
+          "expected": false,
+          "got": true,
+          "discrepancy": 0.02,
+          "tags": [
+            "hard:arithmetic_mismatch",
+            "hard:arithmetic_rounding",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "033-invoice-injection_invoice",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "dates:iso",
+            "hard:injection",
+            "invoice",
+            "money:plain"
+          ]
+        },
+        {
+          "doc_id": "035-invoice-two_invoices",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "hard:ambiguity",
+            "hard:multiple_documents",
+            "invoice"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "cot",
+      "documents": 32,
+      "accuracy": 0.75,
+      "false_ok": 0,
+      "false_alarm": 2,
+      "invented_verdict": 2,
+      "valid_first_try": 1.0,
+      "mean_repairs": 0.0,
+      "by_bucket": {
+        "missing": {
+          "n": 5,
+          "accuracy": 0.6
+        },
+        "obvious": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "reconciles": {
+          "n": 23,
+          "accuracy": 0.7826
+        },
+        "subtle": {
+          "n": 2,
+          "accuracy": 0.5
+        }
+      },
+      "mistakes": [
+        {
+          "doc_id": "003-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": 0.0,
+          "tags": [
+            "dates:dmy_dot",
+            "invoice",
+            "money:eu"
+          ]
+        },
+        {
+          "doc_id": "006-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "bait:absent_po",
+            "dates:long",
+            "invoice",
+            "money:plain"
+          ]
+        },
+        {
+          "doc_id": "029-invoice-illegible",
+          "bucket": "missing",
+          "expected": null,
+          "got": true,
+          "discrepancy": null,
+          "tags": [
+            "bait:everything_absent",
+            "hard:illegible",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "037-invoice-german",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "bait:derived_due_date",
+            "hard:non_english",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "038-invoice-mixed_currency",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": -2322.58,
+          "tags": [
+            "hard:ambiguity",
+            "hard:mixed_currency",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "046-invoice-arith_rounding",
+          "bucket": "subtle",
+          "expected": false,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "hard:arithmetic_mismatch",
+            "hard:arithmetic_rounding",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "047-invoice-no_total",
+          "bucket": "missing",
+          "expected": null,
+          "got": true,
+          "discrepancy": null,
+          "tags": [
+            "bait:absent_total",
+            "hard:cropped_total",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "049-invoice-credit_note",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "hard:credit_note",
+            "hard:negative_amounts",
+            "hard:two_numbers",
+            "invoice"
+          ]
+        }
+      ]
+    },
+    {
+      "arm": "cot_fewshot",
+      "documents": 32,
+      "accuracy": 0.8125,
+      "false_ok": 0,
+      "false_alarm": 1,
+      "invented_verdict": 1,
+      "valid_first_try": 1.0,
+      "mean_repairs": 0.0,
+      "by_bucket": {
+        "missing": {
+          "n": 5,
+          "accuracy": 0.8
+        },
+        "obvious": {
+          "n": 2,
+          "accuracy": 1.0
+        },
+        "reconciles": {
+          "n": 23,
+          "accuracy": 0.8261
+        },
+        "subtle": {
+          "n": 2,
+          "accuracy": 0.5
+        }
+      },
+      "mistakes": [
+        {
+          "doc_id": "006-invoice-std",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "bait:absent_po",
+            "dates:long",
+            "invoice",
+            "money:plain"
+          ]
+        },
+        {
+          "doc_id": "029-invoice-illegible",
+          "bucket": "missing",
+          "expected": null,
+          "got": true,
+          "discrepancy": null,
+          "tags": [
+            "bait:everything_absent",
+            "hard:illegible",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "037-invoice-german",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "bait:derived_due_date",
+            "hard:non_english",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "038-invoice-mixed_currency",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": false,
+          "discrepancy": -2322.58,
+          "tags": [
+            "hard:ambiguity",
+            "hard:mixed_currency",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "046-invoice-arith_rounding",
+          "bucket": "subtle",
+          "expected": false,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "hard:arithmetic_mismatch",
+            "hard:arithmetic_rounding",
+            "invoice"
+          ]
+        },
+        {
+          "doc_id": "049-invoice-credit_note",
+          "bucket": "reconciles",
+          "expected": true,
+          "got": null,
+          "discrepancy": null,
+          "tags": [
+            "hard:credit_note",
+            "hard:negative_amounts",
+            "hard:two_numbers",
+            "invoice"
+          ]
+        }
+      ]
+    }
+  ]
+}

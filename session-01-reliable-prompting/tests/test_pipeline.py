@@ -50,7 +50,8 @@ class ScriptedProvider:
         self.script = list(script)
         self.calls: list[list[dict]] = []
 
-    def complete(self, *, system, messages, output_config=None, temperature=None):
+    def complete(self, *, system, messages, output_config=None, temperature=None,
+                 task="extraction"):
         self.calls.append(messages)
         return self.script.pop(0) if self.script else LLMResponse(text="{}", model=self.model)
 

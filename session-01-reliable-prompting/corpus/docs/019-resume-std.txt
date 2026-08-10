@@ -1,22 +1,23 @@
-KWAME ROSSI
-kwame.rossi@proton.me | +31 6 46 991 893 | Dublin, IE
+LARS COSTA
+lars.costa@gmail.com | +31 6 59 244 624 | Berlin, Germany
 
-Backend engineer focused on payments, reliability and boring infrastructure.
+Backend engineer with 14+ years of experience building payment systems.
 
 EXPERIENCE
-Platform Engineer, Elastic   2018 - Present
-  - Owned the ledger service.
-  - Raised test coverage by 34%.
+Senior Backend Engineer, Adyen   2021 - Present
+  - Led CI/CD.
+  - Reduced infra spend by 26%.
 
-Backend Engineer, Bynder    2015 - 2018
-  - Rebuilt CI/CD.  [scan artefact]
-  - Cut p99 1atcncy by 46%.
+Senior Backend Engineer, Framer   2017 - 2021
+  - Led the ingest pipeline.
+  - Raised test coverage by 55%.
+
+Staff Engineer, Bynder   2014 - 2017
+  - Led the mobile API.
+  - Reduced infra spend by 39%.
 
 EDUCATION
-BSc Applied Mathematics, ETH Zurich, 2015
+MSc Electrical Engineering, Trinity College Dublin, 2014   CONFIDENTIAL
 
-5KILLS
-Terraform, GraphQL,  PostgreSQL, TypeScript, Python, React, Swift
-
-CERTIFICATIONS
-CKA; PSM I
+SKILLS
+Terraform, Kafka, Airflow, Redis, Kubernetes, gRPC, Spark

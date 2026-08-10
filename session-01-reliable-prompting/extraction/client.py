@@ -57,6 +57,7 @@ class Provider(Protocol):
         messages: list[dict[str, Any]],
         output_config: Optional[dict[str, Any]] = None,
         temperature: Optional[float] = None,
+        task: str = "extraction",
     ) -> LLMResponse: ...
 
 
@@ -110,6 +111,7 @@ class AnthropicProvider:
         messages: list[dict[str, Any]],
         output_config: Optional[dict[str, Any]] = None,
         temperature: Optional[float] = None,
+        task: str = "extraction",  # noqa: ARG002 - the real model needs no hint
     ) -> LLMResponse:
         if temperature is not None and not self.supports_temperature(temperature):
             raise ValueError(
@@ -208,7 +210,12 @@ class MockProvider:
         messages: list[dict[str, Any]],
         output_config: Optional[dict[str, Any]] = None,
         temperature: Optional[float] = None,
+        task: str = "extraction",
     ) -> LLMResponse:
+        if task != "extraction":
+            return _mock_task_response(
+                self, task=task, system=system, messages=messages, temperature=temperature
+            )
         strict = output_config is not None and "format" in (output_config or {})
         first_user = _first_user_text(messages)
         document = _between(first_user, "<document>", "</document>") or first_user
@@ -393,15 +400,18 @@ def _mock_invoice(document: str) -> dict[str, Any]:
         currency = m.group(1)
 
     def amount_after(*labels: str) -> Optional[float]:
+        """First number printed after `label`, on the same line."""
         for label in labels:
-            m = re.search(rf"{label}[^\n\d-]*(-?[\d][\d.,\s]*)", document, re.IGNORECASE)
+            m = re.search(rf"{label}[^\n\d-]*(-?\d[\d.,]*)", document, re.IGNORECASE)
             if m:
                 return parse_number(m.group(1))
         return None
 
     total = amount_after(r"total credit", r"\btotal\b", r"gesamtbetrag")
     subtotal = amount_after(r"subtotal", r"net total")
-    tax = amount_after(r"vat\s*\d*\s*%?", r"ust", r"tax")
+    # The rate line ("VAT 21%   252,00"), not the registration line
+    # ("VAT / Tax ID: GB 421 7788 21") — hence the required percent sign.
+    tax = amount_after(r"vat\s*\d+\s*%", r"zzgl\.\s*\d+\s*%\s*ust", r"\bust\b", r"\btax\b(?!\s*(?:id|/))")
 
     line_items: list[dict[str, Any]] = []
     for line in lines:
@@ -562,3 +572,202 @@ def has_credentials() -> bool:
 
     root = Path(config) if config else Path.home() / ".config" / "anthropic"
     return (root / "credentials").is_dir()
+
+
+# --------------------------------------------------------------------------- #
+# Mock behaviour for the other four prototypes
+# --------------------------------------------------------------------------- #
+#
+# IMPORTANT, and stated here rather than buried in a docstring: the numbers
+# below are *stipulated*, not measured. They encode "reasoning first should beat
+# answering first" and "examples should help a classifier" as assumptions, so
+# that the harness has something to measure offline. An offline run therefore
+# demonstrates that the experiment is wired up correctly — it is not evidence
+# that the effect is real. Run `--provider anthropic` for that.
+#
+# Self-consistency (prototype 4) is the exception: nothing about voting is
+# stipulated. It operates on the mock's genuine per-repetition variance, so its
+# offline result is emergent rather than assumed.
+
+MOCK_AUDIT_ERROR: dict[str, dict[str, float]] = {
+    #               reconciles   off by <5c    off by more   a number is missing
+    "direct":      {"clean": 0.15, "subtle": 0.60, "obvious": 0.22, "missing": 0.45},
+    "cot":         {"clean": 0.05, "subtle": 0.22, "obvious": 0.06, "missing": 0.15},
+    "cot_fewshot": {"clean": 0.02, "subtle": 0.10, "obvious": 0.03, "missing": 0.08},
+}
+
+# Base probability that a zero-shot classifier collapses a class into `invoice`
+# (or, for resumes, keeps it). Each worked example halves the error twice over.
+MOCK_ROUTING_CONFUSION: dict[str, float] = {
+    "credit_note": 0.70,
+    "delivery_note": 0.55,
+    "unreadable": 0.40,
+    "invoice": 0.06,
+    "resume": 0.05,
+}
+
+MOCK_JUDGE_NOISE = 0.12
+
+
+def _mock_task_response(
+    mock: "MockProvider",
+    *,
+    task: str,
+    system: str,
+    messages: list[dict[str, Any]],
+    temperature: Optional[float],
+) -> LLMResponse:
+    user = _first_user_text(messages)
+    document = _between(user, "<document>", "</document>") or user
+    temp = 0.0 if temperature is None else temperature
+    rng = _rng(f"{task}|{mock.seed}|{document[:400]}|{mock.rep if temp > 0 else 0}")
+
+    if task == "audit":
+        payload = _mock_audit(document, system, rng, temp)
+    elif task == "routing":
+        payload = _mock_routing(document, system, rng)
+    elif task == "judge":
+        payload = _mock_judge(document, _between(user, "<extraction>", "</extraction>"), rng, temp)
+    else:  # pragma: no cover - guarded by the callers
+        raise ValueError(f"mock provider has no simulation for task {task!r}")
+
+    body = json.dumps(payload, ensure_ascii=False, indent=2)
+    return LLMResponse(
+        text=body, model=mock.model, stop_reason="end_turn",
+        usage={"input_tokens": len(document) // 4, "output_tokens": len(body) // 4},
+    )
+
+
+def _audit_arm(system: str) -> str:
+    if "Do not explain" in system:
+        return "direct"
+    return "cot_fewshot" if "Example —" in system else "cot"
+
+
+def _mock_audit(document: str, system: str, rng, temp: float) -> dict[str, Any]:
+    parsed = _mock_invoice(document)
+    subtotal, tax, total = parsed["subtotal"], parsed["tax_amount"], parsed["total_amount"]
+    arm = _audit_arm(system)
+
+    computed = None if subtotal is None or tax is None else round(subtotal + tax, 2)
+    discrepancy = None if computed is None or total is None else round(total - computed, 2)
+    truthful = None if discrepancy is None else abs(discrepancy) < 0.005
+
+    if discrepancy is None:
+        bucket = "missing"
+    elif abs(discrepancy) < 0.005:
+        bucket = "clean"
+    elif abs(discrepancy) < 0.05:
+        bucket = "subtle"
+    else:
+        bucket = "obvious"
+    p_error = min(0.95, MOCK_AUDIT_ERROR[arm][bucket] * (1 + 0.3 * temp))
+
+    verdict = truthful
+    if rng.random() < p_error:
+        # The characteristic failure is optimism: "looks about right".
+        verdict = True if truthful is not True else False
+        if bucket != "missing" and rng.random() < 0.4:
+            discrepancy = 0.0
+            computed = total
+
+    if arm == "direct":
+        return {
+            "subtotal": subtotal,
+            "tax_amount": tax,
+            "total_amount": total,
+            "reconciles": verdict,
+            "discrepancy": discrepancy,
+        }
+    steps = []
+    if subtotal is not None:
+        steps.append(f"subtotal {subtotal:.2f}")
+    if tax is not None:
+        steps.append(f"tax {tax:.2f}")
+    if computed is not None:
+        steps.append(f"{subtotal:.2f} + {tax:.2f} = {computed:.2f}")
+    if total is not None and computed is not None:
+        steps.append(f"printed total {total:.2f}, difference {round(total - computed, 2):+.2f}")
+    if not steps:
+        steps = ["the document does not print all three amounts"]
+    return {
+        "steps": steps,
+        "subtotal": subtotal,
+        "tax_amount": tax,
+        "total_amount": total,
+        "computed_total": computed,
+        "discrepancy": discrepancy,
+        "reconciles": verdict,
+    }
+
+
+_RESUME_MARKERS = ("experience", "education", "skills", "curriculum vitae", "certifications")
+
+
+def _route_heuristic(document: str) -> str:
+    lowered = document.lower()
+    printable = re.sub(r"[^a-z0-9 ]", "", lowered)
+    if len(printable.split()) < 6:
+        return "unreadable"
+    junk_ratio = sum(ch in "#@%&*·~^`|\\/_-=+" for ch in document) / max(1, len(document))
+    if junk_ratio > 0.12:
+        return "unreadable"
+    if "credit note" in lowered or "total credit" in lowered:
+        return "credit_note"
+    if "packing slip" in lowered or "delivery note" in lowered or "not an invoice" in lowered:
+        return "delivery_note"
+    if sum(marker in lowered for marker in _RESUME_MARKERS) >= 2:
+        return "resume"
+    return "invoice"
+
+
+def _mock_routing(document: str, system: str, rng) -> dict[str, Any]:
+    truthful = _route_heuristic(document)
+    k = system.count("Class: ")
+    confusion = MOCK_ROUTING_CONFUSION.get(truthful, 0.1) * (0.5 ** (k / 2))
+    label = truthful
+    if rng.random() < confusion:
+        label = "resume" if truthful == "resume" else "invoice"
+        if truthful == "invoice":
+            label = rng.choice(["credit_note", "delivery_note"])
+    return {
+        "document_class": label,
+        "confidence": "high" if label == truthful and k else rng.choice(["low", "medium", "high"]),
+    }
+
+
+def _mock_judge(document: str, extraction_json: str, rng, temp: float) -> dict[str, Any]:
+    from . import grounding
+
+    try:
+        payload = json.loads(extraction_json) if extraction_json.strip() else {}
+    except json.JSONDecodeError:
+        payload = {}
+
+    index = grounding.DocumentIndex(document)
+    noise = MOCK_JUDGE_NOISE * (1 + 0.5 * temp)
+    verdicts: list[dict[str, Any]] = []
+
+    for path, value in _iter_scalars(payload):
+        if value is None or value == "" or isinstance(value, bool):
+            continue
+        if isinstance(value, (int, float)):
+            supported = index.has_number(float(value))
+        else:
+            supported = index.has_date(str(value)) if path.endswith(("date", "year")) else index.has_text(str(value))
+        verdict = "supported" if supported else rng.choice(["not_in_document", "contradicted"])
+        if rng.random() < noise:  # judges are models too
+            verdict = rng.choice(["supported", "not_in_document", "contradicted"])
+        verdicts.append({"field": path, "verdict": verdict, "evidence": None})
+    return {"verdicts": verdicts}
+
+
+def _iter_scalars(node: Any, prefix: str = ""):
+    if isinstance(node, dict):
+        for key, value in node.items():
+            yield from _iter_scalars(value, f"{prefix}.{key}" if prefix else key)
+    elif isinstance(node, list):
+        for idx, value in enumerate(node):
+            yield from _iter_scalars(value, f"{prefix}[{idx}]")
+    else:
+        yield prefix, node

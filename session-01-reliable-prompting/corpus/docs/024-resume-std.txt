@@ -1,26 +1,28 @@
-ELENA ZHANG
-elena.zhang@gmail.com | +31 6 88 792 876 | Lisbon, PT
+JONAS VISSER
+jonas.visser@outlook.com | +31 6 22 255 996 | Berlin, Germany
 
-Backend engineer focused on payments, reliability and boring infrastructure.
+Backend engineer with 13+ years of experience building payment systems.
 
 EXPERIENCE
-Staff Engineer, Zalando   2018 - Present
-  - Scaled CI/CD.
-  - Raised test coverage by 61%.
-
-iOS Engineer, Zalando   2016 - 2018  ~~~
-  - Led the ingest pipeline.
+Senior Backend Engineer, Adyen   2020 - Present
+  - Owned the mobile API.
   - Cut p99 latency by 42%.
 
-Platform Engineer, Backbase   2012 - 2016
-  - Rebuilt the ledger service.
-  - Cut p99 latency by 39%.
+Site Reliability Engineer, Elastic   2017 - 2020
+  - Scaled the mobile API.
+  - Raised test coverage by 55%.
+
+Backend Engineer, TomTom   2015 - 2017
+  - Rebuilt CI/CD.
+  - Reduced infra spend by 28%.
 
 EDUCATION
-BSc Applied Mathematics, TU Delft, 2012
+MSc Computer Science, ETH Zurich, 2015
 
 SKILLS
-PostgreSQL, Airflow, Spark, Swift, Redis, Rust
+Terraf-
+orm, Redis, Spark, Kuber-
+netes, React, Rust   ..cont'd
 
 CERTIFICATIONS
-Google Cloud PDE
+AWS Solutions Architect; CKA

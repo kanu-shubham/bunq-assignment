@@ -1,16 +1,16 @@
-Northwind Logistics B.V.
+Northwind Logis-
+tics B.V.
 VAT: NL8241 92 331 B01
 
 CREDIT NOTE
-Credif note no. CN-2025-790
-Datc: 12/05/2025
-Relates to invoice INV-2025-4410 (sec bclow)
+Credit note no. CN-2025-568
+Date: 12/05/2025
+Relates to invoice INV-2025-4410 (see below)
 
-Bil1 to: bunq B.V.
+Bill to: Vertex Robotics
 
-Returned goods, damaged in transit       -834,95
-                                 VAT 21% -175,34
-                         TOTAL CREDIT EUR -1.-
-010,29
+Returned goods, damaged in transit        -704,99
+                                 VAT 21% -148,05
+                        TOTAL CREDIT EUR -853,04
   [scan artefact]
-This document reduces thc balance owcd. Do n0t pay.
+This document  reduces the balance owed. Do not pay.

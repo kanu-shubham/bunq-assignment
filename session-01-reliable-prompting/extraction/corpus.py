@@ -718,8 +718,101 @@ def hard_resume_contradictory(rng: random.Random, idx: int) -> DocSpec:
     return text, truth, protected, ["resume", "hard:contradictory", "hard:ambiguity"]
 
 
+def _arithmetic_invoice(rng: random.Random, kind: str) -> DocSpec:
+    """An invoice whose printed total does not equal subtotal + tax.
+
+    The ground truth records what is *printed*, so "does this reconcile?" is
+    derivable from the truth itself (`subtotal + tax_amount == total_amount`)
+    without a separate label. Three flavours, in descending order of how obvious
+    the error is — the rounding one is a single cent, which is where a
+    direct-answer prompt tends to guess.
+    """
+    vendor, tax_id, currency, style = rng.choice(_VENDORS)
+    buyer = rng.choice(_BUYERS)
+    number = f"INV-2025-{rng.randint(1000, 9999)}"
+    issue = date_str(2025, rng.randint(1, 12), rng.randint(1, 28), "dmy_slash")
+
+    desc, unit = rng.choice(_ITEMS)
+    qty = float(rng.choice([2, 3, 4, 6]))
+    subtotal = round(qty * unit, 2)
+    rate = rng.choice([0.09, 0.19, 0.21])
+    tax = round(subtotal * rate, 2)
+    honest_total = round(subtotal + tax, 2)
+
+    if kind == "rounding":
+        printed_total = round(honest_total + rng.choice([-0.01, 0.01, 0.02]), 2)
+        note = "hard:arithmetic_rounding"
+    elif kind == "transposed":
+        digits = f"{honest_total:.2f}".replace(".", "")
+        swapped = list(digits)
+        if len(swapped) >= 3:
+            swapped[0], swapped[1] = swapped[1], swapped[0]
+        printed_total = round(int("".join(swapped)) / 100, 2)
+        note = "hard:arithmetic_transposed"
+    else:  # tax applied to the wrong base — a common real error
+        printed_total = round(subtotal + round(subtotal * (rate + 0.02), 2), 2)
+        note = "hard:arithmetic_wrong_rate"
+
+    text = "\n".join(
+        [
+            vendor, f"VAT / Tax ID: {tax_id}", "", "INVOICE",
+            f"Invoice No. {number}", f"Date: {issue}", "", f"Bill to: {buyer}", "",
+            "Description                          Qty    Unit      Amount",
+            f"{desc[:36]:<36} {qty:>5.0f}  {money(unit, style):>9}  {money(subtotal, style):>10}",
+            "",
+            f"{'Subtotal':>52} {money(subtotal, style):>10}",
+            f"{('VAT ' + format(rate * 100, '.0f') + '%'):>52} {money(tax, style):>10}",
+            f"{'TOTAL ' + currency:>52} {money(printed_total, style):>10}",
+            "", "Payment due 30 days from the invoice date.",
+        ]
+    )
+    truth = {
+        "document_type": "invoice",
+        "invoice_number": number,
+        "issue_date": parse_iso(issue),
+        "due_date": None,
+        "currency": currency,
+        "vendor_name": vendor,
+        "vendor_tax_id": tax_id,
+        "bill_to_name": buyer,
+        "purchase_order": None,
+        "line_items": [
+            {"description": desc, "quantity": qty, "unit_price": unit, "amount": subtotal}
+        ],
+        "subtotal": subtotal,
+        "tax_amount": tax,
+        "total_amount": printed_total,
+    }
+    protected = [
+        number, issue, vendor, tax_id, buyer, currency, desc,
+        money(subtotal, style), money(tax, style), money(printed_total, style), money(unit, style),
+    ]
+    return text, truth, protected, ["invoice", "hard:arithmetic_mismatch", note]
+
+
+def parse_iso(printed: str) -> str:
+    """dd/mm/yyyy -> yyyy-mm-dd (the only format `_arithmetic_invoice` prints)."""
+    d, m, y = printed.split("/")
+    return f"{y}-{m}-{d}"
+
+
+def hard_arithmetic_rounding(rng: random.Random, idx: int) -> DocSpec:
+    return _arithmetic_invoice(rng, "rounding")
+
+
+def hard_arithmetic_transposed(rng: random.Random, idx: int) -> DocSpec:
+    return _arithmetic_invoice(rng, "transposed")
+
+
+def hard_arithmetic_wrong_rate(rng: random.Random, idx: int) -> DocSpec:
+    return _arithmetic_invoice(rng, "wrong_rate")
+
+
 HARD_CASES: list[tuple[str, Callable[[random.Random, int], DocSpec]]] = [
     ("illegible", hard_illegible),
+    ("arith_rounding", hard_arithmetic_rounding),
+    ("arith_transposed", hard_arithmetic_transposed),
+    ("arith_wrong_rate", hard_arithmetic_wrong_rate),
     ("injection_invoice", hard_injection),
     ("credit_note", hard_credit_note),
     ("two_invoices", hard_two_invoices),
@@ -754,7 +847,7 @@ def generate_corpus(seed: int = 7, size: int = 50) -> list[Document]:
     plan += [("std", make_resume)] * n_resumes
     plan += HARD_CASES
     # Top up with repeats of the highest-signal hard cases.
-    for name in ["injection_invoice", "illegible", "no_total", "resume_no_dates", "credit_note"]:
+    for name in ["injection_invoice", "arith_rounding", "no_total", "resume_no_dates", "credit_note"]:
         if len(plan) >= size:
             break
         plan.append(next(p for p in HARD_CASES if p[0] == name))

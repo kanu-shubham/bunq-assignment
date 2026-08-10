@@ -2,6 +2,7 @@
 # The markdown reports and summary.json in runs/ are committed as evidence.
 runs/*/results.json
 runs/*/scores.json
+runs/*/sweep.json
 .venv/
 __pycache__/
 *.pyc

@@ -1,33 +1,33 @@
-From: accounts@helix.example
+From: recruiting@helix.example
 To: ap@bunq.example
 Subject: RE: Application — CV enclosed
-Date: 16 Feb 2025 9:57:00 +0200
+Date: 4 Sep 2025 16:50:00 +0200
 Content-Type: text/plain; charset=utf-8
 
-Hi,
+Dear Sir/Madam,
 
-Please find the details below.
+As discussed:
 
 -------- forwarded message --------
-INGRID PETROVA
-ingrid.petrova@proton.me | +31 6 37 945 541 | Amsterdam, NL
+WEI VISSER
+wei.visser@proton.me | +31 6 84 800 382 | Lisbon, PT
 
-Backend engineer with 13+ years 0f experience building payment systems.
+Backend engineer focused on payments, reliability and boring infrastructure.
 
 EXPERIENCE
-Engineering Manager, Bynder   2018 - Present
-  - Scaled the mobi1e API.
-  - Raised test coverage by 70%.
+Platform Engineer, Picnic   2019 - Present
+  - Scaled CI/CD.
+  - Cut p99 latency by 69%.
 
-Site Reliability Engineer, Elastic   2014 - 2018
-  - Scaled the mobile API.
-  - Raised  test coverage  by 56%.
+Data Engineer, Backbase   2015 - 2019
+  - Rebuilt the ledgcr service.
+  - Reduced infra spend by 61%.
 
 EDUCATION
-8Sc Software Engineering, Trinity College Dublin, 2014
-   CONFIDENTIAL
+BSc Electrical Engineering, University of Amsterdam, 2015
+
 SKILLS
-PostgreSQL, Redis, Terraform, Python, TypeScript
+Redis, PostgreSQL, Swift, Terraform, Kubernetes
 
 CERTIFICATIONS
 PSM I

@@ -1,0 +1,193 @@
+{
+  "meta": {
+    "provider": "mock",
+    "model": "mock-1",
+    "documents": 50,
+    "samples": 5,
+    "prompt": "careful",
+    "temperature": 0.7,
+    "abstain_below": 0.8
+  },
+  "single_sample": {
+    "fields": 1072,
+    "accuracy": 0.8321,
+    "hallucination_rate": 0.2919,
+    "omission_rate": 0.1105,
+    "outcomes": {
+      "correct": 761,
+      "wrong": 28,
+      "omission": 98,
+      "correct_null": 131,
+      "hallucination": 54
+    }
+  },
+  "majority_vote": {
+    "fields": 1072,
+    "accuracy": 0.8405,
+    "hallucination_rate": 0.2432,
+    "omission_rate": 0.1105,
+    "outcomes": {
+      "correct": 761,
+      "wrong": 28,
+      "omission": 98,
+      "correct_null": 140,
+      "hallucination": 45
+    }
+  },
+  "by_margin": {
+    "unanimous": {
+      "fields": 1036,
+      "accuracy": 0.8378
+    },
+    "strong (\u226575%)": {
+      "fields": 30,
+      "accuracy": 0.9
+    },
+    "split (\u226550%)": {
+      "fields": 5,
+      "accuracy": 1.0
+    },
+    "scattered": {
+      "fields": 1,
+      "accuracy": 1.0
+    }
+  },
+  "abstain_policy": {
+    "threshold": 0.8,
+    "fields_sent_for_review": 6,
+    "of_which_would_have_been_wrong": 0,
+    "precision_of_the_abstain_rule": 0.0,
+    "accuracy_on_what_is_kept": 0.8396
+  },
+  "margin_discrimination": {
+    "unanimous_fields": 1036,
+    "unanimous_accuracy": 0.8378,
+    "contested_fields": 36,
+    "contested_accuracy": 0.9167,
+    "verdict": "The margin does **not** discriminate here \u2014 unanimous answers are no more accurate than contested ones. That means most of the remaining error is bias, not variance: the model is wrong the same way every time. Sampling more will not fix it and an abstain rule on the margin would mostly route correct fields to a human. Fix the prompt or the schema instead."
+  },
+  "biggest_movers": [
+    {
+      "doc_id": "038-invoice-mixed_currency",
+      "tags": [
+        "hard:ambiguity",
+        "hard:mixed_currency",
+        "invoice"
+      ],
+      "single_accuracy": 0.5833,
+      "voted_accuracy": 0.6667,
+      "delta": 0.0833,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "040-invoice-wrong_kind",
+      "tags": [
+        "bait:everything_absent",
+        "hard:wrong_document_type",
+        "invoice"
+      ],
+      "single_accuracy": 0.8333,
+      "voted_accuracy": 0.9167,
+      "delta": 0.0833,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "049-invoice-credit_note",
+      "tags": [
+        "hard:credit_note",
+        "hard:negative_amounts",
+        "hard:two_numbers",
+        "invoice"
+      ],
+      "single_accuracy": 0.75,
+      "voted_accuracy": 0.8333,
+      "delta": 0.0833,
+      "min_margin": 0.4
+    },
+    {
+      "doc_id": "048-resume-resume_no_dates",
+      "tags": [
+        "bait:absent_grad_year",
+        "bait:absent_years",
+        "hard:no_dates",
+        "resume"
+      ],
+      "single_accuracy": 0.7037,
+      "voted_accuracy": 0.7778,
+      "delta": 0.0741,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "010-invoice-std",
+      "tags": [
+        "bait:absent_po",
+        "dates:iso",
+        "invoice",
+        "money:plain"
+      ],
+      "single_accuracy": 0.875,
+      "voted_accuracy": 0.9375,
+      "delta": 0.0625,
+      "min_margin": 0.6
+    },
+    {
+      "doc_id": "030-invoice-arith_rounding",
+      "tags": [
+        "hard:arithmetic_mismatch",
+        "hard:arithmetic_rounding",
+        "invoice"
+      ],
+      "single_accuracy": 0.875,
+      "voted_accuracy": 0.9375,
+      "delta": 0.0625,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "046-invoice-arith_rounding",
+      "tags": [
+        "hard:arithmetic_mismatch",
+        "hard:arithmetic_rounding",
+        "invoice"
+      ],
+      "single_accuracy": 0.8125,
+      "voted_accuracy": 0.875,
+      "delta": 0.0625,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "026-resume-std",
+      "tags": [
+        "bait:absent_years",
+        "resume"
+      ],
+      "single_accuracy": 0.7714,
+      "voted_accuracy": 0.8,
+      "delta": 0.0286,
+      "min_margin": 0.8
+    },
+    {
+      "doc_id": "000-invoice-std",
+      "tags": [
+        "dates:dmy_dot",
+        "invoice",
+        "money:us"
+      ],
+      "single_accuracy": 1.0,
+      "voted_accuracy": 1.0,
+      "delta": 0.0,
+      "min_margin": 1.0
+    },
+    {
+      "doc_id": "001-invoice-std",
+      "tags": [
+        "dates:dmy_slash",
+        "invoice",
+        "money:us"
+      ],
+      "single_accuracy": 1.0,
+      "voted_accuracy": 1.0,
+      "delta": 0.0,
+      "min_margin": 1.0
+    }
+  ]
+}

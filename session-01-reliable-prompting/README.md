@@ -388,10 +388,15 @@ the 2024 report), and it is **blind to negation** ("met its target" vs "did not
 meet its stated target" share every salient token). Both are exactly what the
 `near_miss` and `refuted` slices exist to catch.
 
-Meanwhile every deterministic defence held. No claim asserted only by the
-adversarial page was reported as supported — even though the simulated verifier
-obeys the injection about half the time, because the defence is the zero weight
-at stage 5, not the verifier's judgement.
+Meanwhile the deterministic defences held — but one of them held *by accident*
+until a stage-by-stage trace caught it. Retrieval chunks pages into sentences,
+which separated the injection instruction from the payload sentence it was
+smuggling, so the per-passage detector never fired: the trap was only defused by
+a reliability score I had hand-assigned, which a real retriever does not have.
+The page is now judged once as a whole and every sentence from it inherits the
+flag. Two regression tests pin it. The lesson is not that the defence was wrong
+but that **a defence you have not traced end to end is a defence you have not
+tested** — the eval was green throughout.
 
 Ablations price the stages: dropping to one passage per claim costs ~17 points
 of accuracy and most of the abstention precision; removing query planning costs

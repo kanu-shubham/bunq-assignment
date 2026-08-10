@@ -56,6 +56,10 @@ class Passage:
     reliability: float
     text: str
     score: float = 0.0
+    # Set from the *whole source document*, not from this sentence. Chunking
+    # separates an injection instruction from the payload sentence it is trying
+    # to smuggle through, so a per-passage check alone misses it entirely.
+    is_adversarial: bool = False
 
 
 class Retriever(Protocol):
@@ -202,6 +206,9 @@ class LocalRetriever:
     def __post_init__(self) -> None:
         self._passages: list[Passage] = []
         for doc in self.corpus:
+            # Judge the document once. A page that addresses the checker taints
+            # every sentence on it, including the innocuous-looking ones.
+            adversarial = looks_adversarial(doc.text)
             for sentence in _SENTENCE_RE.split(doc.text):
                 sentence = sentence.strip()
                 if len(sentence) < 20:
@@ -211,6 +218,7 @@ class LocalRetriever:
                         source_id=doc.source_id, title=doc.title, publisher=doc.publisher,
                         published=doc.published, is_primary=doc.is_primary,
                         reliability=doc.reliability, text=sentence,
+                        is_adversarial=adversarial,
                     )
                 )
         self._tokenised = [_tokens(p.text) for p in self._passages]
@@ -246,6 +254,7 @@ class LocalRetriever:
                         publisher=passage.publisher, published=passage.published,
                         is_primary=passage.is_primary, reliability=passage.reliability,
                         text=passage.text, score=round(score, 4),
+                        is_adversarial=passage.is_adversarial,
                     )
                 )
         scored.sort(key=lambda p: -p.score)
@@ -317,6 +326,7 @@ class WebRetriever:
                         reliability=0.7,
                         text=(getattr(item, "encrypted_content", None) and "")
                         or getattr(item, "title", "") or "",
+                        is_adversarial=looks_adversarial(getattr(item, "title", "") or ""),
                     )
                 )
         return passages[:limit]

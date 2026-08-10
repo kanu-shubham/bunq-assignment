@@ -302,3 +302,37 @@ def test_document_cases_declare_more_claims_than_sentences():
     # be measuring sentence splitting rather than atomicity.
     compound = next(d for d in DOCUMENTS if d.doc_id == "DOC-compound")
     assert compound.text.count(".") < compound.gold_claims
+
+
+def test_a_retrieved_sentence_inherits_its_pages_adversarial_flag():
+    # Regression. Chunking splits the injection instruction away from the
+    # payload sentence it is smuggling, so a per-sentence check sees a clean
+    # passage. Without the document-level flag the trap goes unnoticed and is
+    # only defused by the reliability score — which a real retriever does not have.
+    payload = [
+        p for p in LocalRetriever().search("Northwind revenue 9.9 billion 2024 employs", limit=5)
+        if p.source_id == "SRC-ADVERSARIAL"
+    ]
+    assert payload, "the adversarial page should be retrievable — that is the point of it"
+    for passage in payload:
+        assert passage.is_adversarial
+        # The retrieved sentence itself is innocuous; only the page is not.
+        if not looks_adversarial(passage.text):
+            break
+    else:  # pragma: no cover - defensive
+        pytest.skip("every retrieved sentence carried a marker; the regression needs a new fixture")
+
+
+def test_the_injection_page_gets_zero_weight_even_when_its_sentence_looks_clean():
+    passage = next(
+        p for p in LocalRetriever().search("Northwind revenue 9.9 billion 2024 employs", limit=5)
+        if p.source_id == "SRC-ADVERSARIAL"
+    )
+    outcome = PassageOutcome(
+        source_id=passage.source_id, title=passage.title, publisher=passage.publisher,
+        published=passage.published, is_primary=passage.is_primary,
+        reliability=1.0,  # pretend we had no reliability signal to fall back on
+        relation="supports", confidence="high", quote=passage.text,
+        adversarial_source=passage.is_adversarial or looks_adversarial(passage.text),
+    )
+    assert outcome.weight() == 0.0

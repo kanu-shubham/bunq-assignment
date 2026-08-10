@@ -175,7 +175,7 @@ def verify(
         confidence=result.payload.get("confidence", "low"),
         quote=quote,
         quote_grounded=grounded,
-        adversarial_source=looks_adversarial(passage.text),
+        adversarial_source=passage.is_adversarial or looks_adversarial(passage.text),
     )
 
 

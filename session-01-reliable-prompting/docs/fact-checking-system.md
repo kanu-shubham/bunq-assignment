@@ -312,10 +312,16 @@ The eval (`runs/factcheck/report.md`) is doing its job, which is to fail:
   reduction" shares every salient token, and a token-overlap verifier says
   supported. This is the classic failure and it needs a verifier that reasons
   rather than matches.
-- **The deterministic defences all held.** No claim asserted only by the
-  adversarial page was reported as supported, even though the simulated verifier
-  complies with the injection about half the time: the defence is the zero
-  weight at stage 5, not the verifier's judgement. Ungrounded quotes were
+- **The deterministic defences held — one of them by accident, at first.**
+  Retrieval chunks pages into sentences, and that split the injection
+  instruction away from the payload sentence carrying the false figure. The
+  per-passage detector saw a clean sentence and never fired; the page was
+  defused only by a hand-assigned reliability score, which a real retriever
+  does not give you. Found by tracing one claim through all six stages, not by
+  the eval, which stayed green. Pages are now judged once as a whole and every
+  passage inherits the flag. Generalisable lesson: **chunking moves text away
+  from the context that makes it dangerous**, so any content-based safety check
+  belongs at the level of the whole document, not the retrieved fragment. Ungrounded quotes were
   discarded and counted. Stale-source claims were refuted correctly by the
   primary-source weighting.
 - **The ablations price the stages.** Dropping to one passage per claim costs

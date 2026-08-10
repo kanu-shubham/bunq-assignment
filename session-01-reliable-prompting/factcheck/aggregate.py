@@ -142,6 +142,7 @@ def gate(claim, outcomes: list[PassageOutcome], *, passages_examined: int) -> Cl
                 source_id=o.source_id, title=o.title, publisher=o.publisher,
                 published=o.published, is_primary=o.is_primary, quote=o.quote,
                 relation=o.relation, confidence=o.confidence, quote_grounded=o.quote_grounded,
+                from_adversarial_source=o.adversarial_source,
             )
             for o in outcomes
             if o.relation in ("supports", "refutes")

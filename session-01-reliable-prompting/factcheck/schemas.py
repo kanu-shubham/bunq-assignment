@@ -125,6 +125,10 @@ class EvidenceRef(StrictModel):
     relation: Relation = "insufficient"
     confidence: Confidence = "low"
     quote_grounded: bool = True
+    # Carried from the source document, not re-derived from `quote` — the quote
+    # is one sentence and the instruction that makes the page dangerous is
+    # usually in a different one.
+    from_adversarial_source: bool = False
 
 
 class ClaimVerdict(StrictModel):

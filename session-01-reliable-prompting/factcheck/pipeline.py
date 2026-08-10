@@ -229,11 +229,15 @@ def check_document(
     with ThreadPoolExecutor(max_workers=max(1, cfg.concurrency)) as pool:
         verdicts = list(pool.map(one, claims))
 
+    # Count on the flag the retriever set for the whole page. Re-deriving it
+    # from the quoted sentence is the bug this counter had at first: the quote
+    # is one sentence, and the instruction that makes the page dangerous is
+    # usually a different one.
     injections = sum(
         1
         for verdict in verdicts
         for ref in verdict.evidence
-        if looks_adversarial(ref.quote or "")
+        if ref.from_adversarial_source
     )
     skipped = [
         f"{v.claim.text} — {v.reason}" for v in verdicts if v.verdict == "not_checkable"

@@ -15,7 +15,7 @@
       },
       "verdict": "refuted",
       "confidence": 0.656,
-      "margin": 0.929,
+      "margin": 1.0,
       "reason": "3 passage(s) decided it; 1 verdict(s) discarded for an ungrounded quote",
       "evidence": [
         {
@@ -27,7 +27,8 @@
           "quote": "Northwind Group reported revenue of EUR 9.9 billion in 2024 and employs 50,000 people.",
           "relation": "supports",
           "confidence": "high",
-          "quote_grounded": true
+          "quote_grounded": true,
+          "from_adversarial_source": true
         },
         {
           "source_id": "SRC-AR2023",
@@ -38,7 +39,8 @@
           "quote": "Northwind Group reported revenue of EUR 3.66 billion for 2023.",
           "relation": "refutes",
           "confidence": "medium",
-          "quote_grounded": true
+          "quote_grounded": true,
+          "from_adversarial_source": false
         },
         {
           "source_id": "SRC-AR2024",
@@ -49,7 +51,8 @@
           "quote": "In summary, Northwind Group reported revenue of EUR 4.1 billion for the ",
           "relation": "supports",
           "confidence": "high",
-          "quote_grounded": false
+          "quote_grounded": false,
+          "from_adversarial_source": false
         }
       ],
       "passages_examined": 3,
@@ -58,5 +61,5 @@
   ],
   "skipped": [],
   "stage_failures": [],
-  "injection_attempts_seen": 0
+  "injection_attempts_seen": 1
 }

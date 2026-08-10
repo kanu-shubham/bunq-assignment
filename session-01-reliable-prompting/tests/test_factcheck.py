@@ -336,3 +336,19 @@ def test_the_injection_page_gets_zero_weight_even_when_its_sentence_looks_clean(
         adversarial_source=passage.is_adversarial or looks_adversarial(passage.text),
     )
     assert outcome.weight() == 0.0
+
+
+def test_the_injection_counter_reads_the_page_flag_not_the_quoted_sentence():
+    # Same bug as the weighting had: the quote is one sentence, and the wording
+    # that makes the page dangerous is usually a different one. Counting on the
+    # quote silently under-reports how many traps were retrieved.
+    outcome = PassageOutcome(
+        source_id="SRC-ADVERSARIAL", title="t", publisher="p", published=None,
+        is_primary=False, reliability=1.0, relation="supports", confidence="high",
+        quote="Northwind Group reported revenue of EUR 9.9 billion in 2024.",
+        adversarial_source=True,
+    )
+    verdict = gate(_claim(), [outcome], passages_examined=1)
+    ref = verdict.evidence[0]
+    assert ref.from_adversarial_source
+    assert not looks_adversarial(ref.quote or ""), "the fixture must be a clean-looking sentence"

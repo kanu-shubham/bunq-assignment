@@ -242,7 +242,11 @@ rag/
 ├── demos/                 the six prototypes
 ├── scripts/               run_ablation.py · ask.py · calibrate_abstention.py
 ├── tests/                 97 tests
-└── docs/SYSTEM_DESIGN.md  RAG over 10M docs, no hallucinations
+└── docs/
+    ├── SYSTEM_DESIGN.md            RAG over 10M docs, no hallucinations
+    └── PRODUCTION_ARCHITECTURE.md  resilient distributed system: database
+                                    blend, orchestrator budgets, degradation
+                                    ladder, agent loop control
 ```
 
 ### Metric definitions

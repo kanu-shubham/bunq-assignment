@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 @Configuration
 public class ApplicationConfig {
@@ -33,8 +34,13 @@ public class ApplicationConfig {
         return new SimulatedPartnerBankClient(0.15, 0.10, 0.05);
     }
 
-    /** Stands in for Kafka. Replace with a real producer and nothing else changes. */
+    /**
+     * Stands in for Kafka so the default run needs no broker. Under the {@code kafka}
+     * profile, {@code KafkaEventPublisher} takes over — hence {@code @Profile("!kafka")},
+     * without which both beans exist and injection fails with NoUniqueBeanDefinition.
+     */
     @Bean
+    @Profile("!kafka")
     public EventPublisher eventPublisher() {
         return event -> log.info("PUBLISH type={} aggregate={} eventId={} payload={}",
                 event.getEventType(), event.getAggregateId(), event.getEventId(), event.getPayload());

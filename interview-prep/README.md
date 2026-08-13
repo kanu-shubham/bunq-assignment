@@ -8,9 +8,12 @@ which is a miniature of the domain the role actually covers: accepting payment i
 from partner banks, doing so exactly once, and staying up when the partner does not.
 
 ```
-mvn -q test        # 40 tests, ~12s
+mvn -q test         # 47 tests, ~60s (a real Kafka broker runs in-process)
 mvn spring-boot:run # http://localhost:8080
 ```
+
+**New here?** Read [§08](./08-learning-path.md) first — it answers "where do I start" and
+saves you from spending your prep time in the wrong place.
 
 ---
 
@@ -72,6 +75,8 @@ Read the posting closely and the technical shape of the job falls out of it:
 | [05 — System design walkthrough](./05-system-design-walkthrough.md) | A full worked answer to "design Send for Partners", the likely design round. |
 | [06 — Leadership round](./06-leadership-round.md) | Stories, frameworks, and the questions to ask them. |
 | [07 — Question bank](./07-question-bank.md) | Rapid-fire Q&A for the last 48 hours. |
+| [08 — What to learn, in what order](./08-learning-path.md) | **Start here if you're deciding where to begin.** The sequence, the schedule, the exercises, and what to skip. |
+| [09 — Events, Kafka and Redis](./09-events-kafka-redis.md) | Event processing concepts, grounded in a real broker running in-process. |
 | [partner-send/](./partner-send) | The runnable service. Read the code; the comments are prep material. |
 
 ---
@@ -81,6 +86,8 @@ Read the posting closely and the technical shape of the job falls out of it:
 Pick the row that matches your remaining time.
 
 ### If you have two weeks
+
+> §08 has a fuller version of this with exercises. The short form:
 
 | Days | Focus |
 |---|---|

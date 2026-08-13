@@ -7,11 +7,14 @@ It exists to make the interview topics concrete. Every pattern in the guide has 
 tested code here, and the class comments carry the reasoning you'd give out loud.
 
 ```bash
-mvn test              # 40 tests, ~12s
-mvn spring-boot:run   # http://localhost:8080
+mvn test              # 47 tests, ~60s
+mvn spring-boot:run   # http://localhost:8080, no broker needed
 ```
 
-Java 21, Spring Boot 3.5, H2 in-memory, Resilience4j.
+Java 21, Spring Boot 3.5, H2 in-memory, Resilience4j, Spring Kafka.
+
+The Kafka path is behind the `kafka` profile, so the default run needs no broker. The
+integration tests start one **in-process** via `@EmbeddedKafka` — no Docker required.
 
 ---
 
@@ -41,6 +44,10 @@ Watch the log ~500ms after the first request and you'll see the outbox poller pu
 the log on the second request. That is Hibernate reporting the duplicate-key INSERT that the
 idempotency logic deliberately provokes and catches. It's the mechanism working, not a bug.
 
+To watch the Kafka path instead of the logging stand-in, start a broker and run with
+`--spring.profiles.active=kafka`. The tests do this for you with an in-process broker:
+`mvn test -Dtest=KafkaIntegrationTest`.
+
 The H2 console is at `/h2-console` (JDBC URL `jdbc:h2:mem:partnersend`, user `sa`, no password)
 if you want to look at `idempotency_record` and `outbox_event` directly.
 
@@ -56,6 +63,7 @@ if you want to look at `idempotency_record` and `outbox_event` directly.
 | **Dual writes** | `service/TransferService.java`, `outbox/` | Transactional outbox; at-least-once delivery |
 | **Resilience** | `partner/ResilientPartnerBankClient.java`, `config/ResilienceConfig.java` | Timeout, retry+jitter, circuit breaker, bulkhead, and their nesting order |
 | **API contract** | `api/` | Idempotency outcomes as HTTP status codes; retryable vs not |
+| **Event processing** | `outbox/KafkaEventPublisher.java`, `consumer/` | Partitioning for ordering; consumer idempotency; read models; dead-lettering |
 
 ### Reading order
 
@@ -65,12 +73,13 @@ if you want to look at `idempotency_record` and `outbox_event` directly.
 4. `idempotency/IdempotencyService.java` — the claim protocol; sealed interfaces.
 5. `outbox/OutboxPublisher.java` — at-least-once, and why duplicates are expected.
 6. `partner/ResilientPartnerBankClient.java` — the hard one. Read the class comment twice.
+7. `consumer/TransferEventProcessor.java` — consumer idempotency, and why the dedup marker and the effect must share a transaction.
 
 ---
 
 ## The tests are the point
 
-40 tests, and each is written to answer an interview question rather than to chase coverage.
+47 tests, and each is written to answer an interview question rather than to chase coverage.
 
 | Test | Question it answers |
 |---|---|
@@ -89,6 +98,10 @@ if you want to look at `idempotency_record` and `outbox_event` directly.
 | `ResiliencePatternsTest.timeoutAppliesPerAttemptNotPerRequest` | Why is the timeout inside the retry? |
 | `ResiliencePatternsTest.idempotencyKeyDoesNotChangeBetweenAttempts` | Why must the downstream key be stable? |
 | `ResiliencePatternsTest.bulkheadLimitsConcurrency` | What does a bulkhead protect? |
+| `ConsumerIdempotencyTest.duplicateDeliveryIsIgnored` | Why must consumers be idempotent? (the counter makes it visible) |
+| `ConsumerIdempotencyTest.poisonMessageIsRejectedNotRetried` | What do you do with a message that can never succeed? |
+| `KafkaIntegrationTest.keyingByAggregateIdPreservesPerTransferOrdering` | How do you get ordering without killing scalability? |
+| `KafkaIntegrationTest.redeliveryIsDeduplicated` | What happens when the broker delivers twice? |
 
 ### A bug this codebase actually had
 
@@ -125,3 +138,8 @@ Called out so you don't defend something the code doesn't do:
 - **Resilience4j wired by hand** rather than via `@CircuitBreaker` annotations. Annotations are
   fine in production; here the point is that the composition order stays visible.
 - **No auth.** Real partner APIs use mTLS plus request signing.
+- **The Kafka consumer has no dead-letter topic wired up.** `TransferEventProcessor` classifies
+  a poison message correctly and the test asserts it, but routing it to a DLQ (Spring's
+  `DefaultErrorHandler` + `DeadLetterPublishingRecoverer`) is described in §09, not built.
+- **The read model is a single counter table.** Enough to make duplicate processing visible,
+  which is its only job here.

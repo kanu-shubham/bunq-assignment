@@ -12,8 +12,9 @@ mvn -q test         # 47 tests, ~60s (a real Kafka broker runs in-process)
 mvn spring-boot:run # http://localhost:8080
 ```
 
-**New here?** Read [§08](./08-learning-path.md) first — it answers "where do I start" and
-saves you from spending your prep time in the wrong place.
+**New here?** Read [§08](./08-learning-path.md) first — it answers "where do I start".
+**Java feels unfamiliar?** [§10](./10-code-walkthrough.md) explains every file and every
+annotation from scratch.
 
 ---
 
@@ -77,6 +78,7 @@ Read the posting closely and the technical shape of the job falls out of it:
 | [07 — Question bank](./07-question-bank.md) | Rapid-fire Q&A for the last 48 hours. |
 | [08 — What to learn, in what order](./08-learning-path.md) | **Start here if you're deciding where to begin.** The sequence, the schedule, the exercises, and what to skip. |
 | [09 — Events, Kafka and Redis](./09-events-kafka-redis.md) | Event processing concepts, grounded in a real broker running in-process. |
+| [10 — The whole codebase, explained](./10-code-walkthrough.md) | **Beginner-level.** Every file in `partner-send/`, every annotation, mapped back to JavaScript/TypeScript. |
 | [partner-send/](./partner-send) | The runnable service. Read the code; the comments are prep material. |
 
 ---

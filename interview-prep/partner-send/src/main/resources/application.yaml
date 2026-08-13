@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: partner-send
+  datasource:
+    url: jdbc:h2:mem:partnersend;DB_CLOSE_DELAY=-1
+    username: sa
+    password: ""
+  jpa:
+    hibernate:
+      # Fine for a demo. In production this is 'validate', with Flyway or Liquibase owning
+      # the schema — letting Hibernate alter tables on startup is how you lose a column.
+      ddl-auto: create-drop
+    open-in-view: false   # see README: the default (true) holds a DB connection for the
+                          # whole HTTP request, including response serialisation
+    properties:
+      hibernate.format_sql: true
+  h2:
+    console:
+      enabled: true       # http://localhost:8080/h2-console
+  threads:
+    virtual:
+      enabled: true       # Java 21 virtual threads for request handling
+
+outbox:
+  poll-interval-ms: 500
+  batch-size: 100
+
+logging:
+  level:
+    com.example.prep.partnersend: DEBUG

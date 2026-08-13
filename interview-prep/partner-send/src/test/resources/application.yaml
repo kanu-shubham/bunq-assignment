@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    open-in-view: false
+    properties:
+      hibernate.format_sql: false
+
+# Effectively disables the background poller so outbox tests drive it explicitly.
+# (fixedDelay still fires once at startup, against an empty table.)
+outbox:
+  poll-interval-ms: 3600000
+  batch-size: 100
+
+logging:
+  level:
+    root: WARN
+    org.hibernate.SQL: WARN
+    com.example.prep.partnersend: WARN

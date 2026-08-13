@@ -1,0 +1,629 @@
+<title>Payments Interview Cram Sheet</title>
+
+<style>
+  /* ─── Tokens ───────────────────────────────────────────────────────────
+     Light is the base. Dark is redefined twice: once for the un-stamped
+     system-preference state, once for the explicit toggle. Every component
+     below styles through these tokens only.                              */
+  :root {
+    --ground:      #EFF2F1;
+    --surface:     #FFFFFF;
+    --surface-alt: #E7ECEA;
+    --ink:         #141F1D;
+    --ink-soft:    #3B4A47;
+    --muted:       #64736F;
+    --rule:        #D2DAD7;
+    --rule-strong: #B4C0BC;
+    --accent:      #0B7361;
+    --accent-soft: #DCEBE7;
+    --bad:         #A03828;
+    --bad-soft:    #F4E3E0;
+    --shadow:      0 1px 2px rgba(20,31,29,.06), 0 8px 24px rgba(20,31,29,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0C1413;
+      --surface:     #141E1C;
+      --surface-alt: #1B2725;
+      --ink:         #E3EAE8;
+      --ink-soft:    #BCC8C5;
+      --muted:       #849691;
+      --rule:        #26332F;
+      --rule-strong: #35443F;
+      --accent:      #4FC5AC;
+      --accent-soft: #16302B;
+      --bad:         #E58C7C;
+      --bad-soft:    #2E1D1A;
+      --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:      #0C1413;
+    --surface:     #141E1C;
+    --surface-alt: #1B2725;
+    --ink:         #E3EAE8;
+    --ink-soft:    #BCC8C5;
+    --muted:       #849691;
+    --rule:        #26332F;
+    --rule-strong: #35443F;
+    --accent:      #4FC5AC;
+    --accent-soft: #16302B;
+    --bad:         #E58C7C;
+    --bad-soft:    #2E1D1A;
+    --shadow:      0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+
+  /* ─── Type: mono for the machine's voice, serif for the human's ──────── */
+  :root {
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
+    --serif: ui-serif, "Iowan Old Style", Charter, "Bitstream Charter", "Palatino Linotype", Georgia, serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  .wrap {
+    max-width: 60rem;
+    margin: 0 auto;
+    padding: 0 1.5rem 6rem;
+  }
+
+  /* ─── Masthead ───────────────────────────────────────────────────────── */
+  header.masthead {
+    padding: 4rem 0 2rem;
+    border-bottom: 2px solid var(--ink);
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1.25rem;
+  }
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.1rem, 6vw, 3.4rem);
+    line-height: 1.05;
+    letter-spacing: -.02em;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    max-width: 34em;
+    margin: 0;
+  }
+
+  /* ─── The thesis: five sentences ─────────────────────────────────────── */
+  .thesis {
+    margin: 3rem 0 0;
+    display: grid;
+    gap: 0;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .thesis-head {
+    padding: 1rem 1.25rem;
+    background: var(--surface-alt);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .thesis ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: thesis;
+  }
+  .thesis li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 0 .5rem;
+    padding: 1.05rem 1.25rem;
+    border-bottom: 1px solid var(--rule);
+    counter-increment: thesis;
+  }
+  .thesis li:last-child { border-bottom: 0; }
+  .thesis li::before {
+    content: counter(thesis, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: .78rem;
+    color: var(--accent);
+    padding-top: .28rem;
+  }
+  .thesis li q {
+    quotes: "“" "”";
+    font-size: 1.02rem;
+  }
+
+  /* ─── Section scaffolding ────────────────────────────────────────────── */
+  section { margin-top: 4.5rem; }
+  h2 {
+    font-family: var(--mono);
+    font-size: .78rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--ink);
+    font-weight: 600;
+    margin: 0 0 .35rem;
+    padding-bottom: .75rem;
+    border-bottom: 1px solid var(--rule-strong);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 1rem;
+  }
+  h2 .count {
+    color: var(--muted);
+    font-weight: 400;
+    letter-spacing: .08em;
+  }
+  .section-note {
+    color: var(--muted);
+    font-size: .95rem;
+    margin: .9rem 0 1.5rem;
+    max-width: 42em;
+  }
+
+  /* ─── Drill rows: click to reveal ────────────────────────────────────── */
+  .controls {
+    display: flex;
+    gap: .5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    margin: 2.5rem 0 0;
+  }
+  .btn {
+    font-family: var(--mono);
+    font-size: .74rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    padding: .55rem .9rem;
+    border: 1px solid var(--rule-strong);
+    background: var(--surface);
+    color: var(--ink);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .hint {
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--muted);
+  }
+
+  .drill { display: grid; gap: 0; margin-top: 1rem; }
+  .qa {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    padding: .95rem 0;
+    border-bottom: 1px solid var(--rule);
+    cursor: pointer;
+  }
+  .qa:first-child { border-top: 1px solid var(--rule); }
+  .qa:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .q { margin: 0; }
+  .a {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: .97rem;
+    position: relative;
+    transition: filter .18s ease, opacity .18s ease;
+  }
+  .qa[data-hidden="true"] .a {
+    filter: blur(5px);
+    opacity: .55;
+    user-select: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .a { transition: none; }
+  }
+  .a code, .q code, td code, li code, p code {
+    font-family: var(--mono);
+    font-size: .86em;
+    background: var(--surface-alt);
+    padding: .1em .35em;
+    border-radius: 2px;
+  }
+
+  @media (max-width: 46rem) {
+    .qa { grid-template-columns: 1fr; gap: .45rem; }
+  }
+
+  /* ─── The decorator stack: a real sequence, so nesting is literal ────── */
+  .stack {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    overflow-x: auto;
+  }
+  .layer {
+    border: 1px solid var(--rule-strong);
+    border-left: 3px solid var(--accent);
+    border-radius: 2px;
+    padding: .7rem .9rem;
+    margin-bottom: .55rem;
+    background: var(--ground);
+  }
+  .layer:last-child { margin-bottom: 0; }
+  .layer .name {
+    font-family: var(--mono);
+    font-size: .8rem;
+    letter-spacing: .04em;
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .layer .why {
+    font-size: .92rem;
+    color: var(--ink-soft);
+    margin: .3rem 0 0;
+  }
+  .layer .nest { margin: .55rem 0 0 1.5rem; }
+  .layer.core {
+    border-left-color: var(--rule-strong);
+    background: var(--accent-soft);
+  }
+
+  /* ─── Tables ─────────────────────────────────────────────────────────── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); box-shadow: var(--shadow); }
+  table { border-collapse: collapse; width: 100%; font-size: .95rem; }
+  th {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    text-align: left;
+    color: var(--muted);
+    font-weight: 500;
+    padding: .8rem 1rem;
+    border-bottom: 1px solid var(--rule-strong);
+    background: var(--surface-alt);
+    white-space: nowrap;
+  }
+  td {
+    padding: .75rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-soft);
+  }
+  tr:last-child td { border-bottom: 0; }
+  td:first-child { color: var(--ink); }
+  .num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: .82rem; white-space: nowrap; }
+
+  /* ─── Retryable / not: semantic pair ─────────────────────────────────── */
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 46rem) { .split { grid-template-columns: 1fr; } }
+  .card {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    border-radius: 3px;
+    background: var(--surface);
+    padding: 1.1rem 1.25rem;
+    box-shadow: var(--shadow);
+  }
+  .card.no { border-top-color: var(--bad); }
+  .card h3 {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    margin: 0 0 .75rem;
+    color: var(--accent);
+  }
+  .card.no h3 { color: var(--bad); }
+  .card ul { margin: 0; padding-left: 1.1rem; }
+  .card li { margin-bottom: .35rem; font-size: .95rem; color: var(--ink-soft); }
+
+  /* ─── Callout ────────────────────────────────────────────────────────── */
+  .callout {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 1rem 1.25rem;
+    border-radius: 0 3px 3px 0;
+    margin: 1.5rem 0 0;
+  }
+  .callout p { margin: 0; font-size: .98rem; }
+  .callout .label {
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: .4rem;
+  }
+
+  footer {
+    margin-top: 5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: .74rem;
+    color: var(--muted);
+    line-height: 1.7;
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Engineering Lead · Send for Partners</p>
+    <h1>Payments Interview Cram Sheet</h1>
+    <p class="standfirst">
+      Distributed systems, fault tolerance and the payments domain, compressed to what you can
+      hold in your head on the way in. Answers are hidden — tap a row to check yourself.
+    </p>
+  </header>
+
+  <div class="thesis">
+    <div class="thesis-head">Say these five without hesitating</div>
+    <ol>
+      <li><q>A timeout is an ambiguity, not a failure — you don't know whether it happened.</q></li>
+      <li><q>At-least-once delivery plus an idempotent consumer gives exactly-once <em>effect</em>. Exactly-once delivery isn't available over a network.</q></li>
+      <li><q>You can't atomically write to a database and publish to a broker. That's the dual-write problem, and the answer is a transactional outbox.</q></li>
+      <li><q>Retry only what's retryable, with exponential backoff and jitter, behind a per-dependency circuit breaker — because backoff without jitter just synchronises the herd.</q></li>
+      <li><q>Money is counted, not measured: integer minor units, double-entry, append-only, corrections by reversal.</q></li>
+    </ol>
+  </div>
+
+  <div class="controls">
+    <button class="btn" id="toggle-all" type="button">Show all answers</button>
+    <span class="hint">or tap any row</span>
+  </div>
+
+  <section>
+    <h2>Distributed systems <span class="count">14</span></h2>
+    <div class="drill" data-drill>
+      <div class="qa"><p class="q">What does a timeout tell you?</p><p class="a">Nothing about whether the work happened. It's an ambiguity, not a failure.</p></div>
+      <div class="qa"><p class="q">Can you get exactly-once delivery?</p><p class="a">No. At-least-once delivery plus an idempotent consumer gives exactly-once <em>effect</em>.</p></div>
+      <div class="qa"><p class="q">Why can't you write to the DB and publish to Kafka atomically?</p><p class="a">Dual-write problem — two systems, two failure modes. No ordering is safe. Fix: transactional outbox.</p></div>
+      <div class="qa"><p class="q">Why not use XA / two-phase commit?</p><p class="a">Every participant must support it, locks are held across a network round trip, and a coordinator crash leaves rows locked in doubt.</p></div>
+      <div class="qa"><p class="q">What does an idempotency key identify?</p><p class="a">The client's <em>intent</em> — so every retry of one logical payment carries the same key.</p></div>
+      <div class="qa"><p class="q">Why can't check-then-insert work?</p><p class="a">It's a race. Two requests both read "absent", both insert. Only a database constraint can arbitrate — application locking can't, across instances.</p></div>
+      <div class="qa"><p class="q">Why hash the request body?</p><p class="a">To catch a client reusing a key for a different payment. Otherwise you return the first payment's response and they believe the second succeeded.</p></div>
+      <div class="qa"><p class="q">What if you crash between claim and complete?</p><p class="a">The key is stranded <code>IN_PROGRESS</code>. A reaper releases it — with a threshold longer than the work's worst case, including its retries.</p></div>
+      <div class="qa"><p class="q">Do you need global event ordering?</p><p class="a">Almost never. Per-entity ordering via partitioning on the entity id. Global ordering means a single writer and no scaling.</p></div>
+      <div class="qa"><p class="q">How do consumers survive out-of-order events?</p><p class="a">Version numbers, and a state machine that rejects impossible transitions. The state machine is more robust — it's a domain rule, not plumbing.</p></div>
+      <div class="qa"><p class="q">State CAP precisely.</p><p class="a">On <em>partition</em>, choose availability or consistency. It says nothing about normal operation. PACELC is the better framing: else, choose latency or consistency.</p></div>
+      <div class="qa"><p class="q">Where does a ledger sit on that?</p><p class="a">CP. Refusing a payment is annoying; double-spending isn't recoverable.</p></div>
+      <div class="qa"><p class="q">Compensation vs rollback?</p><p class="a">You can't un-send a payment. You send a return — a new transaction, visible on the customer's statement.</p></div>
+      <div class="qa"><p class="q">Orchestration or choreography for payments?</p><p class="a">Orchestration. When a regulator asks what happened to a payment, you need one place that knows.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Fault tolerance <span class="count">12</span></h2>
+    <div class="drill" data-drill>
+      <div class="qa"><p class="q">Why is a slow dependency worse than a dead one?</p><p class="a">Dead fails fast. Slow holds threads until the pool exhausts — then every endpoint dies, including ones unrelated to it.</p></div>
+      <div class="qa"><p class="q">How do you size a timeout?</p><p class="a">Downstream p99 plus headroom. And timeouts must shrink going down the stack, never grow.</p></div>
+      <div class="qa"><p class="q">What must you never retry?</p><p class="a">Deterministic failures — 400, 401, 403, 422. The answer won't change, and under load it's waste aimed at a system already saying no.</p></div>
+      <div class="qa"><p class="q">Why jitter?</p><p class="a">Backoff alone <em>synchronises</em> the herd: everyone fails at once, waits the same interval, and retries at once. Randomness disperses them.</p></div>
+      <div class="qa"><p class="q">Why keep retry budgets small?</p><p class="a">They multiply. Three services deep at three attempts each is 27 requests at the bottom.</p></div>
+      <div class="qa"><p class="q">Why does a circuit breaker need <code>HALF_OPEN</code>?</p><p class="a">To probe recovery without handing a fragile service the entire backlog the instant it comes back.</p></div>
+      <div class="qa"><p class="q">Why a minimum call count before tripping?</p><p class="a">Otherwise the breaker trips on tiny samples during quiet periods — three failures out of four at 04:00 is noise, not an outage.</p></div>
+      <div class="qa"><p class="q">Should slow calls count as failures?</p><p class="a">Yes. An eight-second response is functionally down, and error-only counting misses the most common real outage shape.</p></div>
+      <div class="qa"><p class="q">Should business rejections trip the breaker?</p><p class="a">No. The partner is healthy and answering correctly. One partner's bad data would cut off every other partner's payments.</p></div>
+      <div class="qa"><p class="q">What does a bulkhead protect?</p><p class="a">Everything <em>else</em>. It stops one dependency draining a shared pool.</p></div>
+      <div class="qa"><p class="q">What bounds <em>total</em> request time?</p><p class="a">Not per-attempt timeouts — deadline propagation from the caller. Most resilience configs get this wrong.</p></div>
+      <div class="qa"><p class="q">Liveness vs readiness?</p><p class="a">"Restart me" vs "can I serve traffic now". Conflating them turns a brief database blip into a simultaneous restart of every pod.</p></div>
+    </div>
+
+    <div class="callout">
+      <span class="label">The composition question</span>
+      <p>Anyone can list the patterns. The one that separates candidates is what order they nest in.</p>
+    </div>
+
+    <div class="stack" style="margin-top:1rem">
+      <div class="layer">
+        <span class="name">1 · Bulkhead</span>
+        <p class="why">Outermost, because its concurrency cap must cover the retries <em>and</em> the backoff waits between them. A retrying call still occupies a slot.</p>
+        <div class="nest">
+          <div class="layer">
+            <span class="name">2 · Retry</span>
+            <p class="why">Outside the breaker, so the breaker records every individual attempt — it sees the true failure rate, trips fast, and then short-circuits the remaining retries.</p>
+            <div class="nest">
+              <div class="layer">
+                <span class="name">3 · Circuit breaker</span>
+                <p class="why">Counts outcomes, sheds load when open. Business rejections excluded from its window.</p>
+                <div class="nest">
+                  <div class="layer">
+                    <span class="name">4 · Time limiter</span>
+                    <p class="why">Innermost, so each attempt gets its own deadline. Outside the retry, one slow call eats the whole budget and the retries never run.</p>
+                    <div class="nest">
+                      <div class="layer core">
+                        <span class="name">the actual call</span>
+                        <p class="why">Carrying an idempotency key that is stable across every attempt — which is the only reason retrying is safe at all.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="split" style="margin-top:1.5rem">
+      <div class="card">
+        <h3>Retry these</h3>
+        <ul>
+          <li>503, 502, connection reset</li>
+          <li>Read timeout <em>(ambiguous — safe only because of the idempotency key)</em></li>
+          <li>429, honouring <code>Retry-After</code></li>
+        </ul>
+      </div>
+      <div class="card no">
+        <h3>Never retry these</h3>
+        <ul>
+          <li>400 malformed request</li>
+          <li>401 / 403 auth</li>
+          <li>422 business rejection — "beneficiary account closed"</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Java, Spring &amp; JPA <span class="count">9</span></h2>
+    <p class="section-note">
+      Nobody will test your <code>Stream</code> API recall at lead level. These are the ones that
+      come up because they bite in production.
+    </p>
+    <div class="drill" data-drill>
+      <div class="qa"><p class="q">The biggest <code>@Transactional</code> trap?</p><p class="a">Self-invocation. Spring uses a proxy; a call from one method of a class to another goes straight to <code>this</code> and the annotation is <em>silently ignored</em>. Same for <code>@Async</code> and <code>@Cacheable</code>.</p></div>
+      <div class="qa"><p class="q">Which exceptions roll back by default?</p><p class="a">Unchecked only. A checked exception <em>commits</em> unless you set <code>rollbackFor</code>.</p></div>
+      <div class="qa"><p class="q">What is <code>REQUIRES_NEW</code> for?</p><p class="a">An independent transaction that commits immediately — how an idempotency claim becomes visible to competing requests before the slow work starts.</p></div>
+      <div class="qa"><p class="q">What is <code>open-in-view</code>, and why disable it?</p><p class="a">It defaults to <em>true</em> and holds a DB connection for the entire HTTP request including response serialisation. Under load it exhausts the pool.</p></div>
+      <div class="qa"><p class="q">The JPA <code>save()</code> gotcha with assigned IDs?</p><p class="a">Non-null id → treated as detached → <code>merge()</code> → a duplicate-key INSERT silently becomes an UPDATE. Fix: implement <code>Persistable</code> so it calls <code>persist()</code>.</p></div>
+      <div class="qa"><p class="q">What does <code>@Version</code> give you?</p><p class="a">Optimistic locking. Hibernate appends <code>WHERE version = ?</code>; the second concurrent writer matches zero rows and gets an exception. No locks, no deadlocks, loser retries.</p></div>
+      <div class="qa"><p class="q">What are virtual threads?</p><p class="a">JVM-scheduled threads (Java 21). Millions can exist and blocking is cheap again — which removes most of the reason to reach for reactive.</p></div>
+      <div class="qa"><p class="q">Their one caveat?</p><p class="a"><code>synchronized</code> can pin a virtual thread to its carrier. Prefer <code>ReentrantLock</code> in hot paths.</p></div>
+      <div class="qa"><p class="q">Simplest concurrency strategy in Java?</p><p class="a">Immutability. An object that can't change is automatically thread-safe — which is why your functional habits transfer and are worth more here.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Payments domain <span class="count">10</span></h2>
+    <p class="section-note">
+      The differentiator. Most candidates for a payments role are competent backend engineers
+      who have never thought hard about money.
+    </p>
+    <div class="drill" data-drill>
+      <div class="qa"><p class="q">Why never <code>double</code> for money?</p><p class="a">0.1 has no exact binary representation, so 0.1 + 0.2 ≠ 0.3 — in Java, JavaScript, everywhere. Fractions of a penny compound into unexplained drift.</p></div>
+      <div class="qa"><p class="q">How do you store £12.34?</p><p class="a"><code>1234</code> minor units, plus the currency. Money is counted, not measured.</p></div>
+      <div class="qa"><p class="q">Which currencies break "multiply by 100"?</p><p class="a">JPY has 0 decimal places; KWD, BHD and JOD have 3.</p></div>
+      <div class="qa"><p class="q">Why not send amounts as JSON numbers?</p><p class="a">Most parsers make them doubles, so <code>10.10</code> can arrive as <code>10.099999999999999</code>. Send a digit string and parse it yourself.</p></div>
+      <div class="qa"><p class="q">What does double-entry guarantee?</p><p class="a">Every transaction has entries summing to zero, so money is conserved — and that invariant is continuously checkable.</p></div>
+      <div class="qa"><p class="q">How do you fix a ledger mistake?</p><p class="a">A reversing entry. You never update or delete — the error and its correction both stay visible. The audit trail <em>is</em> the product.</p></div>
+      <div class="qa"><p class="q">Is <code>SETTLED</code> terminal?</p><p class="a">No. A beneficiary bank can return funds days later. A model where settled ends the story can't represent that.</p></div>
+      <div class="qa"><p class="q">Which state is most dangerous?</p><p class="a"><code>SUBMITTED</code>. The instruction is on the wire and the outcome is genuinely unknown — it must be reconciled against the partner's record, never inferred from our request.</p></div>
+      <div class="qa"><p class="q">The worst reconciliation break?</p><p class="a">In theirs, not ours — a payment you recorded as failed that actually moved money. Only comparing against the counterparty finds it.</p></div>
+      <div class="qa"><p class="q">Why is compliance an architecture concern?</p><p class="a">Sanctions screening sits in the synchronous path, so its p99 is inside your API's p99. It's a functional requirement with a latency budget, not a gate at the end.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Design round · 45 minutes <span class="count">6 phases</span></h2>
+    <p class="section-note">
+      Say the plan out loud at the start — it signals structure and lets them redirect you early.
+      Protect the failure-modes phase; it is the most senior-signalling section and it is where
+      most candidates run out of time.
+    </p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Min</th><th>Phase</th><th>The mistake to avoid</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="num">0–5</td><td>Clarify requirements</td><td>Drawing boxes before knowing what you're building</td></tr>
+          <tr><td class="num">5–10</td><td>Scope, scale, SLOs</td><td>Vague "it should be fast" — write the numbers down</td></tr>
+          <tr><td class="num">10–20</td><td>High-level architecture</td><td>Too much detail too early</td></tr>
+          <tr><td class="num">20–35</td><td>Deep dive on two or three areas</td><td>Letting them pick all of them — steer to your strengths</td></tr>
+          <tr><td class="num">35–42</td><td>Failure modes</td><td>Running out of time. Volunteer this section.</td></tr>
+          <tr><td class="num">42–45</td><td>Trade-offs and next steps</td><td>Pretending the design is finished</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout">
+      <span class="label">The answer that carries the round</span>
+      <p>
+        Asked why the accept endpoint returns <code>202</code> and does no network I/O:
+        <em>“Calling the partner bank inside the request holds a database transaction across a
+        network call — a partner taking 30 seconds exhausts the connection pool long before it
+        recovers, and takes down every unrelated endpoint. Worse, if the partner call succeeded
+        and our commit then failed, we'd have moved money with no local record of it. So we
+        persist, return 202, and settle asynchronously.”</em>
+        That one answer demonstrates dual writes, pool exhaustion and honest API design at once.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Failure modes <span class="count">8</span></h2>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>What breaks</th><th>Response</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Partner bank down</td><td>Per-partner breaker opens; payments hold in <code>FUNDED</code>; other partners unaffected; alert</td></tr>
+          <tr><td>Partner call times out</td><td><strong>Never assume failure.</strong> Stay <code>SUBMITTED</code>; resolve by status query or reconciliation</td></tr>
+          <tr><td>Database primary fails</td><td>Failover; return 503 + <code>Retry-After</code> meanwhile — partners retry with the same key, so it's safe</td></tr>
+          <tr><td>Event bus down</td><td>Outbox rows accumulate, nothing is lost, drains on recovery. That's the point of the outbox.</td></tr>
+          <tr><td>Duplicate event delivered</td><td>Consumers idempotent on <code>eventId</code></td></tr>
+          <tr><td>Events arrive out of order</td><td>State machine rejects impossible transitions</td></tr>
+          <tr><td>One partner floods us</td><td>Per-partner rate limit at the edge; nobody can consume another's capacity</td></tr>
+          <tr><td>Bug credits the wrong account</td><td>Reversing entries, never deletions. Freeze, reconcile, publish a corrected trail.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>
+    Companion to the full guide and the runnable <span style="color:var(--accent)">partner-send</span> service
+    — 40 tests covering idempotency under 16-way concurrency, the transactional outbox, and the
+    resilience stack above.<br>
+    The evening before: read the five sentences, say the design out loud once, and learn nothing new.
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    var rows = Array.prototype.slice.call(document.querySelectorAll('.qa'));
+    var btn = document.getElementById('toggle-all');
+    var allHidden = true;
+
+    rows.forEach(function (row) {
+      row.setAttribute('data-hidden', 'true');
+      row.setAttribute('tabindex', '0');
+      row.setAttribute('role', 'button');
+      row.setAttribute('aria-label', 'Reveal answer');
+
+      function toggle() {
+        var hidden = row.getAttribute('data-hidden') === 'true';
+        row.setAttribute('data-hidden', hidden ? 'false' : 'true');
+        row.setAttribute('aria-label', hidden ? 'Hide answer' : 'Reveal answer');
+      }
+
+      row.addEventListener('click', toggle);
+      row.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    });
+
+    btn.addEventListener('click', function () {
+      allHidden = !allHidden;
+      rows.forEach(function (row) {
+        row.setAttribute('data-hidden', allHidden ? 'true' : 'false');
+        row.setAttribute('aria-label', allHidden ? 'Reveal answer' : 'Hide answer');
+      });
+      btn.textContent = allHidden ? 'Show all answers' : 'Hide all answers';
+    });
+  })();
+</script>

@@ -1,0 +1,2 @@
+anthropic>=0.60.0   # only needed for --live runs; everything else is stdlib
+pytest>=7.0

@@ -1,0 +1,1772 @@
+<title>Bot Detection at a Neobank</title>
+
+<style>
+  /* ---------- tokens: light is the base ---------- */
+  :root {
+    --ground:      #F7F8FA;
+    --surface:     #FFFFFF;
+    --surface-2:   #EFF2F6;
+    --ink:         #141A22;
+    --ink-muted:   #5A6472;
+    --ink-faint:   #8A94A3;
+    --rule:        #DDE2E9;
+    --rule-strong: #C3CBD6;
+    --ember:       #B8531E;
+    --ember-soft:  #F2E3D8;
+    --teal:        #1F6E7A;
+    --teal-soft:   #DDEBED;
+    --ok:          #2E7D5B;
+    --warn:        #96690C;
+    --crit:        #A32B2B;
+    --shadow:      0 1px 2px rgba(20, 26, 34, .06), 0 8px 24px rgba(20, 26, 34, .05);
+
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", "Consolas", monospace;
+    --sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+    --col: 42rem;
+    --wide: 62rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #0F1419;
+      --surface:     #161C23;
+      --surface-2:   #1C242D;
+      --ink:         #E4E8EE;
+      --ink-muted:   #94A0AE;
+      --ink-faint:   #6B7683;
+      --rule:        #252D36;
+      --rule-strong: #38424E;
+      --ember:       #E0813F;
+      --ember-soft:  #2E2119;
+      --teal:        #4FB3C0;
+      --teal-soft:   #14262A;
+      --ok:          #5CB98D;
+      --warn:        #D3A03A;
+      --crit:        #E07A7A;
+      --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #0F1419;
+    --surface:     #161C23;
+    --surface-2:   #1C242D;
+    --ink:         #E4E8EE;
+    --ink-muted:   #94A0AE;
+    --ink-faint:   #6B7683;
+    --rule:        #252D36;
+    --rule-strong: #38424E;
+    --ember:       #E0813F;
+    --ember-soft:  #2E2119;
+    --teal:        #4FB3C0;
+    --teal-soft:   #14262A;
+    --ok:          #5CB98D;
+    --warn:        #D3A03A;
+    --crit:        #E07A7A;
+    --shadow:      0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .3);
+  }
+
+  /* ---------- base ---------- */
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 14rem minmax(0, 1fr);
+    gap: 3rem;
+    max-width: 82rem;
+    margin: 0 auto;
+    padding: 0 1.5rem 8rem;
+  }
+
+  main { min-width: 0; }
+
+  /* ---------- left rail ---------- */
+  .rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+    padding: 3rem 0;
+    font-family: var(--mono);
+    font-size: .72rem;
+    line-height: 1.5;
+  }
+  .rail-title {
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ink-faint);
+    padding-bottom: .75rem;
+    margin-bottom: .75rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .rail ol { list-style: none; display: flex; flex-direction: column; gap: .1rem; }
+  .rail a {
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    gap: .1rem;
+    padding: .3rem .4rem .3rem .6rem;
+    color: var(--ink-muted);
+    text-decoration: none;
+    border-left: 2px solid transparent;
+  }
+  .rail a:hover { color: var(--ink); }
+  .rail a .n { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+  .rail a.active { color: var(--ember); border-left-color: var(--ember); }
+  .rail a.active .n { color: var(--ember); }
+  .rail a:focus-visible { outline: 2px solid var(--ember); outline-offset: 2px; }
+
+  .rail-toggle { display: none; }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    padding: 4rem 0 2.5rem;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 3rem;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .16em;
+    color: var(--ember);
+  }
+  h1 {
+    font-family: var(--mono);
+    font-size: clamp(1.9rem, 4.4vw, 3rem);
+    font-weight: 600;
+    letter-spacing: -.02em;
+    line-height: 1.08;
+    text-wrap: balance;
+    margin: .9rem 0 1rem;
+  }
+  .standfirst {
+    font-size: 1.06rem;
+    color: var(--ink-muted);
+    max-width: 38rem;
+  }
+
+  .spec {
+    margin-top: 2.25rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .spec div {
+    padding: .85rem 1rem;
+    border-right: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+  }
+  .spec div:last-child { border-right: 0; }
+  .spec .k {
+    font-family: var(--mono);
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ink-faint);
+  }
+  .spec .v {
+    font-family: var(--mono);
+    font-size: .86rem;
+    margin-top: .3rem;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 2.75rem; scroll-margin-top: 1.5rem; }
+  section + section { border-top: 1px solid var(--rule); margin-top: 2.75rem; }
+
+  h2 {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: -.015em;
+    line-height: 1.25;
+    text-wrap: balance;
+    margin-bottom: 1.1rem;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr;
+    align-items: baseline;
+  }
+  h2 .n { color: var(--ember); font-size: .82rem; font-variant-numeric: tabular-nums; }
+
+  h3 {
+    font-family: var(--mono);
+    font-size: .95rem;
+    font-weight: 600;
+    margin: 2rem 0 .6rem;
+    color: var(--ink);
+  }
+  h4 {
+    font-family: var(--mono);
+    font-size: .74rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ink-faint);
+    margin: 1.5rem 0 .5rem;
+  }
+
+  section > p, section > ul, section > ol, section > .note, section > h3, section > h4,
+  section > blockquote, section > .pair, section > .terms, section > .qa {
+    max-width: var(--col);
+  }
+  p + p { margin-top: .85rem; }
+  h3 + p, h4 + p, h4 + ul { margin-top: 0; }
+
+  ul, ol { margin: .7rem 0; padding-left: 1.15rem; display: flex; flex-direction: column; gap: .4rem; }
+  li::marker { color: var(--ink-faint); }
+  ol { padding-left: 1.35rem; }
+
+  strong { font-weight: 650; }
+
+  code {
+    font-family: var(--mono);
+    font-size: .84em;
+    background: var(--surface-2);
+    padding: .1em .35em;
+    border-radius: 2px;
+  }
+
+  a { color: var(--ember); }
+
+  .terms { display: flex; flex-direction: column; gap: .9rem; margin: 1rem 0; }
+  .terms > div { display: grid; gap: .15rem; }
+  .terms .t { font-family: var(--mono); font-size: .82rem; color: var(--ink); font-weight: 600; }
+  .terms .d { color: var(--ink-muted); font-size: .95rem; }
+
+  /* ---------- wide instrument blocks ---------- */
+  .wide { max-width: var(--wide); }
+  .scroller { overflow-x: auto; margin: 1.4rem 0; max-width: var(--wide); }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 36rem;
+    font-size: .875rem;
+  }
+  caption {
+    font-family: var(--mono);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ink-faint);
+    text-align: left;
+    padding-bottom: .6rem;
+  }
+  th {
+    font-family: var(--mono);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--ink-faint);
+    text-align: left;
+    font-weight: 500;
+    padding: .5rem .8rem .5rem 0;
+    border-bottom: 1px solid var(--rule-strong);
+    vertical-align: bottom;
+  }
+  td {
+    padding: .65rem .8rem .65rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: var(--ink-muted);
+  }
+  td:first-child { color: var(--ink); }
+  td.mono, th.mono, .num { font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: .82rem; }
+  tbody tr:last-child td { border-bottom: 1px solid var(--rule-strong); }
+
+  .pill {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    padding: .16em .5em;
+    border: 1px solid currentColor;
+    border-radius: 2px;
+    white-space: nowrap;
+  }
+  .pill.hi { color: var(--crit); }
+  .pill.md { color: var(--warn); }
+  .pill.lo { color: var(--ok); }
+
+  .note {
+    border-left: 2px solid var(--ember);
+    background: var(--surface);
+    padding: .95rem 1.1rem;
+    margin: 1.4rem 0;
+    box-shadow: var(--shadow);
+  }
+  .note .lbl {
+    font-family: var(--mono);
+    font-size: .66rem;
+    text-transform: uppercase;
+    letter-spacing: .14em;
+    color: var(--ember);
+    display: block;
+    margin-bottom: .35rem;
+  }
+  .note p { font-size: .95rem; }
+  .note.teal { border-left-color: var(--teal); }
+  .note.teal .lbl { color: var(--teal); }
+
+  blockquote {
+    border-left: 2px solid var(--rule-strong);
+    padding-left: 1.1rem;
+    margin: 1.2rem 0;
+    color: var(--ink-muted);
+    font-size: 1.02rem;
+  }
+
+  .pair { display: grid; gap: .8rem; margin: 1.2rem 0; }
+  .pair > div { padding: .8rem 1rem; background: var(--surface); border: 1px solid var(--rule); }
+  .pair .lbl {
+    font-family: var(--mono);
+    font-size: .64rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    display: block;
+    margin-bottom: .3rem;
+  }
+  .pair .good { border-left: 2px solid var(--ok); }
+  .pair .good .lbl { color: var(--ok); }
+  .pair .bad { border-left: 2px solid var(--crit); }
+  .pair .bad .lbl { color: var(--crit); }
+  .pair p { font-size: .95rem; }
+
+  /* latency budget bar */
+  .budget { margin: 1.5rem 0; max-width: var(--wide); }
+  .budget-bar { display: flex; height: 2.4rem; border: 1px solid var(--rule-strong); overflow: hidden; }
+  .budget-bar span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: .66rem;
+    color: var(--ink);
+    border-right: 1px solid var(--rule-strong);
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .budget-bar span:last-child { border-right: 0; }
+  .budget-legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+    gap: .4rem 1rem;
+    margin-top: .7rem;
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--ink-muted);
+  }
+  .budget-legend b { color: var(--ink); font-weight: 600; }
+  .sw { display: inline-block; width: .6rem; height: .6rem; margin-right: .4rem; border: 1px solid var(--rule-strong); }
+
+  /* cascade layers */
+  .layers { display: flex; flex-direction: column; margin: 1.4rem 0; max-width: var(--wide); border: 1px solid var(--rule); }
+  .layer { display: grid; grid-template-columns: 4.5rem 1fr 8rem; gap: 1rem; padding: 1rem; border-bottom: 1px solid var(--rule); background: var(--surface); }
+  .layer:last-child { border-bottom: 0; }
+  .layer .id { font-family: var(--mono); font-size: .8rem; color: var(--ember); font-weight: 600; }
+  .layer .body h5 { font-family: var(--mono); font-size: .88rem; font-weight: 600; margin-bottom: .25rem; }
+  .layer .body p { font-size: .9rem; color: var(--ink-muted); }
+  .layer .meta { font-family: var(--mono); font-size: .68rem; color: var(--ink-faint); text-align: right; line-height: 1.7; }
+
+  /* diagrams */
+  figure { margin: 1.8rem 0; max-width: var(--wide); }
+  figure svg { display: block; width: 100%; height: auto; }
+  figcaption {
+    font-family: var(--mono);
+    font-size: .68rem;
+    color: var(--ink-faint);
+    margin-top: .6rem;
+    letter-spacing: .04em;
+  }
+  .svg-box { fill: var(--surface); stroke: var(--rule-strong); }
+  .svg-box-accent { fill: var(--ember-soft); stroke: var(--ember); }
+  .svg-box-teal { fill: var(--teal-soft); stroke: var(--teal); }
+  .svg-label { fill: var(--ink); font-family: var(--mono); font-size: 11px; }
+  .svg-sub { fill: var(--ink-muted); font-family: var(--mono); font-size: 9px; }
+  .svg-tier { fill: var(--ink-faint); font-family: var(--mono); font-size: 9px; letter-spacing: .1em; }
+  .svg-arrow { stroke: var(--rule-strong); fill: none; stroke-width: 1.2; }
+  .svg-arrow-accent { stroke: var(--ember); fill: none; stroke-width: 1.2; stroke-dasharray: 4 3; }
+
+  /* Q&A */
+  .qa { display: flex; flex-direction: column; gap: 1.3rem; margin: 1.2rem 0; }
+  .qa > div { border-top: 1px solid var(--rule); padding-top: 1rem; }
+  .qa .q { font-family: var(--mono); font-size: .88rem; font-weight: 600; margin-bottom: .4rem; }
+  .qa .a { font-size: .95rem; color: var(--ink-muted); }
+  .qa .a strong { color: var(--ink); }
+
+  .cheat {
+    max-width: var(--wide);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    margin: 1.4rem 0;
+  }
+  .cheat > div { background: var(--surface); padding: 1rem 1.1rem; }
+  .cheat h5 {
+    font-family: var(--mono);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ember);
+    margin-bottom: .5rem;
+  }
+  .cheat ul { margin: 0; padding-left: 1rem; gap: .3rem; }
+  .cheat li { font-size: .85rem; color: var(--ink-muted); }
+
+  footer {
+    max-width: var(--wide);
+    margin-top: 4rem;
+    padding-top: 1.2rem;
+    border-top: 2px solid var(--ink);
+    font-family: var(--mono);
+    font-size: .7rem;
+    color: var(--ink-faint);
+    letter-spacing: .04em;
+  }
+
+  @media (max-width: 62rem) {
+    .page { grid-template-columns: minmax(0, 1fr); gap: 0; }
+    .rail {
+      position: static;
+      max-height: none;
+      padding: 1.5rem 0 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .rail-toggle { display: block; }
+    .rail ol { display: none; padding-top: .75rem; }
+    .rail.open ol { display: flex; }
+    .layer { grid-template-columns: 3.5rem 1fr; }
+    .layer .meta { grid-column: 2; text-align: left; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <nav class="rail" id="rail" aria-label="Sections">
+    <div class="rail-title">Contents</div>
+    <ol id="toc"></ol>
+  </nav>
+
+  <main>
+
+    <header class="masthead">
+      <div class="eyebrow">ML System Design · Staff / Principal</div>
+      <h1>Bot Detection at a Neobank</h1>
+      <p class="standfirst">The standard nine-step system-design spine, worked end to end against an
+        adversarial problem — including the three places where the standard spine quietly breaks and
+        what replaces it.</p>
+
+      <div class="spec">
+        <div><div class="k">Prompt</div><div class="v">"Design bot detection"</div></div>
+        <div><div class="k">Format</div><div class="v">60 min, whiteboard</div></div>
+        <div><div class="k">Domain</div><div class="v">Mobile-first bank</div></div>
+        <div><div class="k">Assumed scale</div><div class="v">15M users</div></div>
+        <div><div class="k">Decisions/day</div><div class="v">~20M</div></div>
+        <div><div class="k">Base rate</div><div class="v">0.1% – 60%</div></div>
+      </div>
+    </header>
+
+    <!-- ============================================ -->
+    <section id="s0">
+      <h2><span class="n">00</span><span>Open, then run the spine</span></h2>
+
+      <p>Memorise the opener. It buys you the right to run your own structure for the next fifty minutes,
+        and it plants every thread the interviewer will later pull.</p>
+
+      <blockquote>
+        "Bot detection at a bank isn't one classifier — it's a <strong>policy system</strong> that scores
+        different entities on different clocks. I'll go through it in the usual order: scope and objective,
+        the ML framing, metrics, data and labels, features, model, serving, rollout, monitoring. Two
+        warnings up front about where this problem departs from a normal ranking system. First, the label is
+        not observed — it's delayed by weeks and biased by whatever policy was live at the time.
+        Second, the data-generating process is an adversary who adapts to every response I emit, which
+        breaks the usual A/B and retraining assumptions. So I'll add one step at the end that the standard
+        template doesn't have: designing against the adversary."
+      </blockquote>
+
+      <p>The spine, and where it needed modification:</p>
+
+      <div class="scroller">
+        <table>
+          <caption>Standard template ↔ this problem</caption>
+          <thead>
+            <tr><th class="mono">§</th><th>Standard step</th><th>Holds as-is?</th><th>What it becomes here</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">01</td><td>Clarify &amp; scope</td><td><span class="pill lo">Holds</span></td><td>Plus an adversary taxonomy — "bot" is seven businesses in one word</td></tr>
+            <tr><td class="mono">02</td><td>Frame as ML</td><td><span class="pill md">Modified</span></td><td>Label is proxy + delayed; loss is cost-weighted, not plain logloss</td></tr>
+            <tr><td class="mono">03</td><td>Metrics</td><td><span class="pill md">Modified</span></td><td>No CTR/NDCG. Recall@fixed-FPR, precision@review-capacity, euro loss</td></tr>
+            <tr><td class="mono">04</td><td>Data</td><td><span class="pill hi">Breaks</span></td><td>Selective labelling — you only see outcomes for traffic you allowed</td></tr>
+            <tr><td class="mono">05</td><td>Features</td><td><span class="pill lo">Holds</span></td><td>user/item/context → entity/device/session/graph; PIT correctness identical</td></tr>
+            <tr><td class="mono">06</td><td>Model</td><td><span class="pill lo">Holds</span></td><td>Two-stage retrieval+ranking → cheap triage + expensive cascade</td></tr>
+            <tr><td class="mono">07</td><td>Serving</td><td><span class="pill lo">Holds</span></td><td>ANN index is real here — nearest-known-bad over embeddings</td></tr>
+            <tr><td class="mono">08</td><td>Eval &amp; rollout</td><td><span class="pill hi">Breaks</span></td><td>A/B has interference: the attacker is shared across arms</td></tr>
+            <tr><td class="mono">09</td><td>Monitoring</td><td><span class="pill md">Modified</span></td><td>Position bias → enforcement bias; retraining can't answer fast drift</td></tr>
+            <tr><td class="mono">10</td><td class="mono">— added —</td><td><span class="pill hi">New</span></td><td>Adversarial design: response leakage, poisoning, attacker economics</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="lbl">Why lead with this table</span>
+        <p>Reciting a template is a senior signal. Reciting it <em>and naming the three cells where it
+          doesn't apply</em> is the staff signal, and it takes ninety seconds. Interviewers are explicitly
+          listening for whether you're pattern-matching or thinking.</p>
+      </div>
+
+      <h3>Time budget</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th class="mono">Min</th><th>Step</th><th>Failure mode</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">0–3</td><td>Opener + spine</td><td>Diving straight into features</td></tr>
+            <tr><td class="mono">3–10</td><td>Scope &amp; objective</td><td>Solving "bots" in the abstract</td></tr>
+            <tr><td class="mono">10–15</td><td>ML framing: label, granularity, loss</td><td>Skipping straight to model choice</td></tr>
+            <tr><td class="mono">15–20</td><td>Metrics</td><td>Quoting AUC at 0.1% prevalence</td></tr>
+            <tr><td class="mono">20–28</td><td>Data &amp; labels</td><td>Assuming labels exist</td></tr>
+            <tr><td class="mono">28–33</td><td>Features</td><td>Listing features without an evadability axis</td></tr>
+            <tr><td class="mono">33–40</td><td>Model</td><td>Proposing a transformer for everything</td></tr>
+            <tr><td class="mono">40–46</td><td>Serving + architecture diagram</td><td>Boxes with no numbers on the arrows</td></tr>
+            <tr><td class="mono">46–52</td><td>Rollout, monitoring, adversary</td><td>Never getting here — this is the staff section</td></tr>
+            <tr><td class="mono">52–60</td><td>Roadmap, risks, what you didn't build</td><td>Trailing off when time is called</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s1">
+      <h2><span class="n">01</span><span>Clarify &amp; scope</span></h2>
+
+      <h3>Business objective first</h3>
+      <p>Say the objective in money, then translate. <strong>Objective:</strong> minimise total abuse cost —
+        realised fraud loss, plus regulatory exposure from mule accounts, plus the customer friction we
+        spend catching it — subject to not degrading the experience of legitimate users.
+        <strong>Translation:</strong> a calibrated probability of abuse per entity per decision point, fed
+        into a policy that picks the cheapest sufficient intervention. Not "classify bots".</p>
+
+      <h3>The four infrastructure questions, and what each answer changes</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Ask</th><th>Assume if unanswered</th><th>What it changes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td>QPS at the decision points?</td>
+              <td class="num">~230/s avg, 1k/s peak</td>
+              <td>Two orders below raw event volume — this is why real-time ML is affordable at all</td>
+            </tr>
+            <tr>
+              <td>Latency SLA?</td>
+              <td class="num">p99 60 ms, fail-open</td>
+              <td>Kills synchronous graph traversal; forces the cascade; sets model size</td>
+            </tr>
+            <tr>
+              <td>Data volume &amp; retention?</td>
+              <td class="num">500M events/day, 2y hot</td>
+              <td>Sets the streaming/batch split and collides with GDPR retention (§09)</td>
+            </tr>
+            <tr>
+              <td>Existing infra?</td>
+              <td>Kafka + a lake, no feature store</td>
+              <td>If there's no feature store, that's phase one — everything else inherits its skew</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Two more that are specific to this problem and worth more than the generic four:
+        <strong>do we control the client?</strong> (a first-party app means hardware attestation, an
+        enormously strong signal; a public web surface deletes that entire branch), and
+        <strong>is any traffic currently unpoliced?</strong> (determines whether you have unbiased labels
+        at all).</p>
+
+      <h3>"Bot" is seven businesses wearing one word</h3>
+      <p>Put the taxonomy up and make the interviewer choose. Each has different economics, a different
+        detection surface, and a different acceptable false-positive rate.</p>
+
+      <div class="scroller">
+        <table>
+          <caption>Abuse taxonomy at a consumer bank</caption>
+          <thead>
+            <tr><th>Abuse type</th><th>Attacker economics</th><th>Best signal surface</th><th class="mono">Loss/event</th><th>FP tolerance</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Synthetic-ID / farm signups</td><td>Sell aged, KYC'd accounts</td><td>Device + identity graph, onboarding sequence</td><td class="num">€50–800</td><td><span class="pill md">Medium</span></td></tr>
+            <tr><td>Credential stuffing → ATO</td><td>Drain balance, add beneficiary</td><td>IP/ASN velocity, device novelty, login sequence</td><td class="num">€200–3k</td><td><span class="pill lo">High</span></td></tr>
+            <tr><td>Money-mule networks</td><td>Launder proceeds; the account <em>is</em> the product</td><td>Transaction graph, funding + beneficiary reuse</td><td class="num">€5k–50k</td><td><span class="pill hi">Very low</span></td></tr>
+            <tr><td>Card / payment testing</td><td>Validate stolen BINs at scale</td><td>Decline patterns, request timing, amount entropy</td><td class="num">€1–5</td><td><span class="pill lo">High</span></td></tr>
+            <tr><td>Promo &amp; referral abuse</td><td>Farm signup bonuses</td><td>Device graph, funding reuse, timing clusters</td><td class="num">€10–50</td><td><span class="pill md">Medium</span></td></tr>
+            <tr><td>OTP / SMS pumping</td><td>Revenue share on premium SMS routes</td><td>Phone-prefix mix, resend rate, conversion</td><td class="num">€0.05–2</td><td><span class="pill lo">High</span></td></tr>
+            <tr><td>Scraping &amp; API abuse</td><td>Rates, competitive intel, aggregators</td><td>Request shape, JA4 TLS fingerprint, attestation</td><td class="num">Infra only</td><td><span class="pill lo">High</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Pick two and say why: <strong>credential stuffing / ATO</strong> (highest customer harm, fastest
+        feedback, cleanest labels) and <strong>farm signups</strong> (upstream of mule networks, so catching
+        it there prevents the downstream AML exposure).</p>
+
+      <h4>Non-goals, stated out loud</h4>
+      <ul>
+        <li><strong>Not</strong> authorised-push-payment fraud — a real human doing real actions is a
+          different problem and will eat the hour.</li>
+        <li><strong>Not</strong> AML transaction monitoring, though the graph layer shares infrastructure
+          with it — and saying so is a real platform argument.</li>
+        <li><strong>Not</strong> WAF/DDoS; volumetric attacks die at the edge before this system sees them.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s2">
+      <h2><span class="n">02</span><span>Frame as ML: label, granularity, loss</span></h2>
+
+      <p>This is the step most candidates skip, and it's where the domain's difficulty actually lives.
+        Answer all three parts explicitly.</p>
+
+      <h3>What is the label?</h3>
+      <p><strong>"Bot" is never observed.</strong> There is no ground truth for automation; there are only
+        proxies for harm. So define the label per abuse type, as an entity-level outcome within a horizon:</p>
+      <ul>
+        <li><strong>ATO:</strong> <code>y = 1</code> if the account was confirmed compromised within 30 days
+          of the login — via chargeback, customer dispute, or upheld analyst review.</li>
+        <li><strong>Farm signup:</strong> <code>y = 1</code> if the account was closed for abuse, or is in a
+          confirmed ring, within 90 days of opening.</li>
+        <li><strong>Negatives</strong> are <em>matured</em> non-events: an account with no adverse outcome
+          after the full horizon — not merely "not yet flagged".</li>
+      </ul>
+      <p>Say the consequence out loud: the horizon means your freshest month of data is only partially
+        labelled, so the training cut-off has to lag the horizon, and you are always training on a slightly
+        stale adversary. That tension — freshness versus label completeness — is a design decision, not an
+        inconvenience.</p>
+
+      <h3>What is one training example?</h3>
+      <p>One row per <strong>(entity, decision event, timestamp)</strong>, with every feature reconstructed
+        as of that timestamp. Not one row per account — an account generates a row at every login, transfer
+        and settings change, and the label is the entity outcome propagated back to each decision within the
+        horizon. Three consequences worth naming:</p>
+      <ul>
+        <li><strong>Grouped splitting.</strong> Rows from one account — and one ring — must not straddle
+          train and test, or you leak through shared devices. Split by time <em>and</em> by entity cluster.</li>
+        <li><strong>Row weighting.</strong> A heavy user generates 50× the rows of a light one and would
+          dominate the loss. Weight down within entity, or sample per entity.</li>
+        <li><strong>Separate models per surface.</strong> Onboarding and logged-in traffic have such
+          different feature availability that one model serving both is a compromise for both.</li>
+      </ul>
+
+      <h3>What is the loss?</h3>
+      <div class="terms">
+        <div>
+          <div class="t">Cost-weighted binary cross-entropy — the default</div>
+          <div class="d">Per-example weight = the euro consequence from §03, so a €3,000 ATO outweighs a €5
+            card-test. This is how the business objective enters the optimisation rather than being bolted on
+            at the threshold.</div>
+        </div>
+        <div>
+          <div class="t">Negative downsampling with prior correction</div>
+          <div class="d">At 0.1% prevalence, downsample negatives to ~1:20 for tractable training — then
+            <strong>correct the intercept back</strong> (or fit isotonic on an un-downsampled window), or every
+            probability you emit is inflated and every threshold in your policy layer is wrong. Volunteering
+            the correction, not just the downsampling, is the detail interviewers listen for.</div>
+        </div>
+        <div>
+          <div class="t">Why not focal loss by reflex</div>
+          <div class="d">It's the standard imbalance answer and it's a poor fit here: it deliberately distorts
+            the probability scale, and this entire system depends on calibrated probabilities feeding an
+            expected-cost policy. Use it only if you're ranking a review queue, where order matters and
+            calibration doesn't.</div>
+        </div>
+        <div>
+          <div class="t">A ranking head for the queue</div>
+          <div class="d">The analyst queue is a genuine ranking problem with a hard k — optimise it with a
+            LambdaRank-style objective on precision@k, separate from the calibrated classification head.
+            Multi-task: shared trunk, one calibrated head for policy, one ranking head for triage.</div>
+        </div>
+      </div>
+
+      <h3>Prediction units — five, not one</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Unit</th><th>Question</th><th class="mono">Latency</th><th>Weakness</th></tr></thead>
+          <tbody>
+            <tr><td>Request</td><td>Is this call automated?</td><td class="num">&lt;10 ms</td><td>Almost no context</td></tr>
+            <tr><td>Session</td><td>Is a human driving this?</td><td class="num">&lt;100 ms</td><td>Cold start on new devices</td></tr>
+            <tr><td>Device</td><td>Is this a farm asset?</td><td class="num">&lt;100 ms</td><td>Emulator + reset defeats naïve versions</td></tr>
+            <tr><td>Account</td><td>Is the owner operating it?</td><td class="num">&lt;300 ms</td><td>Useless at day zero</td></tr>
+            <tr><td>Cluster / ring</td><td>Is this coordinated?</td><td class="num">min–hours</td><td>Not real-time; graph must have formed</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The last row wins interviews. A well-run farm account is individually indistinguishable from a
+        cautious new customer; it is only anomalous <em>relative to its cohort</em> — a hundred accounts
+        opened in forty minutes from four devices, funded by two cards, all paying one beneficiary. No
+        per-account model recovers that.</p>
+
+      <h3>The output is an action, not a class</h3>
+      <div class="scroller">
+        <table>
+          <caption>Action ladder, ordered by cost to a legitimate customer</caption>
+          <thead><tr><th>Action</th><th class="mono">Cost if wrong</th><th>Reversible?</th><th>Tells the attacker?</th></tr></thead>
+          <tbody>
+            <tr><td>Log &amp; allow (shadow)</td><td class="num">€0</td><td>—</td><td>No</td></tr>
+            <tr><td>Silent rate-limit / degrade</td><td class="num">~€0.01</td><td>Yes</td><td>Ambiguous</td></tr>
+            <tr><td>Invisible challenge</td><td class="num">~€0.02</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Step-up auth (biometric / 3DS)</td><td class="num">~€0.30</td><td>Yes</td><td>Weakly</td></tr>
+            <tr><td>Queue for human review</td><td class="num">~€4</td><td>Yes</td><td>No</td></tr>
+            <tr><td>Hold transaction</td><td class="num">~€25</td><td>Yes</td><td>Yes</td></tr>
+            <tr><td>Freeze / offboard</td><td class="num">€180+</td><td>Painfully</td><td>Loudly</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <span class="lbl">The core decision rule</span>
+        <p>Choose the action <em>a</em> minimising
+          <code>E[cost] = p(abuse|x)·harm(a) + (1−p(abuse|x))·friction(a) + opcost(a)</code>.
+          One calibrated probability, many thresholds — one per action, per surface, per value band. This is
+          why <strong>calibration matters more than ranking</strong>, and why the single global threshold most
+          candidates propose is the wrong answer.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s3">
+      <h2><span class="n">03</span><span>Metrics</span></h2>
+
+      <p>Money first, then offline ML metrics, then online, then guardrails. The generic list —
+        AUC, NDCG@k, CTR, retention — mostly doesn't survive contact with this problem, and saying which
+        parts don't and why is worth more than reciting it.</p>
+
+      <h3>The cost model, worked</h3>
+      <ul>
+        <li>4.5M logins/day; steady-state ATO base rate ~0.05%, spiking above <strong>50% of login traffic</strong>
+          during a stuffing campaign. Quote both — the base rate is not a constant, and that alone breaks
+          fixed-threshold designs.</li>
+        <li>Realised loss per successful ATO: <strong>€600</strong> blended.</li>
+        <li>Step-up on a legitimate user: <strong>€0.02</strong> direct plus ~0.4% session abandonment →
+          <strong>€0.25</strong> blended.</li>
+        <li>So a step-up pays at <code>p ≈ 0.25/600 ≈ 0.04%</code> — fire challenges generously. A freeze at
+          €180 expected cost needs <code>p ≈ 30%</code> — fire those stingily.</li>
+      </ul>
+      <p>That arithmetic — two thresholds three orders of magnitude apart from one calibrated score — is
+        worth more than any architecture slide.</p>
+
+      <h3>Offline</h3>
+      <div class="terms">
+        <div>
+          <div class="t">Recall @ fixed FPR — the headline</div>
+          <div class="d">"Recall at 0.1% FPR", reported per abuse cohort. Fix the FPR because that's the
+            customer-harm budget the business actually agreed to.</div>
+        </div>
+        <div>
+          <div class="t">PR-AUC, not ROC-AUC</div>
+          <div class="d">At 0.1% prevalence a model hits 0.99 ROC-AUC and is still useless: ROC normalises by
+            a negative class 1,000× larger, hiding exactly the errors that hurt. One sentence, and it lands.</div>
+        </div>
+        <div>
+          <div class="t">Precision @ k, where k = review capacity</div>
+          <div class="d">The template's precision@k, with a hard operational meaning: 40 analysts × 60
+            cases/day = 2,400. Everything ranked below 2,400 is invisible to the business.</div>
+        </div>
+        <div>
+          <div class="t">Calibration — first-class, not a footnote</div>
+          <div class="d">Reliability curves and expected calibration error on matured labels. In a ranking
+            system calibration is optional polish; here the policy layer <em>is</em> the product, so drifting
+            calibration silently moves every threshold you own.</div>
+        </div>
+        <div>
+          <div class="t">Time-to-detect and money-at-risk-before-detect</div>
+          <div class="d">Catching a mule ring on day 30 after €400k has moved is not a success. Report
+            detection latency distributions and cumulative exposure, not just terminal accuracy.</div>
+        </div>
+        <div>
+          <div class="t">NDCG@k — deliberately not used</div>
+          <div class="d">There's no graded relevance and no user scanning a list top-down. The queue is
+            ranked by <em>expected recovered euro</em>, which is precision@k weighted by value, not NDCG.</div>
+        </div>
+      </div>
+
+      <h3>Online</h3>
+      <p>CTR and retention don't apply; the online metrics are loss and friction.</p>
+      <ul>
+        <li>Realised fraud loss per €M transacted, trended weekly.</li>
+        <li>Attacker cost per successful account, from the red team (§10) — the closest thing to a north star.</li>
+        <li>Treated-vs-holdout realised loss — the only clean causal attribution you will ever have.</li>
+      </ul>
+
+      <h3>Guardrails that can halt a rollout</h3>
+      <ul>
+        <li>Challenge rate for known-good users (tenure &gt; 12 months, no prior flags) — hard ceiling.</li>
+        <li>p99 decision latency and fallback rate.</li>
+        <li>Appeal volume and <strong>appeal overturn rate</strong> — the truest false-positive proxy you own.</li>
+        <li>Support contact rate on auth and payment issues.</li>
+        <li>False-positive rate <em>by customer segment</em> (§09).</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s4">
+      <h2><span class="n">04</span><span>Data: labels, sampling, leakage, delayed feedback</span></h2>
+
+      <p>Spend eight minutes here. This is where the standard template breaks hardest, and where interviewers
+        separate people who have shipped a risk system from people who have read about one.</p>
+
+      <h3>Label sources, and what's wrong with each</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Source</th><th class="mono">Volume</th><th class="mono">Delay</th><th>Bias</th></tr></thead>
+          <tbody>
+            <tr><td>Confirmed fraud / chargeback</td><td class="num">Low</td><td class="num">7–120 d</td><td>Only attacks that succeeded <em>and</em> were reported</td></tr>
+            <tr><td>Manual review verdicts</td><td class="num">Medium</td><td class="num">1–3 d</td><td>Only what current policy already flagged</td></tr>
+            <tr><td>Honeypots / canary endpoints</td><td class="num">Low</td><td class="num">Minutes</td><td>Precise but unrepresentative — catches the curious, not the careful</td></tr>
+            <tr><td>Challenge outcomes</td><td class="num">High</td><td class="num">Seconds</td><td>Weak: humans fail challenges, good bots pass them</td></tr>
+            <tr><td>Appeals / disputes</td><td class="num">Low</td><td class="num">1–14 d</td><td>The cleanest <em>negative</em> label you own — treasure it</td></tr>
+            <tr><td>Rule hits</td><td class="num">High</td><td class="num">0</td><td>Circular; training on these teaches the model to imitate the rules</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure>
+        <svg viewBox="0 0 860 210" role="img" aria-label="Timeline showing labels for one decision arriving over 120 days: challenge outcome in seconds, review verdict in days, mule detection in weeks, chargeback settlement in months.">
+          <line x1="40" y1="150" x2="820" y2="150" class="svg-arrow" stroke-width="1.5"/>
+          <g class="svg-tier">
+            <text x="40" y="172">t₀ DECISION</text>
+            <text x="215" y="172">+1 h</text>
+            <text x="390" y="172">+3 d</text>
+            <text x="565" y="172">+30 d</text>
+            <text x="740" y="172">+120 d</text>
+          </g>
+          <g>
+            <line x1="40" y1="143" x2="40" y2="157" class="svg-arrow" stroke-width="1.5"/>
+            <line x1="215" y1="143" x2="215" y2="157" class="svg-arrow" stroke-width="1.5"/>
+            <line x1="390" y1="143" x2="390" y2="157" class="svg-arrow" stroke-width="1.5"/>
+            <line x1="565" y1="143" x2="565" y2="157" class="svg-arrow" stroke-width="1.5"/>
+            <line x1="740" y1="143" x2="740" y2="157" class="svg-arrow" stroke-width="1.5"/>
+          </g>
+
+          <rect x="40" y="26" width="150" height="26" rx="2" class="svg-box-accent"/>
+          <text x="52" y="43" class="svg-label">score + act</text>
+          <line x1="115" y1="52" x2="115" y2="143" class="svg-arrow-accent"/>
+
+          <rect x="150" y="62" width="150" height="26" rx="2" class="svg-box"/>
+          <text x="162" y="79" class="svg-label">challenge outcome</text>
+          <line x1="225" y1="88" x2="225" y2="143" class="svg-arrow"/>
+
+          <rect x="330" y="98" width="150" height="26" rx="2" class="svg-box"/>
+          <text x="342" y="115" class="svg-label">review verdict</text>
+          <line x1="405" y1="124" x2="405" y2="143" class="svg-arrow"/>
+
+          <rect x="500" y="62" width="150" height="26" rx="2" class="svg-box-teal"/>
+          <text x="512" y="79" class="svg-label">mule detected</text>
+          <line x1="575" y1="88" x2="575" y2="143" class="svg-arrow"/>
+
+          <rect x="660" y="98" width="160" height="26" rx="2" class="svg-box-teal"/>
+          <text x="672" y="115" class="svg-label">chargeback settles</text>
+          <line x1="740" y1="124" x2="740" y2="143" class="svg-arrow"/>
+
+          <text x="40" y="196" class="svg-sub">A weekly retrain is fitting a label set that is still ~60% incomplete for its most recent month.</text>
+        </svg>
+        <figcaption>Fig. 1 — Label maturation for a single decision. Set the training cut-off from this curve, not from the calendar.</figcaption>
+      </figure>
+
+      <h3>The three pathologies, and the fixes</h3>
+
+      <h4>1 · Selective labelling — the one that breaks the template</h4>
+      <p>You only observe outcomes for traffic you <em>allowed</em>. Everything blocked has no ground truth,
+        and the blocked set is precisely where the model is most uncertain. Train naïvely and you get a model
+        that's excellent at confirming yesterday's policy and blind to anything outside it.</p>
+      <p><strong>Fix:</strong> a permanently unpoliced <strong>random holdout</strong> — 0.1–0.5% of traffic
+        that bypasses all enforcement, with a hard value cap and an automatic kill switch on realised loss.
+        Someone in the room will push back on deliberately letting fraud through. Defend it: it is the only
+        source of unbiased prevalence, the only honest denominator for recall, and the only way to answer
+        "how much abuse are we not seeing?" Put the expected monthly leakage in the proposal so it's a
+        decision, not a surprise.</p>
+
+      <h4>2 · Feedback loops</h4>
+      <p>Model blocks a pattern → pattern leaves the data → next model forgets it → attacker returns. Keep
+        blocked events in training with their pre-block labels, decay label weight by age rather than
+        dropping rows, and preserve an exploration budget so the model keeps observing the boundary it
+        enforces.</p>
+
+      <h4>3 · Leakage — three specific traps</h4>
+      <ul>
+        <li><strong>Post-decision features.</strong> "Account was frozen" correlates perfectly with the label
+          and doesn't exist at scoring time. Enforce point-in-time correctness in the feature store, not by
+          convention in a notebook.</li>
+        <li><strong>The single-observation leak.</strong> "Device seen only once" is a great training feature
+          and a useless serving feature — at scoring time every device that <em>will</em> be seen once has so
+          far been seen once. Any feature involving future counts is poison.</li>
+        <li><strong>Investigation artefacts.</strong> Analysts touch fraud cases; "number of internal notes"
+          will top your feature importance and mean nothing.</li>
+      </ul>
+
+      <h4>Sampling strategy</h4>
+      <ul>
+        <li>Keep <strong>all</strong> positives — they're the scarce resource.</li>
+        <li>Downsample negatives to ~1:20, stratified by surface and time bucket so you don't accidentally
+          drop a whole quiet period; correct the prior afterwards (§02).</li>
+        <li>Cap per-entity and per-ring contribution so one 400-account farm doesn't become 8% of the
+          training set and teach the model that farm's idiosyncrasies.</li>
+        <li>Oversample the recent window and the current campaign; time-decay older labels.</li>
+      </ul>
+
+      <div class="note teal">
+        <span class="lbl">Techniques to name in one sentence each</span>
+        <p><strong>PU learning</strong> for "confirmed positive / unknown rest". <strong>Label propagation</strong>
+          across the entity graph — a device with two confirmed mules makes its other accounts strong
+          weak-positives. <strong>Rejection inference</strong>, borrowed from credit scoring, to reason about
+          the blocked population. Name them and move on; don't lecture.</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s5">
+      <h2><span class="n">05</span><span>Features</span></h2>
+
+      <p>The template's user / item / context / interaction decomposition maps cleanly — it just has
+        different names here.</p>
+
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Template slot</th><th>Here</th><th>Examples</th></tr></thead>
+          <tbody>
+            <tr><td>User</td><td>Account</td><td>Tenure, balance volatility, deviation from own 30d baseline, prior flags</td></tr>
+            <tr><td>Item</td><td>Device / instrument</td><td>Attestation verdict, install age, accounts-per-device 1h/24h/30d, card BIN reuse</td></tr>
+            <tr><td>Context</td><td>Session &amp; network</td><td>ASN, residential-proxy score, JA4, time-of-day fit, app version, geo-velocity</td></tr>
+            <tr><td>Interaction</td><td>Account × device × counterparty</td><td>First-seen-together, edge age, shared-beneficiary count, funding-source overlap</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Rank features by evadability, not importance</h3>
+      <p>Any candidate can list features. The staff move is to organise them by <strong>what it costs the
+        attacker to defeat this signal</strong>, and to concentrate where their cost is in money or hardware
+        rather than in one-time engineering effort.</p>
+
+      <div class="scroller">
+        <table>
+          <caption>Signal inventory by evadability</caption>
+          <thead><tr><th>Family</th><th>Cost to defeat</th><th>Coverage</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Hardware attestation<br><span class="num">Play Integrity, App Attest</span></td><td><span class="pill hi">Very high</span></td><td>Native app only</td><td>Strongest single signal. Fails open on rooted-but-legitimate users; never hard-block on it alone.</td></tr>
+            <tr><td>Funding instrument<br><span class="num">BIN, IBAN provenance</span></td><td><span class="pill hi">Very high</span></td><td>Post-funding</td><td>Money is the scarcest thing an attacker has. Reuse across accounts is near-conclusive.</td></tr>
+            <tr><td>Identity graph<br><span class="num">doc hash, phone, address</span></td><td><span class="pill hi">High</span></td><td>Onboarding</td><td>Biometric-derived features are GDPR Art. 9 — see §09 before proposing them.</td></tr>
+            <tr><td>Behavioural biometrics<br><span class="num">touch, scroll, cadence</span></td><td><span class="pill md">Medium</span></td><td>Needs seconds in-app</td><td>Strong against naïve automation, weaker against record-and-replay.</td></tr>
+            <tr><td>Event sequence<br><span class="num">screen order, dwell, errors</span></td><td><span class="pill md">Medium</span></td><td>Sessions &gt; 3 events</td><td>Humans hesitate, mis-tap and recover. Scripts don't — or do it identically every time.</td></tr>
+            <tr><td>Device fingerprint<br><span class="num">install ID, locale coherence</span></td><td><span class="pill md">Medium</span></td><td>Universal</td><td>Anti-detect tooling targets this directly. Useful combined, weak alone.</td></tr>
+            <tr><td>Network intel<br><span class="num">ASN, proxy score, JA4</span></td><td><span class="pill lo">Low</span></td><td>Universal</td><td>Residential proxy pools at €2/GB have made raw IP reputation nearly worthless.</td></tr>
+            <tr><td>Timing &amp; velocity</td><td><span class="pill lo">Low</span></td><td>Universal</td><td>Catches the bottom 60% of attackers on day one — still worth having.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Embeddings</h3>
+      <ul>
+        <li><strong>Sequence embeddings</strong> — a session encoder pretrained self-supervised on all
+          500M events/day with next-event prediction, then fine-tuned. This is how you get value from
+          overwhelming unlabelled data given how scarce labels are.</li>
+        <li><strong>Graph node embeddings</strong> — GraphSAGE over the account/device/instrument/beneficiary
+          graph, refreshed every few minutes and written to the online store as plain feature vectors.</li>
+        <li><strong>Consumed as features by the GBDT</strong>, not as separate scores. One calibrated
+          probability is far easier to threshold, explain and defend than five scores someone combines by
+          hand.</li>
+      </ul>
+
+      <h3>Point-in-time correctness</h3>
+      <p>The template item that holds exactly, and matters more here than almost anywhere: one feature
+        definition, two execution paths (streaming for serving, batch for training), compiled from the same
+        declaration. Training/serving skew in a fraud system doesn't announce itself — it shows up as a model
+        that backtests beautifully and underperforms in production for a quarter before anyone finds it.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s6">
+      <h2><span class="n">06</span><span>Model</span></h2>
+
+      <h3>Baselines you must beat, in order</h3>
+      <ol>
+        <li><strong>Rules only.</strong> Velocity ceilings and hot lists. Honest, and stronger than
+          candidates expect — quote it as the incumbent.</li>
+        <li><strong>Logistic regression</strong> on ~30 hand-built features. Trains in seconds, fully
+          explainable, and if the fancy model beats it by two points then the fancy model isn't the story.</li>
+        <li><strong>GBDT</strong> on a few hundred aggregates — the production workhorse.</li>
+      </ol>
+      <p>Justify going deeper only with measured incremental recall at fixed FPR over the GBDT. "Under two
+        points and it doesn't ship" is a good line, because it puts a falsifiable bar on your own proposal.</p>
+
+      <h3>Two-stage retrieval + ranking, translated</h3>
+      <p>The template's retrieval/ranking split maps twice here, and saying both mappings shows you
+        understand the pattern rather than the vocabulary:</p>
+      <ul>
+        <li><strong>On the hot path</strong> it becomes a <em>cost cascade</em>: cheap models score all
+          traffic, expensive models run only on the uncertain band. Same economics as retrieval + ranking —
+          reduce the candidate set before spending compute — driven by latency rather than corpus size.</li>
+        <li><strong>Off the hot path</strong> it's literally retrieval + ranking: <em>retrieve</em> suspicious
+          entities via ANN over embeddings and graph expansion from known-bad seeds, then <em>rank</em> the
+          shortlist by expected recovered euro for the 2,400-case analyst queue.</li>
+      </ul>
+
+      <div class="layers">
+        <div class="layer">
+          <div class="id">L0</div>
+          <div class="body">
+            <h5>Deterministic rules &amp; hot lists</h5>
+            <p>Known-bad devices, seized proxy ranges, velocity ceilings, hard KYC gates. Unfashionable and
+              non-negotiable: they respond in minutes during an incident when a retrain takes days, they're
+              trivially explainable to a regulator, and they're the fail-open floor when everything else times
+              out. Versioned, auditable, editable by risk ops without a deploy — with two-person approval and
+              a mandatory expiry on every rule, or you'll accumulate a thousand nobody dares delete.</p>
+          </div>
+          <div class="meta">3 ms<br>~35% of catches<br>minutes to update</div>
+        </div>
+        <div class="layer">
+          <div class="id">L1</div>
+          <div class="body">
+            <h5>Gradient-boosted trees — the workhorse</h5>
+            <p>LightGBM over a few hundred features: device fan-out, account velocity, deviation from own
+              baseline, network reputation, attestation, funding reuse, plus the L3/L4 embeddings as columns.
+              Handles missingness natively, trains in minutes, explains with SHAP, and beats deep learning on
+              tabular data at this scale. Ship this first; it gets most of the value.</p>
+          </div>
+          <div class="meta">8 ms<br>~45% of catches<br>daily retrain</div>
+        </div>
+        <div class="layer">
+          <div class="id">L2</div>
+          <div class="body">
+            <h5>Sequence model over the event stream</h5>
+            <p>Tokenise the session — screens, taps, field edits, errors, inter-arrival buckets — and run a
+              small causal transformer (2–4 layers, ~64-dim; it has to fit the budget). Catches what
+              aggregates flatten: perfectly regular timing, no correction behaviour, impossible navigation
+              order, identical paths across "different" users. Cascaded onto the uncertain band only.</p>
+          </div>
+          <div class="meta">15 ms<br>~12% of traffic<br>weekly retrain</div>
+        </div>
+        <div class="layer">
+          <div class="id">L3</div>
+          <div class="body">
+            <h5>Graph layer — where the rings die</h5>
+            <p>Nodes: accounts, devices, IPs, phones, cards/IBANs, beneficiaries, document hashes. Start with
+              connected components and simple ring features (size, density, age spread, funding concentration)
+              — unglamorous and very effective. Then GraphSAGE embeddings refreshed every few minutes and
+              served as features. Sole source of truth for coordinated abuse.</p>
+          </div>
+          <div class="meta">near-line<br>~8% of catches<br>highest €/catch</div>
+        </div>
+        <div class="layer">
+          <div class="id">L4</div>
+          <div class="body">
+            <h5>Unsupervised novelty</h5>
+            <p>The only defence against a pattern you've never labelled. Density estimation over embeddings,
+              plus an inverted trick that works well here: flag <em>excessive similarity</em> between accounts
+              rather than outlierness — farms produce populations that are suspiciously alike. Output goes to
+              the review queue, never to auto-enforcement. Its job is shortening time-to-first-label on a
+              novel campaign from weeks to days.</p>
+          </div>
+          <div class="meta">batch<br>queue only<br>zero-day coverage</div>
+        </div>
+      </div>
+
+      <div class="pair">
+        <div class="bad">
+          <span class="lbl">Weak</span>
+          <p>"I'd use a transformer over the user's event history — it captures long-range dependencies better
+            than feature engineering."</p>
+        </div>
+        <div class="good">
+          <span class="lbl">Strong</span>
+          <p>"GBDT on aggregates first — 80% of the value in two weeks, and risk ops can reason about it.
+            Sequence model second, cascaded on the uncertain band, and it only ships if incremental
+            recall at fixed FPR over the GBDT clears two points. Graph third, because that's where the
+            money is but it's also the biggest platform lift."</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s7">
+      <h2><span class="n">07</span><span>Serving</span></h2>
+
+      <p>Draw this once and keep pointing at it. Put numbers on the arrows — latency on the synchronous path,
+        lag on the asynchronous ones.</p>
+
+      <figure>
+        <svg viewBox="0 0 900 460" role="img" aria-label="Architecture: clients and edge feed a Kafka spine; streaming aggregates, an online store and a near-line graph service feed a synchronous decision service of rules, models and a policy engine; actions flow to enforcement and case management; feedback returns through the label store to training.">
+          <g class="svg-tier">
+            <text x="8" y="40">CLIENT</text>
+            <text x="8" y="128">SPINE</text>
+            <text x="8" y="216">FEATURES</text>
+            <text x="8" y="308">DECIDE</text>
+            <text x="8" y="404">LEARN</text>
+          </g>
+
+          <rect x="80" y="20" width="150" height="34" rx="2" class="svg-box"/>
+          <text x="92" y="36" class="svg-label">Mobile SDK</text>
+          <text x="92" y="48" class="svg-sub">telemetry + attestation</text>
+
+          <rect x="250" y="20" width="150" height="34" rx="2" class="svg-box"/>
+          <text x="262" y="36" class="svg-label">Edge / WAF</text>
+          <text x="262" y="48" class="svg-sub">TLS fp, volumetric</text>
+
+          <rect x="420" y="20" width="150" height="34" rx="2" class="svg-box"/>
+          <text x="432" y="36" class="svg-label">Core banking</text>
+          <text x="432" y="48" class="svg-sub">txn, auth, KYC</text>
+
+          <rect x="590" y="20" width="150" height="34" rx="2" class="svg-box"/>
+          <text x="602" y="36" class="svg-label">3rd-party intel</text>
+          <text x="602" y="48" class="svg-sub">proxy lists, bureaus</text>
+
+          <line x1="155" y1="54" x2="155" y2="100" class="svg-arrow"/>
+          <line x1="325" y1="54" x2="325" y2="100" class="svg-arrow"/>
+          <line x1="495" y1="54" x2="495" y2="100" class="svg-arrow"/>
+          <line x1="665" y1="54" x2="665" y2="100" class="svg-arrow"/>
+
+          <rect x="80" y="100" width="660" height="34" rx="2" class="svg-box-teal"/>
+          <text x="92" y="117" class="svg-label">Event spine — Kafka, versioned schemas</text>
+          <text x="560" y="117" class="svg-sub">~25k events/s peak</text>
+          <text x="92" y="128" class="svg-sub">at-least-once, keyed by device + account</text>
+
+          <line x1="200" y1="134" x2="200" y2="190" class="svg-arrow"/>
+          <line x1="450" y1="134" x2="450" y2="190" class="svg-arrow"/>
+          <line x1="660" y1="134" x2="660" y2="190" class="svg-arrow"/>
+
+          <rect x="80" y="190" width="200" height="46" rx="2" class="svg-box"/>
+          <text x="92" y="207" class="svg-label">Streaming aggregates</text>
+          <text x="92" y="219" class="svg-sub">Flink · windowed counters</text>
+          <text x="92" y="231" class="svg-sub">freshness &lt; 1 s</text>
+
+          <rect x="300" y="190" width="200" height="46" rx="2" class="svg-box"/>
+          <text x="312" y="207" class="svg-label">Online store</text>
+          <text x="312" y="219" class="svg-sub">Redis / Scylla · p99 5 ms</text>
+          <text x="312" y="231" class="svg-sub">one definition, two paths</text>
+
+          <rect x="520" y="190" width="220" height="46" rx="2" class="svg-box"/>
+          <text x="532" y="207" class="svg-label">Graph + ANN index</text>
+          <text x="532" y="219" class="svg-sub">near-line · minutes</text>
+          <text x="532" y="231" class="svg-sub">components · embeddings · HNSW</text>
+
+          <line x1="380" y1="236" x2="380" y2="272" class="svg-arrow"/>
+          <line x1="630" y1="236" x2="630" y2="272" class="svg-arrow"/>
+
+          <rect x="80" y="272" width="660" height="76" rx="2" class="svg-box-accent"/>
+          <text x="92" y="290" class="svg-label">Decision service — synchronous, p99 60 ms, fails open to a rules-only floor</text>
+          <rect x="100" y="300" width="140" height="34" rx="2" class="svg-box"/>
+          <text x="112" y="316" class="svg-label">L0 rules</text>
+          <text x="112" y="328" class="svg-sub">hot lists · 3 ms</text>
+          <rect x="256" y="300" width="140" height="34" rx="2" class="svg-box"/>
+          <text x="268" y="316" class="svg-label">L1 GBDT</text>
+          <text x="268" y="328" class="svg-sub">tabular · 8 ms</text>
+          <rect x="412" y="300" width="140" height="34" rx="2" class="svg-box"/>
+          <text x="424" y="316" class="svg-label">L2 sequence</text>
+          <text x="424" y="328" class="svg-sub">cascaded · 15 ms</text>
+          <rect x="568" y="300" width="150" height="34" rx="2" class="svg-box"/>
+          <text x="580" y="316" class="svg-label">Policy engine</text>
+          <text x="580" y="328" class="svg-sub">cost → action</text>
+
+          <line x1="250" y1="348" x2="250" y2="386" class="svg-arrow"/>
+          <line x1="560" y1="348" x2="560" y2="386" class="svg-arrow"/>
+
+          <rect x="80" y="386" width="200" height="46" rx="2" class="svg-box"/>
+          <text x="92" y="403" class="svg-label">Enforcement</text>
+          <text x="92" y="415" class="svg-sub">challenge · limit · hold</text>
+          <text x="92" y="427" class="svg-sub">freeze</text>
+
+          <rect x="300" y="386" width="200" height="46" rx="2" class="svg-box"/>
+          <text x="312" y="403" class="svg-label">Case management</text>
+          <text x="312" y="415" class="svg-sub">queue · reasons · appeals</text>
+          <text x="312" y="427" class="svg-sub">analyst verdicts</text>
+
+          <rect x="520" y="386" width="220" height="46" rx="2" class="svg-box-teal"/>
+          <text x="532" y="403" class="svg-label">Label store + training</text>
+          <text x="532" y="415" class="svg-sub">point-in-time joins</text>
+          <text x="532" y="427" class="svg-sub">backtest · registry · canary</text>
+
+          <path d="M 760 409 L 800 409 L 800 117 L 745 117" class="svg-arrow-accent"/>
+          <text x="770" y="262" class="svg-sub" transform="rotate(-90 770 262)">feedback</text>
+        </svg>
+        <figcaption>Fig. 2 — Five tiers. The dashed return path is what candidates forget, and it's what decides whether the system is still good in six months.</figcaption>
+      </figure>
+
+      <h3>Latency budget</h3>
+      <div class="budget">
+        <div class="budget-bar">
+          <span style="flex:8;  background:var(--surface-2)">8</span>
+          <span style="flex:6;  background:var(--teal-soft)">6</span>
+          <span style="flex:3;  background:var(--surface-2)">3</span>
+          <span style="flex:8;  background:var(--ember-soft)">8</span>
+          <span style="flex:15; background:var(--ember-soft)">15</span>
+          <span style="flex:4;  background:var(--surface-2)">4</span>
+          <span style="flex:16; background:var(--surface)">16 headroom</span>
+        </div>
+        <div class="budget-legend">
+          <div><span class="sw" style="background:var(--surface-2)"></span><b>8 ms</b> network + auth</div>
+          <div><span class="sw" style="background:var(--teal-soft)"></span><b>6 ms</b> feature fetch (p99)</div>
+          <div><span class="sw" style="background:var(--surface-2)"></span><b>3 ms</b> L0 rules</div>
+          <div><span class="sw" style="background:var(--ember-soft)"></span><b>8 ms</b> L1 GBDT</div>
+          <div><span class="sw" style="background:var(--ember-soft)"></span><b>15 ms</b> L2 sequence (12% of traffic)</div>
+          <div><span class="sw" style="background:var(--surface-2)"></span><b>4 ms</b> policy + logging</div>
+          <div><span class="sw" style="background:var(--surface)"></span><b>16 ms</b> headroom to p99 = 60 ms</div>
+        </div>
+      </div>
+      <p>Quote the headroom explicitly — reviewers notice when a candidate's numbers sum to exactly the SLO,
+        because real ones never do.</p>
+
+      <h3>Precompute vs. real-time — three freshness tiers</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Tier</th><th class="mono">Freshness</th><th>Contents</th><th>Why not fresher</th></tr></thead>
+          <tbody>
+            <tr><td>Streaming</td><td class="num">&lt; 1 s</td><td>Velocity counters, session state, device fan-out</td><td>Already as fresh as it can be</td></tr>
+            <tr><td>Near-line</td><td class="num">1–10 min</td><td>Graph components, node embeddings, ring features</td><td>Graph algorithms don't fit a 60 ms budget — the most common architectural mistake here</td></tr>
+            <tr><td>Batch</td><td class="num">Daily</td><td>Long-horizon baselines, peer-group stats, novelty models</td><td>Stable by nature; cheap to compute once</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Caching — and one thing not to cache</h3>
+      <ul>
+        <li><strong>Cache features, not decisions.</strong> A cached feature is a freshness tradeoff; a cached
+          decision is an exploitable one — an attacker who finds a request shape that caches "allow" replays
+          it for the TTL.</li>
+        <li>Per-entity feature bundles with short TTLs (seconds) and negative caching for absent entities.</li>
+        <li>Third-party intel lookups (proxy scores, bureau data) cached for hours — they're slow, priced per
+          call, and change slowly.</li>
+        <li>Model artefacts and embedding tables pinned in memory; never fetch them per request.</li>
+      </ul>
+
+      <h3>ANN index — where it genuinely applies</h3>
+      <p>HNSW over device and session embeddings, rebuilt near-line. Two uses: a
+        <strong>nearest-known-bad feature</strong> (cosine distance to the closest confirmed-abusive entity,
+        looked up in ~2 ms and fed to L1), and <strong>retrieval for the review queue</strong> — given one
+        confirmed farm account, pull its 500 nearest neighbours for an analyst to sweep as a cohort. The
+        second is how a single confirmed case turns into a few hundred labels in an afternoon, which is the
+        cheapest label-generation mechanism in the whole design.</p>
+
+      <h3>Scale arithmetic</h3>
+      <ul>
+        <li>15M users, ~30% DAU → <strong>4.5M DAU</strong>; ~60 client events/active day → ~270M/day, plus
+          server-side → <strong>~500M events/day ≈ 6k/s avg, 25k/s peak</strong>.</li>
+        <li>Scored decision points — logins, transfers, signups, sensitive settings —
+          <strong>~20M/day ≈ 230/s avg, ~1k/s peak</strong>.</li>
+        <li>At 1k/s and 8 ms CPU per L1 inference: ~8 cores of model serving. The cost is in the streaming
+          aggregates and the online store, not the model.</li>
+        <li>~1 KB/event → 500 GB/day → ~180 TB/year raw, ~40 TB/year columnar-compressed.</li>
+        <li><strong>Degradation ladder:</strong> feature-store timeout at 40 ms → serve on partial features
+          with a degraded-confidence flag; model unavailable → L0 rules only; spine lagging → the policy
+          shifts conservative on value actions but never fails closed on a payment path.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s8">
+      <h2><span class="n">08</span><span>Evaluation &amp; rollout</span></h2>
+
+      <h3>Offline replay</h3>
+      <ul>
+        <li><strong>Never random splits.</strong> Time-based, and ideally out-of-time <em>and</em>
+          out-of-campaign: hold out an entire attack campaign to estimate generalisation to attacks you
+          haven't seen. Random splits leak the future through shared devices and rings and will overstate
+          performance badly.</li>
+        <li><strong>Point-in-time reconstruction</strong> of every feature. If you can't reconstruct it, the
+          offline numbers are fiction.</li>
+        <li><strong>Decision replay.</strong> Run the candidate over logged traffic and diff against
+          production: what changes, for whom, at what euro cost. This diff persuades a risk committee more
+          than any metric.</li>
+        <li><strong>Counterfactual evaluation on the holdout</strong> via inverse-propensity weighting —
+          unbiased estimates of what a new policy would catch. Second payoff of that expensive holdout.</li>
+      </ul>
+
+      <h3>The ramp</h3>
+      <ol>
+        <li><strong>Shadow</strong> — scores everything, enforces nothing, ≥2 weeks. Compare score
+          distributions and decision diffs, not just aggregates.</li>
+        <li><strong>Canary</strong> at 1%, with automatic rollback wired to the §03 guardrails.</li>
+        <li><strong>Ramp</strong> 5 → 25 → 50%, holding a permanent 1–2% control for as long as you can
+          defend it.</li>
+        <li><strong>Long-run holdout</strong> for attribution — without it, in twelve months nobody can say
+          what the system is worth and the budget conversation goes badly.</li>
+      </ol>
+
+      <div class="note">
+        <span class="lbl">Where A/B breaks — say this unprompted</span>
+        <p>Standard A/B assumes no interference between arms. Here the attacker is a <strong>shared entity
+          across both arms</strong>: they probe treatment, learn, and change behaviour in control too. Ring
+          abuse also violates independence at the unit level. Mitigations: randomise at the
+          <strong>entity-cluster</strong> level, use switchback designs over time windows for enforcement
+          changes, and treat any measured effect as a <em>lower bound that decays</em> as the attacker adapts.
+          Volunteering this is a clear staff signal.</p>
+      </div>
+
+      <h3>Red teaming</h3>
+      <p>An internal attack team with a real budget for emulator farms, residential proxies and anti-detect
+        tooling, run quarterly against production. Their cost-per-successful-account is your best north-star,
+        because it measures the thing you're actually trying to change. Add a bug-bounty category for
+        automation bypass. Assume anything you don't test, the adversary will.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s9">
+      <h2><span class="n">09</span><span>Monitoring &amp; iteration</span></h2>
+
+      <h3>What you watch, in priority order</h3>
+      <ul>
+        <li><strong>Action rates by type and segment</strong> — fastest indicator of trouble, and the one
+          that correlates with customer pain.</li>
+        <li><strong>Score distribution (PSI vs. a fixed reference)</strong>, per surface. Distribution shift
+          precedes metric shift by days and labels by weeks.</li>
+        <li><strong>Feature health</strong> — null rate, cardinality, staleness, p99 fetch, sliced by app
+          version. The most common real incident isn't drift; it's a mobile release that silently stops
+          emitting a field, degrading the model for 30% of users for three weeks before anyone notices.</li>
+        <li><strong>Training/serving skew</strong> — log served feature vectors, replay a daily sample
+          through the offline path, alert on divergence. Catches a class of bug nothing else catches.</li>
+        <li><strong>Calibration drift</strong> — reliability curve on matured labels, weekly.</li>
+      </ul>
+
+      <h3>Position bias → enforcement bias</h3>
+      <p>The template's position-bias item has an exact analogue, and drawing the parallel explicitly plays
+        well. In ranking, what the user saw depends on where you put it, so you correct with propensity
+        weights. Here, <strong>what outcome you observe depends on what action you took</strong> — a
+        challenged session that fails is not evidence of a bot, it's evidence you challenged it. The fix is
+        the same machinery: log the action propensity at decision time, weight by inverse propensity in
+        training and evaluation, and keep the random holdout as the unweighted reference.</p>
+
+      <h3>Two clocks of drift, two different responses</h3>
+      <div class="scroller">
+        <table>
+          <thead><tr><th>Drift</th><th class="mono">Timescale</th><th>Signature</th><th>Response</th></tr></thead>
+          <tbody>
+            <tr><td>Campaign onset</td><td class="num">Minutes–hours</td><td>Sharp spike in one segment; bimodal scores</td><td>L0 rules + hot list. <em>Not</em> a retrain</td></tr>
+            <tr><td>Evasion adaptation</td><td class="num">Days–weeks</td><td>Recall decays while volume holds</td><td>Feature work + targeted retrain on recent labels</td></tr>
+            <tr><td>Population drift</td><td class="num">Months</td><td>Feature distributions move; FPR creeps up</td><td>Scheduled retrain, recalibration, threshold review</td></tr>
+            <tr><td>Product drift</td><td class="num">Per release</td><td>New flows, new events, coverage cliffs</td><td>Data contracts, release-gated feature validation</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Retraining is not the answer to fast drift.</strong> Candidates reflexively say "retrain
+        frequently". A daily retrain does nothing about an attack that starts at 02:00 and takes 40,000
+        accounts by 06:00 — that's what the rules lane and automated hot-list promotion exist for.</p>
+
+      <h4>Retraining triggers</h4>
+      <ul>
+        <li>Scheduled: L1 daily, L2 weekly, subject to label maturity.</li>
+        <li>PSI breach on the score distribution, or on any top-20 feature.</li>
+        <li>Recall decay on matured labels versus the frozen reference set.</li>
+        <li>A newly curated campaign label set landing.</li>
+        <li><strong>Every trigger passes a human gate</strong> when the candidate shifts the score
+          distribution beyond a set threshold — see poisoning, §10.</li>
+      </ul>
+
+      <h3>Incident playbook — "03:00, credential stuffing spike"</h3>
+      <ol>
+        <li><strong>Detect.</strong> Login failure and challenge rates breach; page.</li>
+        <li><strong>Contain</strong> (minutes). Raise friction globally on the affected surface — a blunt
+          instrument, deliberately. Better to challenge everyone for twenty minutes than lose accounts.</li>
+        <li><strong>Characterise</strong> (30 min). Slice by ASN, device model, app version, target cohort.
+          Usually one or two dimensions separate it cleanly.</li>
+        <li><strong>Targeted rules</strong> (1 h). Replace blunt friction with narrow L0 rules, each with an
+          expiry attached at creation.</li>
+        <li><strong>Label</strong> (24 h). Curate the campaign into a named evaluation set.</li>
+        <li><strong>Model</strong> (1 week). Retrain including the campaign, verify it catches the attack
+          without the rules, then retire the rules.</li>
+        <li><strong>Review.</strong> Missing signal, missing feature, or threshold problem? Three entirely
+          different fixes — conflating them is how teams accumulate rules forever.</li>
+      </ol>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s10">
+      <h2><span class="n">10</span><span>The step the template is missing: the adversary</span></h2>
+
+      <p>Every other ML system has a stationary-ish data-generating process. This one has an intelligent
+        agent optimising against you, and almost nothing in the standard spine accounts for it.</p>
+
+      <h3>Every response you emit is a training signal for them</h3>
+      <p>If a blocked attempt fails instantly and distinctively, you've built the attacker a free oracle:
+        they binary-search your boundary at zero cost, overnight. Countermeasures, all cheap:</p>
+      <ul>
+        <li><strong>Ambiguous failures</strong> — a detected bot sees the same generic error a network timeout
+          produces.</li>
+        <li><strong>Delayed, batched enforcement</strong> — let detected accounts run degraded, then remove a
+          whole cohort at once, so the attacker can't attribute failure to a specific behaviour change. This
+          destroys their feedback loop, which is the highest-leverage cheap defence you have.</li>
+        <li><strong>Randomised thresholds</strong> in a narrow band, so probing returns noisy answers.</li>
+        <li><strong>Honeypot surfaces</strong> no legitimate client touches.</li>
+        <li><strong>Never expose model reasons externally.</strong> Reason codes are for analysts and
+          regulators, never for the blocked party.</li>
+      </ul>
+
+      <h3>Poisoning — why automated retraining is dangerous</h3>
+      <p>If labels flow automatically into training, an attacker who understands the loop can shape it:
+        appeal aggressively to inject false negatives, or run benign-looking traffic to shift the boundary
+        before the real attack. Defences: quarantine auto-labels behind a review sample; cap any single
+        entity cluster's influence on a training set; require a human gate on retrains that move the score
+        distribution materially; and always backtest against a curated frozen attack set no automated process
+        can touch.</p>
+
+      <div class="note teal">
+        <span class="lbl">The economic frame — close the section on this</span>
+        <p>"The goal isn't catching every bot. It's making the marginal cost of a successful attack exceed its
+          marginal value. That reframes the roadmap: I'd rather ship a change that adds €4 of cost per
+          fraudulent account than one that adds three points of recall against an attacker who adapts in a
+          fortnight. It's also the number I'd take to a board — attacker unit economics, not model AUC."</p>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s11">
+      <h2><span class="n">11</span><span>Legal, fairness, and the human cost</span></h2>
+
+      <p>At a European bank this is a design constraint, not a footnote, and raising it unprompted signals
+        you've shipped something that touched real customers.</p>
+
+      <div class="terms">
+        <div>
+          <div class="t">GDPR Art. 22 — automated decisions with significant effect</div>
+          <div class="d">Freezing a bank account qualifies: you need a lawful basis, meaningful information
+            about the logic, and a route to human review. Practical consequence: <strong>challenges and
+            step-ups can be fully automated; account closure needs a human in the loop</strong> — which is why
+            case management is a first-class component and review capacity is a modelling constraint.</div>
+        </div>
+        <div>
+          <div class="t">Special-category data</div>
+          <div class="d">Behavioural biometrics and face-match embeddings can constitute biometric data under
+            Art. 9. Scope it with legal before it's in the model; prefer derived scores over stored raw
+            biometric signals.</div>
+        </div>
+        <div>
+          <div class="t">Purpose limitation &amp; retention</div>
+          <div class="d">Fraud-prevention data can't be silently reused for marketing models, and retention
+            limits collide directly with wanting years of training data. Resolve it explicitly with
+            aggregated or pseudonymised long-horizon features rather than quietly keeping raw events forever.</div>
+        </div>
+        <div>
+          <div class="t">AML obligations and tipping-off</div>
+          <div class="d">Where suspicion is reported to an FIU you may be legally prohibited from telling the
+            customer why they were restricted. Reason codes and customer messaging must handle a state where
+            the true reason cannot be disclosed.</div>
+        </div>
+      </div>
+
+      <h3>Disparate impact — measure it or you're shipping it</h3>
+      <ul>
+        <li>Cheap or older Android devices fail attestation more often → a device-price proxy for income.</li>
+        <li>VPN users and customers behind heavy CGNAT look like proxy traffic.</li>
+        <li>Expats and frequent travellers trip geo-velocity rules constantly.</li>
+        <li><strong>Accessibility tooling looks automated.</strong> Screen readers, switch access and voice
+          control produce input patterns behavioural models learn to call "non-human". This is the one people
+          miss and the one where the harm is most acute.</li>
+      </ul>
+      <p>So: track FPR by device tier, region, account age and accessibility-service usage; alert on the
+        <em>ratio between segments</em>, not the aggregate; exclude or counter-weight pure proxies; and keep
+        the escalation policy asymmetric — cheap actions can be liberal, expensive ones must clear a higher
+        bar for exactly these populations.</p>
+
+      <h3>Explainability</h3>
+      <p>SHAP in the analyst console; a stable human-readable reason-code taxonomy; model cards documenting
+        training data, known weaknesses and evaluated segments; and an appeal path that both restores the
+        customer and writes a high-quality negative label back to the label store. The appeal loop is the rare
+        control that improves compliance and model quality through the same mechanism — say that.</p>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s12">
+      <h2><span class="n">12</span><span>Roadmap, tradeoffs, org</span></h2>
+
+      <div class="scroller">
+        <table>
+          <caption>Sequencing — the part that reads as staff</caption>
+          <thead><tr><th class="mono">Phase</th><th>Ships</th><th>Why now</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">Weeks 0–4</td><td>Event spine, decision logging, shadow scoring, random holdout, action-ladder plumbing</td><td>You can't improve what you don't measure, and the holdout only pays off after it's been running a while. Start the clock immediately.</td></tr>
+            <tr><td class="mono">Weeks 4–10</td><td>L0 rules + L1 GBDT; challenges enforced, freezes still human-reviewed</td><td>Most of the value, least of the risk. Enforce only on cheap reversible actions until you trust calibration.</td></tr>
+            <tr><td class="mono">Weeks 10–18</td><td>Graph layer (components first), case management, reason codes</td><td>Where the money is; unblocks AML synergies and gives analysts a workable queue.</td></tr>
+            <tr><td class="mono">Months 5–8</td><td>Sequence model, self-supervised pretraining, cascaded serving</td><td>Only worth the latency once cheaper layers plateau and the increment is measurable.</td></tr>
+            <tr><td class="mono">Months 8–12</td><td>Novelty detection, red team, counterfactual eval, attacker-cost reporting</td><td>Moves the team from reactive to anticipatory — the phase most orgs never fund, so argue for it early.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="scroller">
+        <table>
+          <caption>Tradeoffs you should defend both ways</caption>
+          <thead><tr><th>Decision</th><th>Chosen</th><th>Alternative</th><th>When you'd flip</th></tr></thead>
+          <tbody>
+            <tr><td>Model family</td><td>GBDT + cascaded sequence</td><td>End-to-end deep model</td><td>Abundant clean labels and a &gt;200 ms budget</td></tr>
+            <tr><td>Graph timing</td><td>Near-line, served as features</td><td>Synchronous traversal</td><td>Never at 60 ms; maybe on an async high-value path</td></tr>
+            <tr><td>Rules</td><td>Kept permanently</td><td>Retire once the model matures</td><td>Never fully — incident response needs a minutes-scale lever</td></tr>
+            <tr><td>Holdout</td><td>0.2% fully unpoliced</td><td>None; estimate from reviews</td><td>Only if a regulator forbids it — and then say so loudly and often</td></tr>
+            <tr><td>Build vs buy</td><td>Buy fingerprinting/attestation; build graph, features, policy</td><td>Buy end-to-end</td><td>Buy end-to-end for six months at a startup; never long-term — the policy layer is the differentiation</td></tr>
+            <tr><td>Enforcement</td><td>Delayed, batched</td><td>Immediate</td><td>Immediate for an ATO in progress — the money is moving now, and the oracle risk is worth eating</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>"How would you staff this?"</h3>
+      <p>A staff-level question disguised as small talk. Three functions, not three silos:</p>
+      <ul>
+        <li><strong>Risk platform</strong> — features, spine, decision service, serving. Shared with AML and
+          credit; measured on time-to-ship a new signal.</li>
+        <li><strong>Detection</strong> — models, labels, evaluation. Measured on cost-weighted catch rate at a
+          fixed friction budget, never on model metrics alone.</li>
+        <li><strong>Risk operations</strong> — analysts, rules, thresholds, appeals. Critically,
+          <strong>thresholds are owned by risk ops, not ML</strong>: the threshold is a risk-appetite decision,
+          the model just supplies a calibrated probability. Getting that boundary right is what stops ML from
+          being blamed for policy and policy from tuning models by feel.</li>
+      </ul>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s13">
+      <h2><span class="n">13</span><span>Follow-up probes, with answers</span></h2>
+
+      <div class="qa">
+        <div>
+          <div class="q">"You have no labels at all. Day one. What do you do?"</div>
+          <div class="a"><strong>Hard constraints, then clustering, then a seeded queue.</strong> Start with
+            rules needing no labels (impossible velocity, failed attestation, one device with 50 accounts) —
+            near-certain positives that seed the set. Cluster on device/behaviour embeddings and route the
+            densest, most self-similar clusters to analysts; farms produce populations too alike to be
+            organic. Every verdict is a label. Deploy honeypots for precise positives. A usable supervised
+            model in six to eight weeks — and the sequencing <em>is</em> the answer, not the algorithm.</div>
+        </div>
+        <div>
+          <div class="q">"Recall dropped 20% overnight. Walk me through it."</div>
+          <div class="a">Cheapest-first, because the answers differ completely. <strong>(1) Is it real?</strong>
+            Label maturity dropping recall is an artefact, not an incident. <strong>(2) Feature health</strong> —
+            a null-rate cliff tied to an app release is the single most likely cause. <strong>(3) Score
+            distribution</strong> — did it move (data problem) or hold while outcomes changed (attacker
+            adapted)? <strong>(4) Serving path</strong> — model version, skew, timeouts. <strong>(5) Only
+            then</strong> conclude evasion and look at what the misses share. Naming the ordering matters more
+            than naming the cause.</div>
+        </div>
+        <div>
+          <div class="q">"How do you handle a brand-new user with no history?"</div>
+          <div class="a">Cold start is the norm in signup abuse, not an edge case. Use what exists at t₀:
+            attestation, device reputation from the graph (new to <em>this</em> account, not to the platform),
+            funding provenance, network intel, onboarding sequence dynamics. Separate model for the onboarding
+            surface — feature availability differs so much that one model for both compromises both.</div>
+        </div>
+        <div>
+          <div class="q">"The business says false positives are too high. What do you do?"</div>
+          <div class="a">First establish what they mean — measured overturn rate, or three loud complaints?
+            If real: <strong>don't touch the model first.</strong> Move the threshold on the specific expensive
+            action — same-day, quantifiable tradeoff. Then check whether FPs concentrate in a segment (§11);
+            they usually do, and a targeted fix beats a global threshold move. Only then the model. And make
+            them quote the tradeoff back in the same units: this move costs N extra ATOs per week.</div>
+        </div>
+        <div>
+          <div class="q">"Why not just buy a vendor?"</div>
+          <div class="a">Do, for parts. Device fingerprinting and attestation are commodity, high-fixed-cost
+            and network-effected — buy. The entity graph, feature platform and policy layer are where your
+            data is unique and your differentiation lives — build. The failure mode of buying end-to-end is
+            that your risk appetite gets set by someone else's model and you can't explain a decision to a
+            regulator without a vendor on the call.</div>
+        </div>
+        <div>
+          <div class="q">"How do you know the system is working?"</div>
+          <div class="a">Three numbers, and only the third is causal. <strong>(1)</strong> Realised fraud loss
+            per €M transacted, trended. <strong>(2)</strong> Attacker cost per successful account, from the red
+            team. <strong>(3)</strong> Holdout-vs-treated realised loss — the only clean attribution you'll
+            ever have, and the second reason to fight for the holdout.</div>
+        </div>
+        <div>
+          <div class="q">"What breaks first at 10× traffic?"</div>
+          <div class="a">Not the model — inference is embarrassingly parallel. The streaming aggregates and
+            online store go first, specifically hot keys: a shared ASN or a popular device model becomes a
+            partition hotspot. Fixes: salting, tiered aggregation, and sketches (Count-Min, HyperLogLog) for
+            high-cardinality counters. The graph layer is second, and it's the one that forces an
+            architectural change rather than a scaling one.</div>
+        </div>
+        <div>
+          <div class="q">"Would an LLM help here?"</div>
+          <div class="a">Not on the hot path — latency and cost per decision rule it out, and tabular models
+            win on this data. Where it earns its place: <strong>analyst assistance</strong> (summarising a
+            case from a hundred events), <strong>free-text triage</strong> (support tickets, appeal reasons,
+            transaction memos — genuinely under-used for mule detection), and <strong>rule drafting</strong>
+            from an analyst's description of a campaign, subject to review. Volunteering the boundary reads
+            better than either enthusiasm or dismissal.</div>
+        </div>
+        <div>
+          <div class="q">"What if this were a public website, not an app?"</div>
+          <div class="a">Lose attestation — the biggest single downgrade — and most device stability.
+            Compensate with TLS/JA4 and HTTP/2 fingerprinting, proof-of-work to add per-request cost, much
+            heavier reliance on graph and funding signals, and a stricter edge rate-limit posture. Accept a
+            materially worse operating point and say so; pretending the same recall is reachable is the wrong
+            answer.</div>
+        </div>
+        <div>
+          <div class="q">"What's the biggest risk in your own design?"</div>
+          <div class="a">Have a real answer ready. Mine: <strong>the feature platform is on the critical path
+            for everything</strong> — if online/offline parity isn't right from week one, every later model
+            inherits the skew and the debugging cost compounds. Second: the holdout is politically fragile,
+            it's the first thing cut in a bad quarter, and losing it blinds the evaluation in a way nobody
+            notices for months.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================ -->
+    <section id="s14">
+      <h2><span class="n">14</span><span>Recall card</span></h2>
+
+      <div class="cheat">
+        <div>
+          <h5>Spine</h5>
+          <ul>
+            <li>Scope → frame → metrics → data → features</li>
+            <li>→ model → serving → rollout → monitoring</li>
+            <li>+ adversary (the added step)</li>
+            <li>Name the 3 cells where it breaks</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Frame</h5>
+          <ul>
+            <li>Policy system, not a classifier</li>
+            <li>Label = proxy outcome in a horizon</li>
+            <li>Row = (entity, decision, t)</li>
+            <li>Loss = cost-weighted BCE, prior-corrected</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Numbers</h5>
+          <ul>
+            <li>15M users · 4.5M DAU</li>
+            <li>500M events/day · 25k/s peak</li>
+            <li>20M decisions/day · 1k/s peak</li>
+            <li>p99 60 ms · fail open to rules</li>
+            <li>Challenge at p≈0.04% · freeze at p≈30%</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Metrics</h5>
+          <ul>
+            <li>Recall @ 0.1% FPR, per cohort</li>
+            <li>PR-AUC, never ROC-AUC</li>
+            <li>Precision @ review capacity</li>
+            <li>Calibration is first-class</li>
+            <li>Appeal overturn rate</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Data</h5>
+          <ul>
+            <li>Selective labelling → random holdout</li>
+            <li>Feedback loops → keep blocked rows</li>
+            <li>Leakage → point-in-time features</li>
+            <li>Downsample negatives, correct the prior</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Stack</h5>
+          <ul>
+            <li>L0 rules · minutes to change</li>
+            <li>L1 GBDT · the workhorse</li>
+            <li>L2 sequence · cascaded, 12%</li>
+            <li>L3 graph · near-line, rings</li>
+            <li>L4 novelty · queue only</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Adversary</h5>
+          <ul>
+            <li>Responses leak gradients</li>
+            <li>Batch and delay enforcement</li>
+            <li>Fast drift → rules, not retrains</li>
+            <li>Goal: attacker unit economics</li>
+          </ul>
+        </div>
+        <div>
+          <h5>Don't forget</h5>
+          <ul>
+            <li>Art. 22 → human in the loop for freezes</li>
+            <li>FPR by segment, incl. accessibility tools</li>
+            <li>Training/serving skew monitoring</li>
+            <li>Kill switch to rules-only in 60 s</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="note">
+        <span class="lbl">If you're running short on time</span>
+        <p>Drop the sequence model and the novelty layer. Do <em>not</em> drop labels, the adversary section,
+          or the cost model — those three are what the interview is measuring, and a candidate who covers them
+          with two model layers beats one who covers five model layers and nothing else. Close on sequencing:
+          what ships in week two, what you deliberately didn't build, and what would make you change course.</p>
+      </div>
+    </section>
+
+    <footer>
+      Prep note · ML system design · bot detection · figures are stated assumptions, not benchmarks
+    </footer>
+
+  </main>
+</div>
+
+<script>
+  (function () {
+    var toc = document.getElementById('toc');
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    var links = {};
+
+    sections.forEach(function (sec) {
+      var h = sec.querySelector('h2');
+      var n = h.querySelector('.n').textContent.trim();
+      var label = h.querySelector('span:last-child').textContent.trim();
+      var li = document.createElement('li');
+      var a = document.createElement('a');
+      a.href = '#' + sec.id;
+      a.innerHTML = '<span class="n">' + n + '</span><span>' + label + '</span>';
+      li.appendChild(a);
+      toc.appendChild(li);
+      links[sec.id] = a;
+    });
+
+    if ('IntersectionObserver' in window) {
+      var seen = {};
+      var obs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) { seen[e.target.id] = e.isIntersecting; });
+        var current = null;
+        sections.forEach(function (s) { if (seen[s.id] && !current) { current = s.id; } });
+        if (current) {
+          Object.keys(links).forEach(function (id) {
+            links[id].classList.toggle('active', id === current);
+          });
+        }
+      }, { rootMargin: '-10% 0px -75% 0px', threshold: 0 });
+      sections.forEach(function (s) { obs.observe(s); });
+    }
+
+    var rail = document.getElementById('rail');
+    var title = rail.querySelector('.rail-title');
+    var btn = document.createElement('button');
+    btn.className = 'rail-toggle';
+    btn.setAttribute('aria-expanded', 'false');
+    btn.textContent = 'Contents ▾';
+    btn.style.cssText = 'background:none;border:0;color:inherit;font:inherit;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;padding:0;';
+    btn.addEventListener('click', function () {
+      var open = rail.classList.toggle('open');
+      btn.setAttribute('aria-expanded', String(open));
+      btn.textContent = open ? 'Contents ▴' : 'Contents ▾';
+    });
+    if (window.matchMedia('(max-width: 62rem)').matches) {
+      title.textContent = '';
+      title.appendChild(btn);
+    }
+  })();
+</script>

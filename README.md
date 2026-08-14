@@ -24,6 +24,12 @@ companion walkthrough of the same design from zero: what actually happens to the
 credits for engineers, a section-by-section explanation, a jargon dictionary, and how to deliver it
 out loud.
 
+[`docs/system-design/cross-border-payments-staff.md`](./docs/system-design/cross-border-payments-staff.md) —
+the same system end to end at staff level: the full hop-by-hop trace of one payment, the invariant
+set with how each is enforced and detected in production, failure domains and the degradation
+ladder, how the design survives three years of change, testing and assurance, capacity/cost/DR, and
+ownership.
+
 ## Repository layout
 
 ```

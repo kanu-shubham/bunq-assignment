@@ -1,0 +1,1066 @@
+<title>Search Ranking Playbook</title>
+
+<style>
+  :root {
+    --bg:        #EFF1F0;
+    --surface:   #FAFBFA;
+    --surface-2: #E7EBE9;
+    --ink:       #10201C;
+    --muted:     #55665F;
+    --line:      #D3DAD6;
+    --line-soft: #E2E7E4;
+    --accent:    #0B6B5B;
+    --accent-2:  #E3EEEA;
+    --signal:    #B4531A;
+    --signal-2:  #F6E9DF;
+
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg:        #0D1412;
+      --surface:   #141C1A;
+      --surface-2: #1B2523;
+      --ink:       #E4EAE7;
+      --muted:     #93A49D;
+      --line:      #2A3733;
+      --line-soft: #202B28;
+      --accent:    #4FBFA6;
+      --accent-2:  #142925;
+      --signal:    #E08A4C;
+      --signal-2:  #2A1F16;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg:        #0D1412;
+    --surface:   #141C1A;
+    --surface-2: #1B2523;
+    --ink:       #E4EAE7;
+    --muted:     #93A49D;
+    --line:      #2A3733;
+    --line-soft: #202B28;
+    --accent:    #4FBFA6;
+    --accent-2:  #142925;
+    --signal:    #E08A4C;
+    --signal-2:  #2A1F16;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 24px 96px;
+  }
+
+  @media (min-width: 1060px) {
+    .page {
+      grid-template-columns: 210px minmax(0, 1fr);
+      gap: 56px;
+      padding-left: 32px;
+      padding-right: 32px;
+    }
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    grid-column: 1 / -1;
+    border-bottom: 1px solid var(--line);
+    padding: 72px 0 40px;
+    margin-bottom: 48px;
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 20px;
+  }
+
+  h1 {
+    font-family: var(--serif);
+    font-size: clamp(38px, 6.4vw, 62px);
+    line-height: 1.04;
+    letter-spacing: -0.018em;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0 0 22px;
+    max-width: 16ch;
+  }
+
+  .standfirst {
+    font-size: 19px;
+    line-height: 1.55;
+    color: var(--muted);
+    max-width: 60ch;
+    margin: 0;
+  }
+
+  .standfirst strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- clock strip ---------- */
+
+  .clock {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin: 40px 0 0;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .clock div {
+    flex: 1 1 132px;
+    padding: 13px 15px;
+    border-right: 1px solid var(--line-soft);
+  }
+
+  .clock div:last-child { border-right: 0; }
+
+  .clock b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    color: var(--accent);
+    font-weight: 500;
+  }
+
+  .clock span {
+    display: block;
+    font-size: 13.5px;
+    line-height: 1.35;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  /* ---------- nav rail ---------- */
+
+  nav.rail { display: none; }
+
+  @media (min-width: 1060px) {
+    nav.rail {
+      display: block;
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      padding-bottom: 24px;
+    }
+    nav.rail p {
+      font-family: var(--mono);
+      font-size: 10.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 14px;
+    }
+    nav.rail ol {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+      counter-reset: rail;
+    }
+    nav.rail li { counter-increment: rail; }
+    nav.rail a {
+      display: grid;
+      grid-template-columns: 22px 1fr;
+      font-size: 13.5px;
+      line-height: 1.3;
+      color: var(--muted);
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      padding-left: 10px;
+      margin-left: -12px;
+    }
+    nav.rail a::before {
+      content: counter(rail, decimal-leading-zero);
+      font-family: var(--mono);
+      font-size: 10.5px;
+      color: var(--accent);
+      padding-top: 2px;
+    }
+    nav.rail a:hover { color: var(--ink); border-left-color: var(--accent); }
+    nav.rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  }
+
+  /* ---------- article ---------- */
+
+  article { min-width: 0; max-width: 74ch; }
+
+  section { padding-bottom: 12px; margin-bottom: 44px; }
+
+  section + section { border-top: 1px solid var(--line-soft); padding-top: 44px; }
+
+  h2 {
+    font-family: var(--serif);
+    font-size: clamp(26px, 3.4vw, 33px);
+    line-height: 1.14;
+    letter-spacing: -0.012em;
+    font-weight: 600;
+    text-wrap: balance;
+    margin: 0 0 8px;
+  }
+
+  h2 .num {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .deck {
+    color: var(--muted);
+    font-size: 16px;
+    margin: 0 0 26px;
+    max-width: 62ch;
+  }
+
+  h3 {
+    font-family: var(--sans);
+    font-size: 15px;
+    letter-spacing: 0.01em;
+    font-weight: 650;
+    margin: 32px 0 10px;
+  }
+
+  h4 {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 28px 0 10px;
+  }
+
+  p { margin: 0 0 16px; max-width: 66ch; }
+
+  ul, ol.body { padding-left: 20px; margin: 0 0 18px; max-width: 66ch; }
+  li { margin-bottom: 8px; }
+  li > ul { margin-top: 8px; }
+
+  a { color: var(--accent); }
+
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+
+  strong { font-weight: 650; }
+
+  .lede-term {
+    font-weight: 650;
+  }
+
+  /* ---------- tables ---------- */
+
+  .tw {
+    overflow-x: auto;
+    margin: 0 0 24px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    background: var(--surface);
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 14.5px;
+    line-height: 1.45;
+  }
+
+  th, td {
+    text-align: left;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line-soft);
+    vertical-align: top;
+  }
+
+  thead th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+
+  tbody tr:last-child td { border-bottom: 0; }
+
+  td.n, th.n { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.k { font-weight: 600; white-space: nowrap; }
+  tfoot td {
+    font-family: var(--mono);
+    font-variant-numeric: tabular-nums;
+    background: var(--accent-2);
+    font-weight: 600;
+    border-top: 1px solid var(--line);
+  }
+
+  /* ---------- callouts ---------- */
+
+  .say, .trap {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-2);
+    padding: 15px 18px;
+    margin: 0 0 24px;
+    border-radius: 0 3px 3px 0;
+    max-width: 68ch;
+  }
+
+  .trap { border-left-color: var(--signal); background: var(--signal-2); }
+
+  .say p:last-child, .trap p:last-child { margin-bottom: 0; }
+
+  .say b, .trap b {
+    display: block;
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .trap b { color: var(--signal); }
+
+  .say q { font-style: italic; quotes: "\201C" "\201D"; }
+
+  /* ---------- formulas ---------- */
+
+  .fx {
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.75;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 16px 18px;
+    margin: 0 0 12px;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  .fx-note {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: -4px 0 24px;
+    max-width: 64ch;
+  }
+
+  /* ---------- figures ---------- */
+
+  figure {
+    margin: 28px 0 30px;
+    padding: 0;
+  }
+
+  figure .fw {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 20px 16px;
+  }
+
+  figure svg { display: block; max-width: 100%; height: auto; margin: 0 auto; color: var(--ink); }
+
+  figcaption {
+    font-size: 13.5px;
+    color: var(--muted);
+    margin-top: 12px;
+    max-width: 64ch;
+  }
+
+  .svg-box { fill: var(--surface-2); stroke: currentColor; stroke-width: 1; }
+  .svg-box-hot { fill: var(--accent-2); stroke: var(--accent); stroke-width: 1.4; }
+  .svg-t { font-family: var(--sans); font-size: 13px; fill: currentColor; }
+  .svg-s { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+  .svg-l { font-family: var(--mono); font-size: 10.5px; fill: var(--muted); }
+  .svg-line { stroke: currentColor; stroke-width: 1.2; fill: none; }
+  .svg-dash { stroke: var(--accent); stroke-width: 1.2; fill: none; stroke-dasharray: 5 4; }
+
+  /* ---------- closing card ---------- */
+
+  .recall {
+    border: 1px solid var(--accent);
+    border-radius: 3px;
+    background: var(--surface);
+    padding: 26px 28px;
+    margin-top: 8px;
+  }
+
+  .recall ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 15.5px;
+  }
+
+  .recall li { margin-bottom: 10px; }
+
+  footer {
+    grid-column: 1 / -1;
+    border-top: 1px solid var(--line);
+    margin-top: 40px;
+    padding-top: 20px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <p class="eyebrow">ML System Design · Staff Level</p>
+    <h1>Search Ranking Playbook</h1>
+    <p class="standfirst">A full walkthrough of <strong>&ldquo;design a search ranking system&rdquo;</strong>: query understanding, BM25 into hybrid retrieval, learning to rank with pairwise and listwise losses, and the offline&#8202;/&#8202;online metric pair that actually decides whether it ships.</p>
+
+    <div class="clock">
+      <div><b>0&ndash;6 min</b><span>Scope, constraints, business&nbsp;→&nbsp;ML objective</span></div>
+      <div><b>6&ndash;11</b><span>Metrics, offline and online</span></div>
+      <div><b>11&ndash;18</b><span>Data and label construction</span></div>
+      <div><b>18&ndash;24</b><span>Features</span></div>
+      <div><b>24&ndash;34</b><span>Retrieval + ranking models</span></div>
+      <div><b>34&ndash;40</b><span>Serving and latency</span></div>
+      <div><b>40&ndash;45</b><span>Rollout, monitoring, risks</span></div>
+    </div>
+  </header>
+
+  <nav class="rail" aria-label="Sections">
+    <p>The order you speak it</p>
+    <ol>
+      <li><a href="#scope">Clarify &amp; scope</a></li>
+      <li><a href="#framing">Frame it as ML</a></li>
+      <li><a href="#metrics">Metrics</a></li>
+      <li><a href="#data">Data &amp; labels</a></li>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#model">Model</a></li>
+      <li><a href="#serving">Serving</a></li>
+      <li><a href="#rollout">Evaluation &amp; rollout</a></li>
+      <li><a href="#monitoring">Monitoring</a></li>
+      <li><a href="#followups">Follow-up bank</a></li>
+      <li><a href="#transfer">Domain transfer</a></li>
+      <li><a href="#recall">Recall card</a></li>
+    </ol>
+  </nav>
+
+  <article>
+
+    <!-- =================== 1 =================== -->
+    <section id="scope">
+      <h2><span class="num">01 / Clarify &amp; scope</span>Pin the problem before you pin the model</h2>
+      <p class="deck">Six minutes of questions buys you the right to make assumptions out loud for the next forty. Ask, then state what you&rsquo;re assuming and move &mdash; never stall waiting to be handed numbers.</p>
+
+      <h4>Ask these</h4>
+      <ul>
+        <li><b>Product surface.</b> What is being searched &mdash; products, jobs, documents, people, transactions? Is there a browse&#8202;/&#8202;feed surface sharing the same ranker?</li>
+        <li><b>Business objective.</b> What does the business want more of: conversion, engaged time, task completion, deflected support tickets? What does a &ldquo;good&rdquo; search look like to a user?</li>
+        <li><b>Scale.</b> Corpus size, QPS at peak, growth rate, how fast the corpus changes (a news index and a product catalogue are different systems).</li>
+        <li><b>Latency SLA.</b> p99 end-to-end for the search endpoint, and how much of it belongs to ranking versus the rest of the request.</li>
+        <li><b>Existing infra.</b> Is there an inverted index already? A feature store, a stream processor, GPU serving, an experimentation platform? Green-field answers are worth less than answers that reuse what exists.</li>
+        <li><b>Data.</b> How much query&#8202;/&#8202;click log history, is it joined to sessions and users, do we have human relevance judgments, is personalization legally permitted?</li>
+      </ul>
+
+      <h4>Then state the assumptions you&rsquo;ll design against</h4>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Dimension</th><th>Assumed</th><th class="n">Why it matters</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Corpus</td><td class="n">50M documents</td><td>Too big to score exhaustively &rarr; forces two-stage retrieve-then-rank.</td></tr>
+            <tr><td class="k">Traffic</td><td class="n">2,000 QPS peak</td><td>Sets replica count and how much per-query compute you can afford.</td></tr>
+            <tr><td class="k">Latency</td><td class="n">300 ms p99 end-to-end<br>180 ms for search backend</td><td>The single hardest constraint. It kills the &ldquo;just cross-encode everything&rdquo; answer.</td></tr>
+            <tr><td class="k">Logs</td><td class="n">~6 months, 500M sessions</td><td>Enough for a strong click model; not enough for rare tail queries.</td></tr>
+            <tr><td class="k">Freshness</td><td class="n">New doc searchable &lt; 5 min</td><td>Drives incremental indexing and rules out full nightly rebuilds only.</td></tr>
+            <tr><td class="k">Judgments</td><td class="n">~50k human-labelled pairs</td><td>Small &mdash; use for calibration and eval, not as the main training signal.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Business objective &rarr; ML objective</h3>
+      <p>The translation is the part interviewers grade. Name the business goal, then the proxy you can actually optimize, then say explicitly what the proxy gets wrong.</p>
+      <div class="fx">business goal   →  users find what they came for, and come back
+online metric   →  session success rate, query reformulation rate ↓
+ML objective    →  rank order that maximizes expected graded relevance
+loss proxy      →  listwise softmax / LambdaRank over click-derived labels
+offline metric  →  NDCG@10 on de-biased labels</div>
+      <p class="fx-note">Every arrow leaks. Clicks are not relevance, relevance is not satisfaction, and satisfaction is not retention. Saying which leak you accept &mdash; and how you&rsquo;ll detect it &mdash; is the staff-level move.</p>
+
+      <div class="say">
+        <b>Say it like this</b>
+        <p><q>I&rsquo;ll optimize for graded relevance measured by NDCG@10 offline, because that is what I can compute per query. But the metric that decides whether we ship is session success rate with reformulation rate as a guardrail &mdash; a ranker that makes people click more but search three times is a regression, and NDCG will not tell me that.</q></p>
+      </div>
+    </section>
+
+    <!-- =================== 2 =================== -->
+    <section id="framing">
+      <h2><span class="num">02 / Frame it as ML</span>Label, granularity, loss</h2>
+      <p class="deck">Three sentences that must be unambiguous: what a training example is, what its label is, and what the loss does with the group structure.</p>
+
+      <h3>The example</h3>
+      <p>A training example is a <span class="lede-term">(query, document, context)</span> triple. Examples are grouped by <span class="lede-term">query impression</span> &mdash; one search event, its ~20 displayed documents, the user, device, locale, and timestamp. The group is not incidental: ranking losses operate <em>within</em> a group, and metrics are computed per group and then averaged. Batch by group, never shuffle rows across queries.</p>
+
+      <h3>The label</h3>
+      <p>Graded, on a 0&ndash;4 scale, derived from post-impression behaviour and mapped to gains via <code>2^rel − 1</code>:</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th class="n">Grade</th><th>Signal (e-commerce example)</th><th class="n">Gain</th></tr></thead>
+          <tbody>
+            <tr><td class="n">4</td><td>Purchase / conversion attributed to this impression</td><td class="n">15</td></tr>
+            <tr><td class="n">3</td><td>Add-to-cart, save, long dwell (&gt; 30 s) or return-to-item</td><td class="n">7</td></tr>
+            <tr><td class="n">2</td><td>Click with dwell &gt; 10 s (a &ldquo;satisfied&rdquo; click)</td><td class="n">3</td></tr>
+            <tr><td class="n">1</td><td>Click with immediate bounce back to the SERP</td><td class="n">1</td></tr>
+            <tr><td class="n">0</td><td>Displayed, examined (per the click model), not clicked</td><td class="n">0</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>The exponential gain is a design choice, not a formality: it says one perfect result at rank 1 is worth more than two mediocre ones, which is usually what the product wants.</p>
+
+      <h3>The loss</h3>
+      <p>Three families, and you should be able to justify the jump between them:</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th>Family</th><th>Loss</th><th>Optimizes</th><th>Use when</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">Pointwise</td>
+              <td>Logistic / squared error on each (q, d)</td>
+              <td>Calibrated P(click)</td>
+              <td>You need a probability &mdash; ad auctions, blending across surfaces, thresholding.</td>
+            </tr>
+            <tr>
+              <td class="k">Pairwise</td>
+              <td>RankNet, LambdaRank / LambdaMART</td>
+              <td>Correct ordering of pairs, weighted by their effect on NDCG</td>
+              <td>The default for tabular features. Strong, cheap, robust to per-query score scale drift.</td>
+            </tr>
+            <tr>
+              <td class="k">Listwise</td>
+              <td>Softmax cross-entropy (ListNet), ApproxNDCG</td>
+              <td>The whole permutation at once</td>
+              <td>Neural rankers with many candidates per group; best match to the metric.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="fx">RankNet    L = log(1 + exp(−σ(s_i − s_j)))          for labelled pair i ≻ j
+
+LambdaRank λ_ij = −σ / (1 + exp(σ(s_i − s_j))) · |ΔNDCG_ij|
+
+Listwise   L = −Σ_i  (y_i / Σ y) · log( exp(s_i) / Σ_j exp(s_j) )</div>
+      <p class="fx-note">LambdaRank is the one to be able to explain cold: it never writes down a differentiable NDCG. It takes the pairwise gradient and <em>scales</em> it by how much swapping that pair would move NDCG. Cheap trick, correct behaviour &mdash; the model spends its capacity where the metric is sensitive, which is the top of the list.</p>
+
+      <div class="trap">
+        <b>Where candidates lose the room</b>
+        <p>Saying &ldquo;I&rsquo;d train a binary classifier on clicks.&rdquo; It is defensible as a v0, but only if you immediately name the two problems: it ignores group structure (a query with 200 impressions dominates one with 5), and it optimizes calibration rather than order. Say it as a deliberate baseline you will beat, not as the design.</p>
+      </div>
+    </section>
+
+    <!-- =================== 3 =================== -->
+    <section id="metrics">
+      <h2><span class="num">03 / Metrics</span>Three tiers, and what breaks each one</h2>
+      <p class="deck">Offline to iterate fast, online to decide, guardrails to stop you shipping a disaster that happens to score well.</p>
+
+      <h4>Offline</h4>
+      <ul>
+        <li><b>NDCG@10</b> &mdash; primary. Graded, position-discounted, comparable across queries with different numbers of relevant docs.</li>
+        <li><b>Recall@1000 for the retrieval stage</b> &mdash; measured separately, against the union of everything ever judged relevant. Retrieval sets the ceiling; a ranker cannot recover a document that was never a candidate.</li>
+        <li><b>MRR</b> for navigational queries, where exactly one result is right.</li>
+        <li><b>AUC / log-loss</b> for the pointwise head, plus a <b>calibration curve</b> if any downstream consumer (ads, blending) treats the score as a probability.</li>
+        <li>Everything sliced: head&#8202;/&#8202;torso&#8202;/&#8202;tail query frequency, new vs. established documents, locale, device.</li>
+      </ul>
+
+      <h4>NDCG, worked</h4>
+      <p>Grades for the ten results you returned, truncated at 5: <code>[3, 0, 2, 1, 2]</code>. Gains are <code>2^rel − 1</code>, discount is <code>1 / log₂(i + 1)</code>.</p>
+      <div class="tw">
+        <table>
+          <thead><tr><th class="n">Rank</th><th class="n">Grade</th><th class="n">Gain</th><th class="n">Discount</th><th class="n">Contribution</th><th class="n">Ideal order</th></tr></thead>
+          <tbody>
+            <tr><td class="n">1</td><td class="n">3</td><td class="n">7</td><td class="n">1.0000</td><td class="n">7.0000</td><td class="n">7 → 7.0000</td></tr>
+            <tr><td class="n">2</td><td class="n">0</td><td class="n">0</td><td class="n">0.6309</td><td class="n">0.0000</td><td class="n">3 → 1.8928</td></tr>
+            <tr><td class="n">3</td><td class="n">2</td><td class="n">3</td><td class="n">0.5000</td><td class="n">1.5000</td><td class="n">3 → 1.5000</td></tr>
+            <tr><td class="n">4</td><td class="n">1</td><td class="n">1</td><td class="n">0.4307</td><td class="n">0.4307</td><td class="n">1 → 0.4307</td></tr>
+            <tr><td class="n">5</td><td class="n">2</td><td class="n">3</td><td class="n">0.3869</td><td class="n">1.1605</td><td class="n">0 → 0.0000</td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4">DCG@5 = 10.0912&nbsp;&nbsp;·&nbsp;&nbsp;IDCG@5 = 10.8235</td><td colspan="2">NDCG@5 = 0.932</td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <p>Now the number that explains LambdaRank. Swapping ranks 1 and 2 costs <code>|ΔNDCG| = 0.2387</code>. Swapping ranks 4 and 5 &mdash; also a mis-ordering &mdash; is worth <code>0.0081</code>. Same logical error, <b>29&times;</b> the impact. A loss that treats both pairs equally is optimizing something the product does not care about.</p>
+
+      <h4>Online</h4>
+      <ul>
+        <li><b>Session success rate</b> &mdash; share of search sessions ending in the target action (purchase, application, ticket deflection) rather than abandonment.</li>
+        <li><b>CTR@k and MRR-of-first-click</b> &mdash; fast-moving, sensitive, and gameable; treat as diagnostics, not as the decision metric.</li>
+        <li><b>Reformulation rate</b> and <b>queries per successful session</b> &mdash; the honest counterweight to CTR.</li>
+        <li><b>Time to first satisfied click.</b></li>
+        <li><b>Retention / repeat search rate</b> at 7 and 28 days &mdash; the metric leadership cares about, too slow to iterate on.</li>
+      </ul>
+
+      <h4>Guardrails (any breach blocks the ramp)</h4>
+      <ul>
+        <li>p99 latency and timeout rate on the search endpoint.</li>
+        <li>Zero-result and near-zero-result rate.</li>
+        <li>Index freshness lag.</li>
+        <li>Exposure concentration &mdash; Gini over documents shown; a ranker that funnels all traffic to 200 items looks great this week and starves the catalogue next quarter.</li>
+        <li>Policy&#8202;/&#8202;safety violations in the top 10, and complaint or report rate.</li>
+        <li>Revenue and margin neutrality, if relevance and revenue can diverge.</li>
+      </ul>
+
+      <div class="trap">
+        <b>When offline and online disagree</b>
+        <p>NDCG up, CTR down is the classic. Work the list in order: (1) the offline labels are biased and the new model is being scored on the old model&rsquo;s exposure distribution; (2) the eval set is not representative &mdash; usually over-weighted to head queries; (3) latency regressed and you are measuring the timeout path, not the model; (4) the change is real and NDCG&rsquo;s grade mapping does not reflect what users want. Check in that order, because the first three are far more common than the fourth.</p>
+      </div>
+    </section>
+
+    <!-- =================== 4 =================== -->
+    <section id="data">
+      <h2><span class="num">04 / Data &amp; labels</span>The logs are lying, here&rsquo;s how</h2>
+      <p class="deck">Click logs are the only signal at scale, and they are biased by the ranker that produced them. Every serious search system is, structurally, a bias-correction system with a model attached.</p>
+
+      <h3>Sources</h3>
+      <ul>
+        <li><b>Query &amp; impression logs</b> &mdash; the query, the ranked list, which positions were rendered and viewport-visible, the model version, and the <em>exact feature vector scored at request time</em>.</li>
+        <li><b>Interaction logs</b> &mdash; clicks with dwell, adds, conversions, joined by session and user.</li>
+        <li><b>Content&#8202;/&#8202;catalogue store</b> &mdash; document text, attributes, quality signals, embargoes.</li>
+        <li><b>Human judgments</b> &mdash; a few tens of thousands of graded pairs against a written rubric. Used for calibration, tail-query evaluation, and as the golden set for anything automated.</li>
+        <li><b>LLM-generated judgments</b> &mdash; scale the rubric to hundreds of thousands of pairs, but only after measuring agreement with the human set (Cohen&rsquo;s κ &gt; 0.6, and check where it disagrees, not just how often).</li>
+      </ul>
+
+      <h3>Position bias, and the fix</h3>
+      <p>Under a position-based model, a click factorizes into examination and relevance:</p>
+      <div class="fx">P(click | q, d, k)  =  P(examine | k)  ·  P(relevant | q, d)
+
+IPS-weighted label:   ŷ_d  =  c_d / P(examine | k_d)</div>
+      <p class="fx-note">Estimate <code>P(examine | k)</code> one of three ways: randomize result order on a small traffic slice (cleanest, costs relevance); harvest interventions from natural ranking changes across model versions (free, noisier); or fit the PBM with EM over the logs (no traffic cost, relies on the model being right). Inverse-propensity weights blow up at low propensities &mdash; clip them, and report the effective sample size after clipping.</p>
+
+      <p>Two biases the PBM does not cover, worth naming: <b>trust bias</b> (users click top results because they are top, even after examining and judging them mediocre) and <b>selection bias</b> (relevant documents the old ranker never retrieved have no logs at all, so no amount of re-weighting recovers them &mdash; only exploration and hard-negative mining do).</p>
+
+      <h3>Sampling &amp; negatives</h3>
+      <ul>
+        <li><b>Ranker training:</b> sample impressions, keep the full group. Cap groups at ~30 documents to bound per-group cost.</li>
+        <li><b>Retriever training:</b> in-batch negatives are too easy on their own. Mix them with <b>hard negatives</b> mined from the top-100 BM25 results that were not engaged with. The usual failure is <em>false</em> negatives &mdash; documents that are actually relevant and simply were not clicked; de-noise by dropping negatives the current cross-encoder scores above a threshold.</li>
+        <li><b>Head/tail balance:</b> down-weight duplicated head queries so 1% of queries do not become 40% of the loss.</li>
+      </ul>
+
+      <h3>Leakage &amp; time</h3>
+      <ul>
+        <li><b>Point-in-time correctness.</b> Every feature must carry the value it had at request time. The strongest version of this is not a time-travel join &mdash; it is <b>logging the scored feature vector at serving time</b> and training on exactly those bytes. It kills train&#8202;/&#8202;serve skew and point-in-time bugs in one move; the cost is log volume and the fact that new features need a shadow-logging period before they can be trained on.</li>
+        <li><b>Aggregate features leak.</b> A doc&rsquo;s lifetime CTR computed over a window that includes the impression you are training on is direct label leakage. Compute over <code>[t − 28d, t)</code>, strictly exclusive.</li>
+        <li><b>Split by time, not at random.</b> Train on weeks 1&ndash;10, validate on 11, test on 12. Random splits leak the same query&rsquo;s near-duplicate impressions across the boundary and flatter you by several NDCG points.</li>
+        <li><b>Delayed feedback.</b> Conversions arrive hours or days after the impression. Either train on a matured window (simple, costs freshness) or use a delayed-feedback loss that models the conversion delay (better, more machinery). Never train on today&rsquo;s partially-observed conversions as if they were final &mdash; you teach the model that recent documents are bad.</li>
+      </ul>
+    </section>
+
+    <!-- =================== 5 =================== -->
+    <section id="features">
+      <h2><span class="num">05 / Features</span>Four families, one hydration budget</h2>
+      <p class="deck">A GBDT with excellent features beats a transformer with mediocre ones, and it does it in 15 ms. Feature quality is where ranking wins are actually found.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Family</th><th>Examples</th><th>Computed</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">Query</td>
+              <td>Length, language, detected intent, entity types present, historical CTR and abandonment for this normalized query, frequency bucket (head&#8202;/&#8202;torso&#8202;/&#8202;tail), spell-corrected flag</td>
+              <td>Online, cached per normalized query</td>
+            </tr>
+            <tr>
+              <td class="k">Document</td>
+              <td>Quality score, price, rating, review count, age, popularity priors, seller&#8202;/&#8202;author reputation, stock or availability, static embedding</td>
+              <td>Precomputed, refreshed on change</td>
+            </tr>
+            <tr>
+              <td class="k">Query&nbsp;&times;&nbsp;doc</td>
+              <td>BM25 per field (title, body, attributes), exact-match and coverage ratios, phrase and proximity match, cosine of the two embeddings, historical CTR of this pair, category-match indicator</td>
+              <td>Online &mdash; the expensive family, and the one that carries the signal</td>
+            </tr>
+            <tr>
+              <td class="k">User &amp; context</td>
+              <td>Locale, device, time of day, session query history, recently viewed categories, long-term affinity vector, price sensitivity band</td>
+              <td>Session state online, long-term precomputed</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Serve them from a feature store with an offline&#8202;/&#8202;online pair backed by the same definitions &mdash; the entire point is that the training pipeline and the serving path cannot drift apart. Hydration is batched: one multi-get for 1,000 candidate documents, not 1,000 round trips.</p>
+
+      <h3>Embeddings</h3>
+      <p>A two-tower bi-encoder produces both the query and document vectors. Documents are embedded offline and pushed to the ANN index; queries are embedded online by a small distilled encoder (6 layers, ~5&ndash;10 ms), with a cache on the normalized query string that covers most head traffic. Version the embedding space explicitly: <b>a new encoder means a full index rebuild</b>, and mixing vectors from two encoder versions in one index silently destroys recall. Blue-green the index.</p>
+
+      <div class="trap">
+        <b>Features that look great and are traps</b>
+        <p><b>Document position in the previous ranking</b> &mdash; near-perfect offline, useless online, and it teaches the model to reproduce the incumbent. <b>Raw lifetime CTR without a prior</b> &mdash; a document with 1 click on 1 impression outranks one with 8,000 on 10,000; smooth it (Bayesian prior or Wilson lower bound). <b>Anything from the current session recorded after the impression.</b></p>
+      </div>
+    </section>
+
+    <!-- =================== 6 =================== -->
+    <section id="model">
+      <h2><span class="num">06 / Model</span>Understand, retrieve, rank, then re-rank</h2>
+      <p class="deck">Four stages, each one cutting the candidate set by roughly an order of magnitude while spending more compute per document. That funnel <em>is</em> the design.</p>
+
+      <figure>
+        <div class="fw">
+          <svg viewBox="0 0 700 660" role="img" aria-label="Vertical diagram of the search serving pipeline: query understanding, then parallel BM25 and dense ANN retrieval, then fusion and feature hydration, then a LambdaMART ranker over 1000 candidates, then a cross-encoder reranking the top 50, then a policy layer producing the results page. Each stage is annotated with its latency budget.">
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+              </marker>
+            </defs>
+
+            <!-- query -->
+            <rect class="svg-box" x="270" y="14" width="160" height="42" rx="3"/>
+            <text class="svg-t" x="350" y="34" text-anchor="middle">User query</text>
+            <text class="svg-s" x="350" y="49" text-anchor="middle">2,000 QPS peak</text>
+            <line class="svg-line" x1="350" y1="56" x2="350" y2="94" marker-end="url(#ar)"/>
+
+            <!-- QU -->
+            <rect class="svg-box" x="130" y="96" width="440" height="58" rx="3"/>
+            <text class="svg-t" x="350" y="120" text-anchor="middle">Query understanding</text>
+            <text class="svg-s" x="350" y="138" text-anchor="middle">normalize · spell · intent · entities → filters · embed     12 ms</text>
+
+            <!-- split -->
+            <path class="svg-line" d="M 350 154 L 350 172 L 190 172 L 190 200" marker-end="url(#ar)"/>
+            <path class="svg-line" d="M 350 154 L 350 172 L 510 172 L 510 200" marker-end="url(#ar)"/>
+
+            <rect class="svg-box" x="70" y="202" width="240" height="58" rx="3"/>
+            <text class="svg-t" x="190" y="226" text-anchor="middle">BM25 · inverted index</text>
+            <text class="svg-s" x="190" y="244" text-anchor="middle">top 1,000 · 25 ms</text>
+
+            <rect class="svg-box" x="390" y="202" width="240" height="58" rx="3"/>
+            <text class="svg-t" x="510" y="226" text-anchor="middle">Dense ANN · HNSW</text>
+            <text class="svg-s" x="510" y="244" text-anchor="middle">top 500 · 18 ms</text>
+
+            <text class="svg-l" x="350" y="232" text-anchor="middle">parallel</text>
+
+            <!-- merge -->
+            <path class="svg-line" d="M 190 260 L 190 288 L 350 288 L 350 306" marker-end="url(#ar)"/>
+            <path class="svg-line" d="M 510 260 L 510 288 L 350 288" />
+
+            <rect class="svg-box" x="130" y="308" width="440" height="58" rx="3"/>
+            <text class="svg-t" x="350" y="332" text-anchor="middle">Fuse (RRF) · filters · feature hydration</text>
+            <text class="svg-s" x="350" y="350" text-anchor="middle">~1,200 unique candidates · one batched multi-get · 30 ms</text>
+            <line class="svg-line" x1="350" y1="366" x2="350" y2="404" marker-end="url(#ar)"/>
+
+            <rect class="svg-box-hot" x="130" y="406" width="440" height="58" rx="3"/>
+            <text class="svg-t" x="350" y="430" text-anchor="middle">LambdaMART ranker</text>
+            <text class="svg-s" x="350" y="448" text-anchor="middle">~500 trees · 1,000 candidates · 15 ms</text>
+            <line class="svg-line" x1="350" y1="464" x2="350" y2="502" marker-end="url(#ar)"/>
+
+            <rect class="svg-box-hot" x="130" y="504" width="440" height="58" rx="3"/>
+            <text class="svg-t" x="350" y="528" text-anchor="middle">Cross-encoder re-rank</text>
+            <text class="svg-s" x="350" y="546" text-anchor="middle">distilled 6-layer · top 50 only · 45 ms</text>
+            <line class="svg-line" x1="350" y1="562" x2="350" y2="600" marker-end="url(#ar)"/>
+
+            <rect class="svg-box" x="130" y="602" width="440" height="50" rx="3"/>
+            <text class="svg-t" x="350" y="623" text-anchor="middle">Policy: dedup · diversity · freshness · SERP</text>
+            <text class="svg-s" x="350" y="640" text-anchor="middle">5 ms</text>
+          </svg>
+        </div>
+        <figcaption>Candidates fall 50M → 1,200 → 50 → 10 while cost per document rises by three orders of magnitude. The cross-encoder is affordable only because it never sees more than 50 documents.</figcaption>
+      </figure>
+
+      <h3>Stage 0 &mdash; Query understanding</h3>
+      <p>Cheap, high-leverage, and the part most candidates skip.</p>
+      <ul>
+        <li><b>Normalization</b> &mdash; Unicode NFKC, case folding, diacritic handling, language ID, and segmentation (mandatory for CJK, and for German compounds).</li>
+        <li><b>Spell correction</b> &mdash; noisy-channel model over the query log, gated: only rewrite when the correction&rsquo;s historical success rate beats the original&rsquo;s. Always keep the original as a fallback recall path.</li>
+        <li><b>Intent classification</b> &mdash; navigational, informational, transactional. It changes the ranking objective: navigational queries want MRR and one right answer; broad queries want diversity.</li>
+        <li><b>Entity &amp; attribute tagging</b> &mdash; a sequence model tagging brand, category, colour, size, and numeric constraints. <code>&ldquo;red nike running shoes under 80&rdquo;</code> becomes a text query plus three structured filters. Converting free text into filters usually beats any ranking improvement you can buy for the same effort.</li>
+        <li><b>Expansion</b> &mdash; synonyms mined from the co-click graph and embedding neighbours, applied as optional (SHOULD) clauses so they add recall without hijacking precision.</li>
+        <li><b>LLM rewriting</b> &mdash; run offline over head and torso queries, cache the rewrite keyed by normalized query. Never on the online path for the tail: you cannot afford it and you cannot debug it.</li>
+      </ul>
+
+      <h3>Stage 1 &mdash; Retrieval</h3>
+      <p><b>Lexical.</b> BM25 over an inverted index, multi-field with per-field weights:</p>
+      <div class="fx">score(q,d) = Σ_t  IDF(t) · [ f(t,d) · (k₁+1) ] / [ f(t,d) + k₁·(1 − b + b·|d|/avgdl) ]
+
+IDF(t) = ln( 1 + (N − n_t + 0.5) / (n_t + 0.5) )        k₁ ≈ 1.2   b = 0.75</div>
+      <p class="fx-note">Term saturation via k₁ (the 20th occurrence of a term adds almost nothing) and length normalization via b. BM25 is exact, interpretable, handles rare terms and typo-free identifiers perfectly, and needs no training data &mdash; which is why it is still the recall backbone and the honest baseline every neural system must beat.</p>
+
+      <p><b>Dense.</b> A two-tower bi-encoder trained with in-batch plus mined hard negatives, indexed with HNSW (<code>M=32</code>, <code>efConstruction=200</code>, <code>efSearch≈64</code> tuned to hit recall@500 &gt; 0.95 against exact search). Catches semantic matches BM25 cannot: <em>&ldquo;laptop for my kid&rsquo;s school&rdquo;</em> → Chromebooks.</p>
+
+      <p><b>Fuse them.</b> Reciprocal rank fusion is the sane default because it needs no score calibration between two incomparable scoring systems:</p>
+      <div class="fx">RRF(d) = Σ_r  1 / (60 + rank_r(d))</div>
+      <p class="fx-note">Hybrid consistently beats either arm alone, and the failure modes are complementary: BM25 misses paraphrase, dense misses exact identifiers, part numbers, and rare proper nouns. Keep both.</p>
+
+      <h3>Stage 2 &mdash; Ranking</h3>
+      <ul>
+        <li><b>v0: BM25 alone.</b> Ship it, instrument it, and let it generate the logs the next model needs. A ranking system with no click logs has no learning-to-rank problem yet.</li>
+        <li><b>v1: LambdaMART</b> (GBDT, ~500 trees, depth 6&ndash;8) over the four feature families. This is the workhorse: it eats heterogeneous tabular features without scaling, trains in minutes, scores 1,000 candidates in ~15 ms on CPU, and is debuggable via feature importance when someone asks why a specific document ranked 4th. Expect the largest single jump in the whole project here.</li>
+        <li><b>v2: neural ranker</b> with a listwise loss, consuming the same tabular features plus raw text and embeddings. Justify it only by what it adds that trees cannot: shared representations across features, text interaction beyond a cosine, and multi-task heads (click, conversion, dwell) that regularize each other.</li>
+        <li><b>v3: cross-encoder re-rank</b> over the top 50. Full attention between query and document tokens is the highest-quality relevance signal available &mdash; and quadratically unaffordable, which is exactly why it sits behind the funnel. Distil a large teacher (or LLM judgments) into a 6-layer student to fit the latency budget.</li>
+      </ul>
+
+      <h3>Stage 3 &mdash; Policy layer</h3>
+      <p>Deterministic, auditable, outside the model: near-duplicate collapse, per-seller or per-domain capping, diversity via MMR or a submodular selector for broad queries, freshness boosts, hard business and compliance rules, and an exploration slot. Keep it out of the model so it can be changed without a retrain and audited when someone asks why a specific item was suppressed.</p>
+
+      <div class="say">
+        <b>Say it like this</b>
+        <p><q>I want the funnel to be cheap-and-wide at the bottom and expensive-and-narrow at the top. Retrieval sets the ceiling on quality, so I measure it separately with recall@1000; the ranker decides where in that ceiling we land. If recall@1000 is 0.7, no ranker in the world gets me above 0.7, and I should be spending my time on retrieval, not on the loss function.</q></p>
+      </div>
+    </section>
+
+    <!-- =================== 7 =================== -->
+    <section id="serving">
+      <h2><span class="num">07 / Serving</span>Spend the 180 ms deliberately</h2>
+      <p class="deck">Write the budget on the board as a table. It converts hand-waving into arithmetic, and it is the fastest way to demonstrate you have shipped one of these.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Stage</th><th class="n">p99</th><th>What you cut under load</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Query understanding</td><td class="n">12 ms</td><td>Cache hit on normalized query; skip spell correction</td></tr>
+            <tr><td class="k">BM25 retrieval</td><td class="n">25 ms</td><td>Never cut &mdash; this is the recall floor</td></tr>
+            <tr><td class="k">Dense ANN</td><td class="n">18 ms</td><td>Lower efSearch, or drop the arm entirely</td></tr>
+            <tr><td class="k">Fuse + feature hydration</td><td class="n">30 ms</td><td>Drop optional feature groups; serve defaults</td></tr>
+            <tr><td class="k">LambdaMART · 1,000 docs</td><td class="n">15 ms</td><td>Score 500 instead of 1,000</td></tr>
+            <tr><td class="k">Cross-encoder · top 50</td><td class="n">45 ms</td><td>First thing to shed: top 20, then skip</td></tr>
+            <tr><td class="k">Policy + serialization</td><td class="n">5 ms</td><td>Never cut &mdash; compliance rules live here</td></tr>
+            <tr><td class="k">Network, fan-out, margin</td><td class="n">30 ms</td><td>&mdash;</td></tr>
+          </tbody>
+          <tfoot><tr><td>Total backend</td><td class="n">180 ms</td><td>Degrades to ~90 ms with the cuts above</td></tr></tfoot>
+        </table>
+      </div>
+
+      <h3>The rules that keep it there</h3>
+      <ul>
+        <li><b>Every stage has a timeout and a defined degradation.</b> Slow is worse than slightly-less-relevant: the ladder above is a product decision made in advance, not an incident-time improvisation.</li>
+        <li><b>Precompute everything that does not depend on the query.</b> Document features, embeddings, quality scores, popularity priors &mdash; all computed offline, refreshed on document change or on a schedule.</li>
+        <li><b>Cache in three places.</b> Full SERP for head queries (short TTL, keyed on query + filters + user segment, <em>not</em> user ID); query embeddings; document feature blocks. Head queries are a small fraction of distinct queries but a large fraction of traffic &mdash; the cache is the cheapest latency win available.</li>
+        <li><b>Shard by document, fan out, merge.</b> Each shard returns its top-k; latency is the slowest shard, so watch p99 per shard and use hedged requests for stragglers.</li>
+        <li><b>Index freshness.</b> Incremental segments for new and updated documents merged into the main index, so a new document is searchable in minutes without a rebuild. Embeddings for new documents computed on the write path.</li>
+        <li><b>Model rollout is a config change.</b> Model artifacts versioned and loadable without a deploy; keep the previous version warm for instant rollback.</li>
+      </ul>
+
+      <div class="trap">
+        <b>The question behind the question</b>
+        <p>&ldquo;How would you make this 10&times; cheaper?&rdquo; is asking whether you know where the money goes. The answers, in order: cache more head traffic; shrink the cross-encoder set from 50 to 20 (usually costs almost no NDCG); distil or quantize the cross-encoder to int8; use IVF-PQ instead of HNSW to trade recall for memory; and drop the dense arm for query classes where it measurably adds nothing &mdash; often exact-identifier and navigational queries.</p>
+      </div>
+    </section>
+
+    <!-- =================== 8 =================== -->
+    <section id="rollout">
+      <h2><span class="num">08 / Evaluation &amp; rollout</span>Four gates, cheapest first</h2>
+
+      <ol class="body">
+        <li><b>Offline replay.</b> NDCG@10 on held-out, time-split, de-biased labels, sliced by query frequency band and segment. Gate: no slice regresses more than a stated tolerance, even if the average is up.</li>
+        <li><b>Counterfactual / off-policy estimate.</b> Self-normalized IPS over logged impressions gives an expected online delta before any user is exposed. It is directionally useful and only valid where the new policy overlaps the logging policy &mdash; report the effective sample size and be honest that the estimate degrades as the policies diverge.</li>
+        <li><b>Shadow.</b> Run the new ranker on live traffic, serve the old results, log both. This validates latency, memory, feature-hydration failure rates, and train&#8202;/&#8202;serve consistency &mdash; the operational risks &mdash; with zero user impact. Compare the served feature vector to the training vector here; any mismatch is a bug you would otherwise ship.</li>
+        <li><b>Interleaving, then A/B.</b> Team-draft interleaving mixes both rankings into one list and attributes clicks to the ranker that contributed each result. It removes between-user variance and is roughly an order of magnitude more sensitive than an A/B for ranking comparisons &mdash; ideal for triaging several candidates fast. Then a proper A/B on the winner, because interleaving cannot measure session-level or long-run outcomes.</li>
+      </ol>
+
+      <h3>Sizing the A/B</h3>
+      <div class="fx">n per arm  ≈  16 · σ² / δ²
+
+baseline CTR 0.30, σ² = 0.21, target δ = 0.003 (1% relative)
+→ ~375,000 queries per arm, before clustering</div>
+      <p class="fx-note">Randomize on user, not on query &mdash; otherwise the same person sees two rankers and the experience is incoherent. That clustering inflates the requirement by the design effect, so budget 1&ndash;2 weeks regardless of raw traffic: you need to cover the weekly seasonality cycle anyway. Use CUPED with a pre-period covariate to claw back 30&ndash;50% of the variance.</p>
+
+      <p><b>Ramp:</b> 1% → 5% → 25% → 50%, with automated guardrail aborts on latency, error rate, and zero-result rate at every step. Hold a permanent 1% holdout on the previous model for a quarter &mdash; it is the only way to measure the cumulative effect of ten shipped experiments, which is reliably smaller than the sum of their claimed wins.</p>
+    </section>
+
+    <!-- =================== 9 =================== -->
+    <section id="monitoring">
+      <h2><span class="num">09 / Monitoring &amp; iteration</span>The loop that trains you back</h2>
+      <p class="deck">A deployed ranker changes the data that trains its successor. That feedback loop is the defining operational property of search, and designing for it is the difference between a system that improves and one that quietly narrows.</p>
+
+      <figure>
+        <div class="fw">
+          <svg viewBox="0 0 900 300" role="img" aria-label="Diagram of the ranking feedback loop: the served results page produces click logs, which pass through a position-bias correction step to become de-biased graded labels, which train a new ranker, which is validated offline and shipped back into serving. An exploration slot feeds unbiased samples into the bias-correction step.">
+            <defs>
+              <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+              </marker>
+              <marker id="ar3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--accent)"/>
+              </marker>
+            </defs>
+
+            <rect class="svg-box-hot" x="16" y="42" width="150" height="56" rx="3"/>
+            <text class="svg-t" x="91" y="66" text-anchor="middle">Served SERP</text>
+            <text class="svg-s" x="91" y="84" text-anchor="middle">+ logged features</text>
+
+            <line class="svg-line" x1="166" y1="70" x2="212" y2="70" marker-end="url(#ar2)"/>
+            <text class="svg-l" x="189" y="60" text-anchor="middle">shows</text>
+
+            <rect class="svg-box" x="214" y="42" width="150" height="56" rx="3"/>
+            <text class="svg-t" x="289" y="66" text-anchor="middle">Click logs</text>
+            <text class="svg-s" x="289" y="84" text-anchor="middle">biased by rank</text>
+
+            <line class="svg-line" x1="364" y1="70" x2="410" y2="70" marker-end="url(#ar2)"/>
+
+            <rect class="svg-box" x="412" y="42" width="160" height="56" rx="3"/>
+            <text class="svg-t" x="492" y="66" text-anchor="middle">IPS / PBM correction</text>
+            <text class="svg-s" x="492" y="84" text-anchor="middle">graded labels</text>
+
+            <line class="svg-line" x1="572" y1="70" x2="618" y2="70" marker-end="url(#ar2)"/>
+
+            <rect class="svg-box" x="620" y="42" width="160" height="56" rx="3"/>
+            <text class="svg-t" x="700" y="66" text-anchor="middle">Retrain ranker</text>
+            <text class="svg-s" x="700" y="84" text-anchor="middle">weekly + triggers</text>
+
+            <!-- exploration -->
+            <rect class="svg-box" x="412" y="196" width="160" height="52" rx="3"/>
+            <text class="svg-t" x="492" y="218" text-anchor="middle">Exploration slot</text>
+            <text class="svg-s" x="492" y="235" text-anchor="middle">ε ≈ 2% of impressions</text>
+            <line class="svg-dash" x1="492" y1="196" x2="492" y2="106" marker-end="url(#ar3)"/>
+            <text class="svg-l" x="502" y="152" text-anchor="start">unbiased sample</text>
+
+            <!-- return path -->
+            <path class="svg-dash" d="M 700 98 L 700 148 L 91 148 L 91 106" marker-end="url(#ar3)"/>
+            <text class="svg-l" x="396" y="140" text-anchor="middle">offline NDCG → shadow → interleave → A/B → ship</text>
+          </svg>
+        </div>
+        <figcaption>Without the exploration slot, the loop only ever sees documents the incumbent already ranked highly &mdash; and the training set converges on the model&rsquo;s own opinion.</figcaption>
+      </figure>
+
+      <h4>What to watch</h4>
+      <ul>
+        <li><b>Feature drift</b> &mdash; PSI or KL per feature against the training distribution; alert on null-rate spikes, which usually mean an upstream pipeline broke rather than the world changing.</li>
+        <li><b>Score drift</b> &mdash; the distribution of ranker scores per query band. A shift here with stable inputs means the serving model is not the model you think it is.</li>
+        <li><b>Train/serve skew</b> &mdash; continuously re-score a sample of logged feature vectors offline and diff against the logged online score. Non-zero diffs are the single most common silent ranking bug.</li>
+        <li><b>Exposure concentration</b> &mdash; Gini over document impressions, tracked weekly. Rising concentration is the feedback loop tightening.</li>
+        <li><b>Per-slice NDCG and CTR</b> &mdash; tail queries, new documents, each locale. Aggregates hide the segment you are quietly destroying.</li>
+      </ul>
+
+      <h4>Retraining triggers</h4>
+      <p>Scheduled weekly, plus event-driven: guardrail metric breach, PSI above threshold on any top-20 feature, catalogue turnover above a threshold, or a new feature launched and shadow-logged for long enough to train on. Every retrain runs the same four gates &mdash; a scheduled retrain is a deploy, not a background job, and it gets the same evidence bar.</p>
+    </section>
+
+    <!-- =================== 10 =================== -->
+    <section id="followups">
+      <h2><span class="num">10 / Follow-up bank</span>The questions that actually get asked</h2>
+
+      <h3>&ldquo;A brand-new document has no clicks. How does it ever rank?&rdquo;</h3>
+      <p>Three mechanisms. Content features and text match work from day one and carry no history. Priors back off the missing signal: instead of a raw CTR, use a smoothed estimate that starts at the category-and-seller mean and moves toward the document&rsquo;s own data as evidence accumulates. And an explicit exploration slot &mdash; a small share of impressions allocated by uncertainty (Thompson sampling on the CTR posterior) &mdash; buys the observations that resolve the prior. That slot is not charity; it is how the training set stays representative.</p>
+
+      <h3>&ldquo;Tail queries have no data. What do you do?&rdquo;</h3>
+      <p>Stop treating them as queries and treat them as compositions. Back off from the full string to its entities, category, and embedding neighbourhood; the semantic arm of retrieval matters far more here than the lexical one. Aggregate features at the query-cluster level rather than the exact-string level. Accept that tail performance is retrieval-bound, not ranking-bound, and measure it on a separate human-judged tail set &mdash; because your click-derived eval set, by construction, barely contains any.</p>
+
+      <h3>&ldquo;Zero results. What&rsquo;s the fallback?&rdquo;</h3>
+      <p>A ladder, in order: relax optional clauses to OR, drop the most-restrictive tagged filter (and say in the UI that you did), apply spell correction, fall back to the dense arm alone, then to category browse. Zero-result rate is a guardrail metric for a reason &mdash; an empty page is the one outcome from which the session almost never recovers.</p>
+
+      <h3>&ldquo;Why not just let an LLM rank everything?&rdquo;</h3>
+      <p>Cost and latency, by three orders of magnitude, on every query at 2,000 QPS. But the answer is not &ldquo;no LLM&rdquo; &mdash; it is that LLMs belong offline, where their cost amortizes: generating graded relevance judgments at a scale humans cannot reach (calibrated against a human golden set), rewriting and expanding head and torso queries into a cache, mining synonyms, generating training pairs for the tail, and acting as the teacher whose scores get distilled into the 6-layer cross-encoder that actually runs online. Use the LLM to build the ranker, not to be it.</p>
+
+      <h3>&ldquo;Personalization &mdash; how far do you go?&rdquo;</h3>
+      <p>Session-level context is nearly free and nearly always positive: the previous query and the categories viewed in this session. Long-term user affinity is a smaller win and carries real cost &mdash; filter bubbles, cold start, cache fragmentation (a per-user SERP cache has no hit rate), and, in a regulated or European context, a genuine consent and data-minimization question. Personalize the ranking, not the retrieval, so a user can always still find what they explicitly asked for.</p>
+
+      <h3>&ldquo;NDCG went up, CTR went down. Ship it?&rdquo;</h3>
+      <p>No, and do not debate it &mdash; diagnose it. Run the checklist in §3: exposure mismatch in the offline labels first, then eval-set representativeness, then latency regression, then a genuine metric-preference divergence. Then say which piece of evidence would change your mind. That is the answer they are grading.</p>
+
+      <h3>&ldquo;How do you know the ranker is not just memorizing the old ranker?&rdquo;</h3>
+      <p>Drop previous-position features, verify the model still beats BM25 on a randomized-exposure slice, and check that offline gains on the exploration traffic (where the incumbent had no influence) match the gains on organic traffic. If they only appear on organic traffic, you have learned the incumbent, not relevance.</p>
+    </section>
+
+    <!-- =================== 11 =================== -->
+    <section id="transfer">
+      <h2><span class="num">11 / Domain transfer</span>Same skeleton, different label</h2>
+      <p class="deck">If the interviewer swaps the domain, the funnel does not change. The label, the dominant feature family, and the guardrail do.</p>
+
+      <div class="tw">
+        <table>
+          <thead><tr><th>Domain</th><th>Primary label</th><th>Feature that dominates</th><th>Main failure mode</th><th>Guardrail</th></tr></thead>
+          <tbody>
+            <tr>
+              <td class="k">E-commerce</td>
+              <td>Purchase, with add-to-cart as an earlier proxy</td>
+              <td>Query &times; doc text match + price and quality priors</td>
+              <td>Delayed, sparse conversions; popularity feedback loop</td>
+              <td>Exposure concentration, margin neutrality</td>
+            </tr>
+            <tr>
+              <td class="k">Jobs / two-sided</td>
+              <td>Application <em>plus</em> recruiter response &mdash; success needs both sides</td>
+              <td>Structured match (skills, seniority, location) over free text</td>
+              <td>Optimizing one side starves the other</td>
+              <td>Employer-side response rate, applicant diversity</td>
+            </tr>
+            <tr>
+              <td class="k">Help centre / docs</td>
+              <td>Ticket deflection: read, no follow-up contact</td>
+              <td>Semantic similarity; lexical match is weak on paraphrase</td>
+              <td>Almost no click signal; small corpus, tiny logs</td>
+              <td>Contact rate after search, answer staleness</td>
+            </tr>
+            <tr>
+              <td class="k">In-app (transactions, payees)</td>
+              <td>Tap-through to the exact record; near-navigational</td>
+              <td>Recency, frequency, and exact-prefix match &mdash; personal by nature</td>
+              <td>One right answer; rank 2 is already a failure</td>
+              <td>MRR, p99 latency (typed as you type), privacy scope</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Note how far the last row moves: a personal corpus of a few thousand records, an unambiguous target, and a latency budget measured in tens of milliseconds because results update on every keystroke. The two-stage funnel collapses &mdash; you can score the whole candidate set &mdash; and the entire problem becomes query understanding plus recency-weighted personal features. Recognizing when <em>not</em> to build the big system is part of the answer.</p>
+    </section>
+
+    <!-- =================== 12 =================== -->
+    <section id="recall">
+      <h2><span class="num">12 / Recall card</span>If you remember twelve things</h2>
+      <div class="recall">
+        <ol>
+          <li>Scope first: corpus size, QPS, p99 SLA, existing infra, log volume. State assumptions out loud and move.</li>
+          <li>Translate business goal → online metric → offline metric, and name the leak in each arrow.</li>
+          <li>A training example is (query, doc, context), grouped by impression. The group is what ranking losses and metrics operate on.</li>
+          <li>Graded labels from engagement depth, gain <code>2^rel − 1</code>, and every label de-biased for position.</li>
+          <li>NDCG@10 offline, session success online, guardrails on latency, zero-results, and exposure concentration.</li>
+          <li>Clicks are biased. IPS or a PBM, plus a real exploration slot, or the loop trains you back.</li>
+          <li>Log the feature vector at serving time and train on those bytes. It kills skew and point-in-time bugs together.</li>
+          <li>Two stages because 50M documents will not fit the budget: hybrid BM25 + ANN retrieval fused with RRF, then a ranker.</li>
+          <li>LambdaMART is the workhorse; the pairwise gradient scaled by |ΔNDCG| is why it beats a plain classifier. Go neural only for what trees cannot do.</li>
+          <li>Cross-encoder on the top 50 only. Distil the LLM, do not serve it.</li>
+          <li>Write the latency budget as a table, and define the degradation ladder before the incident.</li>
+          <li>Offline replay → shadow → interleave → A/B ramp, with a permanent holdout to check what the year of wins actually added up to.</li>
+        </ol>
+      </div>
+    </section>
+
+  </article>
+
+  <footer>Prep note · search ranking &amp; learning to rank · staff-level ML system design</footer>
+
+</div>

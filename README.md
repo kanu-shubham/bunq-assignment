@@ -12,6 +12,13 @@ Feature-rating popup for the bunq frontend assignment.
 
 **Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 28 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot).
 
+## System design notes
+
+[`docs/system-design/cross-border-payments.md`](./docs/system-design/cross-border-payments.md) —
+multi-currency cross-border payment service (GBP → EUR into a German bank via SEPA): 24-hour rate
+reservation and TTL expiry, the transfer state machine, a double-entry ledger on PostgreSQL,
+synchronous vs. asynchronous compliance, and what happens to quotes that are never funded.
+
 ## Repository layout
 
 ```

@@ -19,6 +19,11 @@ multi-currency cross-border payment service (GBP → EUR into a German bank via 
 reservation and TTL expiry, the transfer state machine, a double-entry ledger on PostgreSQL,
 synchronous vs. asynchronous compliance, and what happens to quotes that are never funded.
 
+[`docs/system-design/cross-border-payments-explained.md`](./docs/system-design/cross-border-payments-explained.md) —
+companion walkthrough of the same design from zero: what actually happens to the money, debits and
+credits for engineers, a section-by-section explanation, a jargon dictionary, and how to deliver it
+out loud.
+
 ## Repository layout
 
 ```

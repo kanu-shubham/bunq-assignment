@@ -481,7 +481,9 @@ Fee recognition (same transaction):
 | `liability.transfer_funds.EUR:{id}` | | 1,151.00 |
 
 The GBP leg nets to zero; the EUR leg nets to zero. The `position.fx.*` pair now holds an open
-position: −995.50 GBP against +1,151.00 EUR. Marked against the rate treasury actually dealt, the
+position: −995.50 GBP against +1,151.00 EUR in the `+debit / −credit` convention — economically
+**long GBP, short EUR**, because the desk took the pounds in and handed the euros out. Flattening it
+means selling GBP and buying EUR in the market. Marked against the rate treasury actually dealt, the
 difference is realised FX P&L, swept to `income.fx_spread`. **This is the account that proves the
 spread we quoted is the spread we earned** — and it is exactly where hedge slippage from unfunded
 locked quotes shows up.

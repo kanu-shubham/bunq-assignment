@@ -1,10 +1,11 @@
 # Pair-programming round — most-asked questions
 
-Prep notes for the live coding session that follows this assignment. Three sections:
+Prep notes for the live coding session that follows this assignment. Four sections:
 
 1. **[Extensions to *this* codebase](#1-extensions-to-this-codebase)** — by far the most likely format. bunq-style pairing rounds open your own submission and ask you to grow it.
 2. **[Classic frontend live-coding questions](#2-classic-frontend-live-coding-questions)** — the standard vocabulary set: debounce, event emitter, concurrency pool, typeahead…
 3. **[Questions they ask *about* your code](#3-questions-they-ask-about-your-code)** — verbal, and where most candidates actually lose points.
+4. **[Interviewing for Engineering Lead](#4-interviewing-for-engineering-lead)** — what the same round grades differently when the title has "lead" in it. **Read this first if that's the role.**
 
 Ground rule for the whole session: **narrate, then type**. State the approach in one sentence, get a nod, then write. Silence reads as being stuck even when you're not.
 
@@ -347,3 +348,68 @@ Verbal, mid-session, while you're typing. Have crisp answers ready — these dec
 - **Say what you'd skip.** "I'd normally add an integration test here; want me to, or keep moving?" — shows judgement about scope, which is the actual signal.
 - **When stuck, externalise.** Say what you expected, what you got, and the next thing you'd check. A candidate debugging out loud reads as a good colleague; a candidate frozen reads as neither.
 - **Don't fight the tooling.** If a test setup misbehaves, timebox it out loud and move on to what you were asked to demonstrate.
+
+---
+
+## 4. Interviewing for Engineering Lead
+
+Sections 1–3 still apply — a lead who can't write the reducer loses the room. But the *grading* moves. At IC level they ask "can you build it?"; at lead level they ask "what's it like when this person is the most senior engineer on the call?" Those are different rounds wearing the same clothes.
+
+**The single biggest failure mode is taking the keyboard.** A strong IC solves the problem in front of them. A strong lead solves it *through* the other person and still lands it on time. If the interviewer starts typing, let them type — even when you'd be faster.
+
+### 4.1 What the format usually becomes
+
+| Format | What it's really testing |
+|---|---|
+| "Here's a PR from a teammate — review it out loud." | Prioritisation. Do you lead with the race condition or with naming nits? |
+| "Extend the widget, but explain it as if I'm two years in." | Whether you can teach without condescending, and whether you actually understand it or just wrote it. |
+| "Sketch how you'd structure this if four teams used it." | Design in code: module boundaries, contracts, versioning — before implementation. |
+| "This test is failing and nobody knows why." | Debugging an unfamiliar codebase calmly, out loud, with a hypothesis each step. |
+| "We have six months of debt here. What do you do Monday?" | Sequencing and appetite. Not the perfect end state — the *first* move. |
+
+### 4.2 The code-review exercise — order matters
+
+Say your ordering out loud before you start; it *is* the answer:
+
+1. **Correctness and security** — race conditions, auth, data loss, unhandled rejections. Blocking.
+2. **Contracts** — public API shape, breaking changes, error semantics. Expensive to change later, so cheap to fix now. Usually blocking.
+3. **Tests** — does the test actually fail if the behaviour breaks? Assertion-free tests are worse than none.
+4. **Readability and structure** — naming, module boundaries. Suggestions.
+5. **Style** — should be automated. If you're spending review time here, the finding is *"we need a linter rule"*, not thirty comments.
+
+Label each finding **blocking / suggestion / nit**, and say the *why* with the *what*. Two lines that consistently impress:
+
+> "This is a nit and I'd merge without it — but if you're already touching the file…"
+
+> "I might be wrong about this one. What happens if the response for the previous query lands after this one?"
+
+The second is the lead move: ask a question that makes them find the bug, rather than announcing it. And when you have twelve findings, say "the first three are blocking, the rest can be follow-ups" — an unranked wall of comments is how leads stall teams.
+
+### 4.3 Design-in-code prompts, tailored to this repo
+
+- **"Four teams need this widget."** Extract the machine + modal primitives into a package; keep each product's *states* local. Public surface is the props contract and the payload type — version those, not internals. Say what you'd deliberately *not* share: copy, styling tokens, and analytics naming.
+- **"Product wants to change the flow without a deploy."** Now the FSM is config, and the trade-off is sharp: the `never` exhaustiveness guarantee dies the moment transitions come from JSON. State that cost explicitly, then propose the middle — configurable *copy and thresholds*, hardcoded *transitions*.
+- **"Add analytics."** An injected `track` seam, exactly like `submitFeedback`. Vendor stays out of the machine. Event names are a contract with the data team — agree them before writing them.
+- **"How does this roll out?"** Flag → internal → 5% → 50% → 100%, with a kill switch and one metric that would make you roll back. Leads who name the rollback trigger unprompted are rare.
+
+### 4.4 Verbal questions aimed at leads
+
+| Question | The answer that lands |
+|---|---|
+| "How do you set frontend standards across a team?" | Automate what's automatable (lint, types, CI) so review is about design, not commas. Write down only the decisions that were actually contested. Standards nobody can cite aren't standards. |
+| "You disagree with a senior engineer's architecture. Then what?" | Disagree in the design phase, in writing, with the trade-off named. If I don't win it and it's reversible, I commit fully and set a checkpoint. Irreversible calls get escalated, not relitigated in the PR. |
+| "How do you split a large feature across three engineers?" | By seam, not by layer — vertical slices behind a flag, each shippable. Splitting into "you do CSS, you do state" creates three-way blocking and no owner. |
+| "What's your bar for tests?" | Test behaviour at the boundary the user cares about; don't test the reducer's internals *and* the DOM for the same rule. Coverage as a smell, never a target. |
+| "How do you pay down debt without stopping delivery?" | Debt gets fixed in the files we're already touching, plus one explicitly funded chunk per quarter for the things that never get touched. "Freeze features for a refactor" is how you lose the argument permanently. |
+| "Someone on your team is underperforming." | Specifics, early, in private, with what "better" looks like and a date. Most cases are a mismatch of expectations or context, not capability — and if I only noticed at review time, that's my failure. |
+| "How do you run code review at scale?" | Small PRs, fast turnaround as a team norm (a day-old PR is a stalled engineer), and authors pick reviewers by context not seniority. I review to unblock, not to prove I read it. |
+| "Migration — React 17 → 18, say. How?" | Incrementally, behind the compatibility layer, with the riskiest surface (concurrent-rendering side effects here) tested first. Name the rollback story. A big-bang branch that lives three months is the failure mode. |
+| "What do you do in your first 30 days?" | Ship something small and real in week one to learn the pipeline; read the last quarter of incidents; talk to whoever complains most about the codebase. Change nothing structural until I can explain why it's the way it is. |
+
+### 4.5 Signals that separate lead from senior in this round
+
+- **Scoping out loud.** "Given 40 minutes I'd do the reducer and one integration test, and stub the rest — agree?" Deciding what *not* to build is the job.
+- **Making the call.** When asked to choose, choose, name the trade-off, and say what would change your mind. "It depends" without a decision reads as avoidance.
+- **Crediting and correcting.** If they spot something, say so plainly. If they're wrong, disagree kindly and with a reason. Both are being watched.
+- **Talking about people at all.** Many candidates answer every lead question in pure technical terms. Mention the engineer who'd maintain this, the reviewer, the on-call — it costs one clause and it's the whole distinction.
+- **Knowing when good enough is good enough.** Over-engineering to demonstrate range is the most common lead-level self-inflicted wound. "This is more than we need today; here's the seam if it grows" beats building the seam.

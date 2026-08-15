@@ -39,11 +39,33 @@ export {
   daysToRun,
   detectableEffect,
   normalCdf,
+  binomialTest,
   normalQuantile,
   sampleSizePerVariant,
   twoProportionZTest,
 } from './analysis/stats';
 export type { ArmResult, SampleSizeInput, SrmResult, TestResult } from './analysis/stats';
 
-export { covariance, cupedCompare, cupedTheta, moments } from './analysis/cuped';
+export { covariance, cupedCompare, cupedTheta, mlrateCompare, moments } from './analysis/cuped';
 export type { CupedArm, CupedResult } from './analysis/cuped';
+
+export { compareRatioMetric, estimateRatio } from './analysis/ratioMetrics';
+export type { RatioComparison, RatioEstimate, RatioUnit } from './analysis/ratioMetrics';
+
+export {
+  doublyRobust,
+  inversePropensityScoring,
+  selfNormalisedIps,
+  supportDiagnostics,
+} from './analysis/offPolicy';
+export type { LoggedDecision, OffPolicyEstimate } from './analysis/offPolicy';
+
+export {
+  interleavingPreference,
+  scoreQuery,
+  teamDraftInterleave,
+} from './analysis/interleaving';
+export type { InterleavedItem, InterleavingResult, QueryOutcome } from './analysis/interleaving';
+
+export { alwaysValidDifference, alwaysValidRateDifference } from './analysis/sequential';
+export type { SequentialArm, SequentialResult } from './analysis/sequential';

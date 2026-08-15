@@ -10,13 +10,16 @@ Feature-rating popup for the bunq frontend assignment.
 
 **Accessibility** — portal-mounted modal with focus trap + restoration, ESC, backdrop dismiss, `aria-modal` + labelled title; thank-you toast is `role="status" aria-live="polite"`; the NEGATIVE form has a `role="status"` live region that announces "Submitting your feedback…" while pending; `prefers-reduced-motion` honoured.
 
-**Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 120 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot, plus the experimentation framework below).
+**Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 164 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot, plus the experimentation framework below).
 
 ## Experimentation
 
 [`src/features/experiments/`](./src/features/experiments) is a dependency-free A/B testing framework — deterministic bucketing (FNV-1a + murmur3 avalanche, salted per experiment), React bindings whose exposure logging fires only when the user can actually see the treatment, and the statistics to size and read a test (sample size, two-proportion z-test, SRM, Benjamini–Hochberg, CUPED). [`examples/feedbackExperiments.tsx`](./src/features/experiments/examples/feedbackExperiments.tsx) runs a real experiment on this widget's thank-you toast.
 
-[**docs/ab-testing.md**](./docs/ab-testing.md) is the accompanying guide: A/B testing from first principles to staff level — hypothesis and metric design, sizing with worked numbers, frontend implementation concerns (bucketing, dilution, flicker, QA overrides), trustworthiness (SRM, peeking, interference, novelty), and platform/organisational design, with interview drills and a cheat sheet.
+Two accompanying guides, each running beginner → staff with worked numbers, interview drills and a cheat sheet:
+
+- [**docs/ab-testing.md**](./docs/ab-testing.md) — the general track: hypothesis and metric design, sizing, frontend implementation (bucketing, dilution, flicker, QA overrides), trustworthiness (SRM, peeking, interference, novelty), platform and organisational design.
+- [**docs/ab-testing-ml.md**](./docs/ab-testing-ml.md) — the ML engineering track: why offline metrics don't ship, sizing for 1% effects, triggered analysis, the serving-side logging contract (propensities!), clustered ratio metrics, feedback loops through retraining, interleaving, off-policy evaluation, MLRATE, bandits, LLM feature evaluation, and model governance in a regulated shop.
 
 ## Repository layout
 
@@ -36,7 +39,8 @@ src/
     └── index.ts
 └── features/experiments/ ← A/B testing framework (see docs/ab-testing.md)
     ├── core/             (hash, assign, overrides + tests)
-    ├── analysis/         (stats, cuped + tests)
+    ├── analysis/         (stats, cuped/MLRATE, ratioMetrics, offPolicy,
+    │                      interleaving, sequential + tests)
     ├── examples/         (feedbackExperiments + test)
     ├── ExperimentProvider.tsx + test
     ├── types.ts

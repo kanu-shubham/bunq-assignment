@@ -125,3 +125,46 @@ export function cupedCompare(
     significant: pValue < alpha,
   };
 }
+
+/**
+ * MLRATE — machine-learning regression-adjusted treatment estimation
+ * (Guo et al., 2021). The ML engineer's version of CUPED, and the one that
+ * pays for itself fastest.
+ *
+ * CUPED uses a single pre-experiment covariate and captures whatever linear
+ * signal that one column carries. MLRATE replaces it with the *prediction* of
+ * a model trained on all the pre-treatment features you have — tenure, device,
+ * historical engagement, embeddings — so the covariate is as correlated with
+ * the outcome as your modelling skill allows. Mechanically it's the same
+ * adjustment with X = ŷ:
+ *
+ *     Y' = Y − θ(ŷ − ȳ̂)
+ *
+ * The variance reduction is ρ²(Y, ŷ), which is to say: the better your model
+ * predicts the metric from pre-experiment data, the less traffic your
+ * experiments need. Teams that already have a churn or engagement model get
+ * 30–60% variance reduction essentially for free.
+ *
+ * Two non-negotiables, both easy to violate and both invisible in the output:
+ *
+ *  1. **Pre-treatment features only.** Any feature computed during the
+ *     experiment window can carry the treatment effect into ŷ, which biases
+ *     the adjustment. "Sessions in the last 7 days" evaluated at analysis time
+ *     is contaminated; evaluated at assignment time it is fine.
+ *  2. **Cross-fitting.** Predict each unit with a model that was not trained on
+ *     that unit (k-fold out-of-fold predictions). Fitting and predicting on the
+ *     same rows makes ŷ partly a memory of Y, which reintroduces bias.
+ *
+ * Nothing in the arithmetic can check either of these, so they belong in the
+ * experiment review, not in the code.
+ */
+export const mlrateCompare = (
+  control: { metric: ReadonlyArray<number>; prediction: ReadonlyArray<number> },
+  treatment: { metric: ReadonlyArray<number>; prediction: ReadonlyArray<number> },
+  alpha = 0.05,
+): CupedResult =>
+  cupedCompare(
+    { metric: control.metric, covariate: control.prediction },
+    { metric: treatment.metric, covariate: treatment.prediction },
+    alpha,
+  );

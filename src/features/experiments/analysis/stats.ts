@@ -127,6 +127,35 @@ function gammaQ(a: number, x: number): number {
   return Math.exp(-x + a * Math.log(x) - logGamma(a)) * h;
 }
 
+/**
+ * Exact two-sided binomial test: P(an outcome at least as extreme as `successes`
+ * | true rate is `p`), summing every outcome whose probability is no greater
+ * than the observed one.
+ *
+ * Exact rather than normal-approximated because the place this gets used —
+ * paired comparisons like interleaving, where each query is one coin flip — is
+ * often run on a few hundred queries, and that is where the approximation is
+ * worst.
+ */
+export function binomialTest(successes: number, trials: number, p = 0.5): number {
+  if (trials <= 0) return 1;
+  if (successes < 0 || successes > trials) throw new RangeError('successes must be within trials');
+
+  const logChoose = (n: number, k: number): number =>
+    logGamma(n + 1) - logGamma(k + 1) - logGamma(n - k + 1);
+  const logPmf = (k: number): number =>
+    logChoose(trials, k) + k * Math.log(p) + (trials - k) * Math.log(1 - p);
+
+  const observed = logPmf(successes);
+  let total = 0;
+  for (let k = 0; k <= trials; k += 1) {
+    const lp = logPmf(k);
+    // 1e-9 slack: outcomes with equal probability must both count.
+    if (lp <= observed + 1e-9) total += Math.exp(lp);
+  }
+  return Math.min(1, total);
+}
+
 /** Upper-tail p-value of a chi-square statistic. */
 export const chiSquarePValue = (chiSquare: number, degreesOfFreedom: number): number =>
   chiSquare <= 0 ? 1 : gammaQ(degreesOfFreedom / 2, chiSquare / 2);

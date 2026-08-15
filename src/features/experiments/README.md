@@ -2,8 +2,11 @@
 
 A small, dependency-free A/B testing framework: deterministic bucketing, React
 bindings with honest exposure logging, and the statistics needed to size and
-read a test. The full walkthrough — beginner to staff, with worked numbers — is
-in [`docs/ab-testing.md`](../../../docs/ab-testing.md).
+read a test. Two walkthroughs, beginner to staff, with worked numbers:
+[`docs/ab-testing.md`](../../../docs/ab-testing.md) (general + frontend) and
+[`docs/ab-testing-ml.md`](../../../docs/ab-testing-ml.md) (ML engineering —
+offline/online gap, triggered analysis, off-policy evaluation, interleaving,
+feedback loops, LLM features).
 
 ```
 types.ts                       Experiment / Variant / Assignment / ExposureEvent
@@ -11,8 +14,12 @@ core/hash.ts                   FNV-1a + murmur3 avalanche → [0,1)
 core/assign.ts                 pure assignment: status, audience, ramp, weights, overrides
 core/overrides.ts              ?ab.<key>=<variant> QA plumbing
 ExperimentProvider.tsx         context, useExperiment / useVariant, exposure logging
-analysis/stats.ts              sizing, two-proportion z-test, SRM, Benjamini–Hochberg
-analysis/cuped.ts              variance reduction from pre-experiment data
+analysis/stats.ts              sizing, two-proportion z-test, SRM, BH, exact binomial
+analysis/cuped.ts              CUPED + MLRATE variance reduction
+analysis/ratioMetrics.ts       delta method for clustered ratio metrics (CTR & friends)
+analysis/offPolicy.ts          IPS / SNIPS / doubly robust + effective sample size
+analysis/interleaving.ts       team-draft interleaving for ranking comparisons
+analysis/sequential.ts         always-valid confidence sequences (safe to peek)
 examples/feedbackExperiments.tsx   the feedback widget experiment, wired end to end
 ```
 
@@ -62,8 +69,15 @@ traffic and variant draws.
 
 ## Tests
 
-`npm test` — the framework contributes ~90 of the repo's 120 tests, covering
+`npm test` — the framework contributes 136 of the repo's 164 tests, covering
 hash uniformity, every assignment gate, override precedence and storage
 failures, exposure timing, the statistics against known reference values
 (z₀.₉₇₅ = 1.959964, χ²₀.₀₅,₁ = 3.8415, n = 3,841 for 10% → 12%), and the widget
 experiment end to end.
+
+The ML estimators are validated by simulation rather than by assertion of
+remembered constants: IPS/SNIPS/DR recover a known policy value from simulated
+logs and degrade exactly where support runs out; the clustered ratio test is
+shown to disagree with the naive per-request test on skewed traffic (1.95×
+standard error); and the confidence sequence holds a 0.2% false-positive rate
+under continuous monitoring where the fixed-horizon test fires 19.0%.

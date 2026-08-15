@@ -1,0 +1,956 @@
+<title>Serving LLMs at Scale</title>
+<style>
+  :root {
+    --paper:#F5F6F8;
+    --surface:#FFFFFF;
+    --surface-2:#EAEDF1;
+    --ink:#14181E;
+    --ink-2:#3C444E;
+    --muted:#6A737F;
+    --rule:#DCE0E6;
+    --rule-strong:#C3C9D2;
+    --compute:#A24C17;
+    --memory:#0F6A74;
+    --compute-wash:#F6EBE3;
+    --memory-wash:#E4F0F1;
+    --shadow:0 1px 2px rgba(20,24,30,.05), 0 8px 24px -16px rgba(20,24,30,.28);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:#0D1015;
+      --surface:#141920;
+      --surface-2:#1B212A;
+      --ink:#E7EAEF;
+      --ink-2:#BCC3CD;
+      --muted:#8A94A1;
+      --rule:#262E38;
+      --rule-strong:#374150;
+      --compute:#E38F52;
+      --memory:#54C3CD;
+      --compute-wash:#231A13;
+      --memory-wash:#0F1F21;
+      --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.9);
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper:#0D1015;
+    --surface:#141920;
+    --surface-2:#1B212A;
+    --ink:#E7EAEF;
+    --ink-2:#BCC3CD;
+    --muted:#8A94A1;
+    --rule:#262E38;
+    --rule-strong:#374150;
+    --compute:#E38F52;
+    --memory:#54C3CD;
+    --compute-wash:#231A13;
+    --memory-wash:#0F1F21;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.9);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 860px; margin: 0 auto; padding: 0 28px 120px; }
+
+  /* ---------- masthead ---------- */
+  header.masthead {
+    border-bottom: 1px solid var(--rule);
+    padding: 76px 0 40px;
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  h1 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-weight: 600;
+    font-size: clamp(2.3rem, 6vw, 3.3rem);
+    line-height: 1.06;
+    letter-spacing: -.018em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.14rem;
+    line-height: 1.55;
+    color: var(--ink-2);
+    max-width: 62ch;
+    margin: 0;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .02em;
+    color: var(--ink-2);
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 5px 10px;
+  }
+
+  /* ---------- contents ---------- */
+  nav.toc {
+    margin: 40px 0 8px;
+    padding: 22px 24px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+  }
+  nav.toc h2 {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .72rem;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 14px;
+    font-weight: 500;
+  }
+  .toc-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 2px 28px;
+    list-style: none;
+    margin: 0; padding: 0;
+  }
+  .toc-list a {
+    display: grid;
+    grid-template-columns: 2.2em 1fr;
+    gap: 4px;
+    padding: 5px 0;
+    color: var(--ink);
+    text-decoration: none;
+    border-bottom: 1px solid transparent;
+    font-size: .95rem;
+  }
+  .toc-list a:hover { color: var(--memory); }
+  .toc-list .n {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .82rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---------- sections ---------- */
+  section { padding-top: 56px; scroll-margin-top: 20px; }
+  section > h2 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-size: 1.72rem;
+    line-height: 1.2;
+    letter-spacing: -.012em;
+    font-weight: 600;
+    margin: 0 0 6px;
+    text-wrap: balance;
+    display: grid;
+    grid-template-columns: 2.4em 1fr;
+    align-items: baseline;
+  }
+  section > h2 .n {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .78rem;
+    color: var(--memory);
+    letter-spacing: .1em;
+    font-variant-numeric: tabular-nums;
+  }
+  .body { margin-left: 0; }
+  @media (min-width: 760px) { .body { margin-left: 2.4em; } }
+
+  h3 {
+    font-size: 1.02rem;
+    font-weight: 650;
+    letter-spacing: -.005em;
+    margin: 34px 0 8px;
+    color: var(--ink);
+  }
+  h4 {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .74rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    margin: 28px 0 8px;
+  }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  ul, ol { max-width: 68ch; margin: 0 0 16px; padding-left: 1.15em; }
+  li { margin-bottom: 7px; }
+  li::marker { color: var(--muted); }
+  strong { font-weight: 650; }
+  em { font-style: italic; }
+  a { color: var(--memory); }
+
+  code {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .875em;
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 2px;
+  }
+  .codewrap { overflow-x: auto; margin: 0 0 20px; }
+  pre {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .82rem;
+    line-height: 1.7;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--memory);
+    border-radius: 2px;
+    padding: 16px 18px;
+    margin: 0;
+    min-width: max-content;
+    color: var(--ink-2);
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+
+  /* ---------- the two-phase spine ---------- */
+  .phases {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 14px;
+    margin: 24px 0 26px;
+  }
+  .phase {
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--c);
+    border-radius: 3px;
+    background: var(--surface);
+    padding: 18px 20px 20px;
+    box-shadow: var(--shadow);
+  }
+  .phase.prefill { --c: var(--compute); }
+  .phase.decode  { --c: var(--memory); }
+  .phase .tag {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--c);
+  }
+  .phase h4 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-size: 1.2rem;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--ink);
+    margin: 6px 0 8px;
+    font-weight: 600;
+  }
+  .phase p { font-size: .94rem; margin: 0 0 10px; color: var(--ink-2); }
+  .phase p:last-child { margin-bottom: 0; }
+
+  /* ---------- callout ---------- */
+  .thesis {
+    margin: 30px 0;
+    padding: 22px 24px;
+    background: var(--memory-wash);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--memory);
+    border-radius: 3px;
+  }
+  .thesis p {
+    margin: 0;
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+    font-size: 1.12rem;
+    line-height: 1.5;
+    color: var(--ink);
+  }
+  .note {
+    margin: 22px 0;
+    padding: 16px 20px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--compute);
+    border-radius: 3px;
+  }
+  .note p { margin: 0; font-size: .96rem; color: var(--ink-2); }
+
+  /* ---------- tables ---------- */
+  .tablewrap { overflow-x: auto; margin: 0 0 24px; border: 1px solid var(--rule); border-radius: 3px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; min-width: 520px; font-size: .92rem; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  thead th {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 500;
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  table code { background: none; padding: 0; }
+
+  /* ---------- architecture diagram ---------- */
+  .arch {
+    margin: 26px 0 28px;
+    padding: 24px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow-x: auto;
+  }
+  .arch-inner { display: flex; flex-direction: column; gap: 0; min-width: 440px; }
+  .tier {
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    padding: 12px 16px;
+    background: var(--surface-2);
+  }
+  .tier .t-name { font-weight: 650; font-size: .94rem; }
+  .tier .t-desc { font-size: .84rem; color: var(--muted); }
+  .arrow {
+    height: 22px;
+    border-left: 1px solid var(--rule-strong);
+    margin-left: 24px;
+  }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .tier.pf { border-top: 3px solid var(--compute); background: var(--compute-wash); }
+  .tier.dc { border-top: 3px solid var(--memory); background: var(--memory-wash); }
+  .xfer {
+    text-align: center;
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .72rem;
+    color: var(--muted);
+    padding: 8px 0;
+  }
+
+  /* ---------- prompt layout figure ---------- */
+  .stack { margin: 22px 0 26px; display: flex; flex-direction: column; gap: 4px; }
+  .layer {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: baseline;
+    padding: 11px 16px;
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    background: var(--surface);
+    font-size: .92rem;
+  }
+  .layer .reuse {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: .74rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .layer.hot { border-left: 3px solid var(--memory); }
+  .layer.cold { border-left: 3px solid var(--compute); }
+
+  /* ---------- cheat sheet ---------- */
+  .points { list-style: none; padding: 0; margin: 0; }
+  .points li {
+    padding: 12px 0 12px 26px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    max-width: 70ch;
+    font-size: .96rem;
+  }
+  .points li::before {
+    content: "";
+    position: absolute;
+    left: 4px; top: 21px;
+    width: 6px; height: 6px;
+    background: var(--memory);
+    border-radius: 50%;
+  }
+  .points li:last-child { border-bottom: none; }
+
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--rule);
+    font-size: .86rem;
+    color: var(--muted);
+  }
+  footer p { max-width: 70ch; }
+
+  a:focus-visible, .toc-list a:focus-visible {
+    outline: 2px solid var(--memory);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <div class="eyebrow">System design · inference platform</div>
+  <h1>Serving LLMs at Scale</h1>
+  <p class="standfirst">KV cache, continuous batching, quantization, and autoscaling — worked
+  through one concrete system: an Expedia-style travel assistant sitting in a booking funnel.</p>
+  <div class="chips">
+    <span class="chip">H100-class fleet</span>
+    <span class="chip">70B dense, FP8</span>
+    <span class="chip">TTFT p95 ≤ 500ms</span>
+    <span class="chip">figures are illustrative</span>
+  </div>
+</header>
+
+<nav class="toc">
+  <h2>Contents</h2>
+  <ul class="toc-list">
+    <li><a href="#s0"><span class="n">00</span><span>The running example</span></a></li>
+    <li><a href="#s1"><span class="n">01</span><span>Requirements</span></a></li>
+    <li><a href="#s2"><span class="n">02</span><span>Prefill vs decode</span></a></li>
+    <li><a href="#s3"><span class="n">03</span><span>Architecture</span></a></li>
+    <li><a href="#s4"><span class="n">04</span><span>KV cache</span></a></li>
+    <li><a href="#s5"><span class="n">05</span><span>Continuous batching</span></a></li>
+    <li><a href="#s6"><span class="n">06</span><span>Quantization</span></a></li>
+    <li><a href="#s7"><span class="n">07</span><span>Parallelism</span></a></li>
+    <li><a href="#s8"><span class="n">08</span><span>Autoscaling</span></a></li>
+    <li><a href="#s9"><span class="n">09</span><span>Observability</span></a></li>
+    <li><a href="#s10"><span class="n">10</span><span>Failure modes</span></a></li>
+    <li><a href="#s11"><span class="n">11</span><span>Rollout plan</span></a></li>
+    <li><a href="#s12"><span class="n">12</span><span>Quick reference</span></a></li>
+  </ul>
+</nav>
+
+<section id="s0">
+  <h2><span class="n">00</span><span>The running example</span></h2>
+  <div class="body">
+    <p>Abstract inference design goes vague fast, so everything below is grounded in one
+    concrete system — an <strong>Expedia-style online travel agency</strong> adding LLM features to its
+    booking funnel. It exercises every mechanism in this document, and it does so for reasons
+    visible in the product rather than invented for the exercise.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Property of the workload</th><th>Why it drives the design</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Enormous prefix reuse</strong></td><td>Every conversation carries the same multi-thousand-token system prompt, tool schemas, and policy text; every chat about one property re-reads the same description and reviews. The strongest argument for prefix caching in the whole design.</td></tr>
+          <tr><td><strong>Long prompts, short outputs</strong></td><td>“A 4-star hotel in Lisbon under €200 with a pool” injects search results, availability, and pricing — tens of thousands of prompt tokens — and answers in 150. The fleet is <em>prefill-dominated</em>.</td></tr>
+          <tr><td><strong>Brutal but forecastable traffic</strong></td><td>~5× diurnal swing, plus January and summer booking peaks. Highly predictable — exactly the condition under which predictive autoscaling beats reactive.</td></tr>
+          <tr><td><strong>Thin margins, high volume</strong></td><td>Revenue per interaction is cents. $/M tokens decides whether the feature ships to 100% of traffic or stays an experiment.</td></tr>
+          <tr><td><strong>Multilingual, correctness-critical</strong></td><td>Prices, dates, and cancellation policies in 30+ languages. A quantization recipe that degrades non-English output or JSON tool calls is a booking-integrity bug, not a benchmark regression.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="s1">
+  <h2><span class="n">01</span><span>Requirements</span></h2>
+  <div class="body">
+    <h4>Workloads</h4>
+    <p>Three classes of traffic want different things from the same GPUs:</p>
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Class</th><th>Example</th><th>Dominant SLO</th><th>Shape</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Interactive</strong></td><td>trip-planning chat, “is this hotel good for toddlers?”</td><td>TTFT p95, inter-token latency</td><td>bursty, multi-turn, long shared prefix</td></tr>
+          <tr><td><strong>Agentic</strong></td><td>itinerary builder calling search / pricing / availability tools in a loop</td><td>end-to-end wall clock</td><td>long prompts (10k–200k), short outputs, very high prefix reuse</td></tr>
+          <tr><td><strong>Batch</strong></td><td>review summarization for 2M properties, listing enrichment, evals</td><td>throughput and $/token</td><td>latency-insensitive, schedulable overnight</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The agentic tier is the interesting one: “plan me a week in Portugal” may issue 10–20
+    model calls, each re-sending a growing conversation plus fresh tool output. The user
+    perceives <em>one</em> latency budget covering all of them, so per-call TTFT is roughly 10×
+    more valuable here than the raw number suggests.</p>
+
+    <h4>SLOs — interactive tier is the binding constraint</h4>
+    <ul>
+      <li><strong>TTFT</strong> p95 ≤ 500 ms at 8k prompt — slower than that and the assistant feels worse than the search box it competes with.</li>
+      <li><strong>ITL / TPOT</strong> p95 ≤ 40 ms → ~25 tok/s per stream, comfortably above reading speed.</li>
+      <li><strong>Agentic end-to-end</strong> p95 ≤ 8 s for a full multi-tool itinerary turn.</li>
+      <li><strong>Availability</strong> 99.9% monthly, degrading by queueing and falling back to classic search results rather than 5xx storms.</li>
+      <li><strong>Goodput</strong> is the headline metric: requests/s meeting <em>both</em> TTFT and ITL. Raw tok/s can rise while goodput falls — that trade is the entire scheduling problem.</li>
+    </ul>
+    <p><strong>Non-goals:</strong> training, fine-tuning pipelines, model quality work. The platform serves
+    whatever checkpoints it is handed; it owns latency, throughput, and cost.</p>
+  </div>
+</section>
+
+<section id="s2">
+  <h2><span class="n">02</span><span>The one mechanism everything follows from</span></h2>
+  <div class="body">
+    <p>Autoregressive decoding has two phases with opposite performance characteristics.
+    Nearly every decision in this document is a consequence of that split — and the two colours
+    below are used consistently throughout the page.</p>
+
+    <div class="phases">
+      <div class="phase prefill">
+        <div class="tag">Phase 1 · compute-bound</div>
+        <h4>Prefill</h4>
+        <p>Processes the whole prompt in one forward pass. A big GEMM over <em>n</em> tokens, with
+        attention O(n²) in prompt length.</p>
+        <p>One 8k-token prefill saturates a GPU by itself. Batching adds little; the tensor
+        cores are already busy.</p>
+      </div>
+      <div class="phase decode">
+        <div class="tag">Phase 2 · memory-bound</div>
+        <h4>Decode</h4>
+        <p>Generates one token per sequence per step, reading <em>every weight in the model</em> to
+        produce a handful of tokens. Arithmetic intensity near 1.</p>
+        <p>At batch 1 the tensor cores sit ~99% idle. Batching is nearly free and nearly
+        linear.</p>
+      </div>
+    </div>
+
+    <p>The floor on a decode step for a dense model:</p>
+    <div class="codewrap"><pre><code>step_time ≥ (model_bytes + kv_bytes_read) / HBM_bandwidth</code></pre></div>
+    <p>For 70B in FP8 (70 GB) sharded TP=8 across H100s (3.35 TB/s each), every GPU reads
+    ~8.75 GB per step → a ~2.6 ms floor: ~380 tok/s single-stream in theory, perhaps 100–150
+    in practice after kernel launch, all-reduce, and sampling overhead.</p>
+
+    <p>The crucial consequence: <strong>that weight read is amortized across the whole batch.</strong>
+    Going from batch 1 to batch 64 costs almost nothing in step time and yields 64× the
+    tokens. Throughput is roughly linear in batch size until KV reads start to rival weight
+    reads, or you cross into compute-bound territory.</p>
+
+    <p>The crossover — the <em>critical batch size</em> — is the hardware's FLOP:byte ratio. An H100
+    does ~989 dense BF16 TFLOPS against 3.35 TB/s, i.e. ~295 FLOP per byte. So you need roughly
+    <strong>256–512 tokens in flight</strong> before decode stops being bandwidth-starved. Below that you
+    are buying GPU time and throwing it away.</p>
+
+    <div class="thesis">
+      <p>Everything below serves one goal: keep several hundred tokens in flight per GPU
+      without blowing the KV cache budget or violating the latency SLO.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s3">
+  <h2><span class="n">03</span><span>Architecture</span></h2>
+  <div class="body">
+    <div class="arch">
+      <div class="arch-inner">
+        <div class="tier"><div class="t-name">API gateway</div><div class="t-desc">authn, per-tenant token budgets, request normalization, max_tokens capping — stateless, CPU-only</div></div>
+        <div class="arrow"></div>
+        <div class="tier"><div class="t-name">Admission control</div><div class="t-desc">priority queues, per-tenant token buckets, KV reservation — the layer that protects the SLO</div></div>
+        <div class="arrow"></div>
+        <div class="tier"><div class="t-name">Router</div><div class="t-desc">prefix-cache-aware, bounded-load consistent hashing — not round-robin</div></div>
+        <div class="arrow"></div>
+        <div class="split">
+          <div class="tier pf"><div class="t-name">Prefill pool</div><div class="t-desc">TP-heavy, chunked, scaled on prompt-token rate</div></div>
+          <div class="tier dc"><div class="t-name">Decode pool</div><div class="t-desc">DP replicas, large batch, scaled on KV utilization</div></div>
+        </div>
+        <div class="xfer">↑ KV blocks transferred over NVLink / RDMA ↑</div>
+        <div class="tier"><div class="t-name">Tiered KV store &amp; prefix index</div><div class="t-desc">HBM → host DRAM → local NVMe; radix tree over token-ID prefixes</div></div>
+        <div class="arrow"></div>
+        <div class="tier"><div class="t-name">Streaming response (SSE)</div><div class="t-desc">with cancellation propagated all the way back to the scheduler</div></div>
+      </div>
+    </div>
+    <p>The control plane sits alongside: a model registry versioning <em>checkpoint + quantization
+    recipe + engine config together</em>, a rollout controller, and the autoscaler consuming queue
+    depth, KV utilization, and SLO burn rate.</p>
+    <p>Engine pools are vLLM / SGLang / TensorRT-LLM processes, one model per pool, each owning
+    its GPUs and its KV cache. Splitting prefill from decode is optional and belongs in a later
+    phase — see §5.4.</p>
+  </div>
+</section>
+
+<section id="s4">
+  <h2><span class="n">04</span><span>KV cache</span></h2>
+  <div class="body">
+    <h3>4.1 Sizing — the number that governs concurrency</h3>
+    <div class="codewrap"><pre><code>kv_bytes_per_token = 2 (K,V) × layers × kv_heads × head_dim × dtype_bytes</code></pre></div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Model</th><th>Layers</th><th>KV heads</th><th>head_dim</th><th>FP16 / token</th><th>8k context</th></tr></thead>
+        <tbody>
+          <tr><td>8B, GQA-8</td><td class="num">32</td><td class="num">8</td><td class="num">128</td><td class="num">128 KiB</td><td class="num">1.0 GiB</td></tr>
+          <tr><td>70B, GQA-8</td><td class="num">80</td><td class="num">8</td><td class="num">128</td><td class="num">320 KiB</td><td class="num">2.5 GiB</td></tr>
+          <tr><td>13B, full MHA</td><td class="num">40</td><td class="num">40</td><td class="num">128</td><td class="num">800 KiB</td><td class="num">6.3 GiB</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Note the third row. <strong>Grouped-query attention is a ~5–10× KV reduction</strong> and the single
+    largest lever on concurrency; full-MHA models are dramatically more expensive to serve at
+    long context than their parameter count suggests. Multi-head latent attention compresses
+    further by caching a low-rank latent instead of full K/V.</p>
+    <p>On 8×H100 (640 GB) serving 70B in FP8: ~70 GB weights, ~40 GB activations and workspace
+    and fragmentation, leaving ~530 GB for KV → ~1.6M tokens → <strong>~200 concurrent requests at 8k
+    context</strong>. That number is your per-replica concurrency limit, and it is what the autoscaler
+    ultimately scales.</p>
+
+    <h3>4.2 Paged allocation</h3>
+    <p>Never allocate a contiguous per-request buffer sized to <code>max_tokens</code>. That was the
+    original sin of first-generation servers: reserving for the worst case wasted 60–80% of the
+    cache to internal fragmentation.</p>
+    <p>Instead, <strong>PagedAttention</strong>: KV lives in fixed-size blocks (typically 16 tokens), a
+    per-request block table maps logical positions to physical blocks, and attention kernels
+    gather through that indirection. Fragmentation drops below 4%, and blocks become shareable:</p>
+    <ul>
+      <li><strong>Copy-on-write for parallel samples</strong> — <code>n=4</code> completions share the prompt's blocks until they diverge.</li>
+      <li><strong>Prefix caching</strong> — a radix tree over token-ID prefixes lets a new request adopt existing blocks by reference. Cache-hit prefill is the difference between a 3 s and a 200 ms TTFT on long-context agent loops.</li>
+    </ul>
+
+    <h4>Why this dominates the OTA design</h4>
+    <p>Structure the prompt so the shared part comes <em>first</em> and the volatile part last. Prefix
+    caching matches on exact token prefixes, so one early-inserted timestamp invalidates
+    everything after it:</p>
+    <div class="stack">
+      <div class="layer hot"><span>System prompt + tool schemas + policy text</span><span class="reuse">~3k tok · 100% of traffic</span></div>
+      <div class="layer hot"><span>Destination / property context, reviews</span><span class="reuse">~20k tok · per destination</span></div>
+      <div class="layer hot"><span>Conversation history</span><span class="reuse">variable · per session</span></div>
+      <div class="layer cold"><span>Live availability + pricing + user query</span><span class="reuse">~2k tok · unique, must be last</span></div>
+    </div>
+    <p>Three tiers of reuse fall out of that layout: the system block is cached fleet-wide, the
+    property block per popular destination (travel demand is extremely Zipfian — a few hundred
+    destinations cover most traffic), and the history block makes turn <em>n+1</em> nearly free. In an
+    agentic loop, each of the 10–20 calls appends to a prefix the replica already holds, so only
+    the newest tool result needs prefilling. That is an 8-second itinerary turn instead of a
+    40-second one, and it costs nothing but prompt discipline.</p>
+
+    <h3>4.3 Cache-aware routing</h3>
+    <p>Prefix caching only pays if the request lands on the replica holding the prefix.
+    Round-robin destroys most of the benefit.</p>
+    <p>Route on a hash of the request's prefix, with <strong>bounded-load consistent hashing</strong>: prefer
+    the cache-owning replica, but fall through when it exceeds ~1.25× mean load. The bounded-load
+    part is load-bearing rather than theoretical here — destination popularity is Zipfian
+    <em>and</em> seasonal, so “everyone is asking about Lisbon this week” is routine. Naive prefix
+    hashing would pin that spike to one replica while the fleet idles.</p>
+    <p>Otherwise prefer <strong>least-outstanding-tokens</strong> over least-connections: requests are wildly
+    unequal in cost, so counting them is nearly meaningless.</p>
+
+    <h3>4.4 Eviction, tiering, and pressure</h3>
+    <ul>
+      <li><strong>Eviction</strong> — LRU over reference-counted blocks; never evict blocks of a running sequence.</li>
+      <li><strong>Tiering</strong> — spill cold prefix blocks HBM → host DRAM (~50 GB/s over PCIe) → local NVMe. Recomputing a 100k-token prefill costs seconds of GPU; re-reading 30 GB of KV costs ~3 s and no GPU. Worth it for large reused contexts, not for short prompts where recompute is cheaper than transfer.</li>
+      <li><strong>Preemption</strong> — when the cache fills, either <em>swap</em> a sequence's KV to host memory or <em>drop and recompute</em> on resume. Recompute wins for short sequences, swap for long ones. Either way, preemption rate is a first-class alert: a steady rate means admission control is over-admitting and the system is burning GPU on repeated work.</li>
+      <li><strong>KV quantization</strong> — FP8 KV roughly doubles concurrency for a small quality cost, near-free on Hopper+. INT4 KV is riskier: quantize K per-channel, V per-token, and validate on long-context retrieval where KV error compounds worst.</li>
+    </ul>
+
+    <h3>4.5 Free the cache aggressively</h3>
+    <div class="note">
+      <p>An underrated source of waste: a client disconnects mid-stream and the server keeps
+      generating. Propagate cancellation from the HTTP layer to the scheduler and free the
+      blocks immediately. On a product with a visible “stop” button, this can be several percent
+      of total GPU spend.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <h2><span class="n">05</span><span>Continuous batching and scheduling</span></h2>
+  <div class="body">
+    <h3>5.1 Iteration-level scheduling</h3>
+    <p>Static batching — collect N requests, run to completion — is pathological when outputs
+    vary from 5 to 4000 tokens: the batch runs at the speed of its longest member and the GPU
+    drains to a trickle as sequences finish.</p>
+    <p><strong>Continuous (in-flight) batching</strong> reschedules at every decode step. Finished sequences
+    leave immediately, queued ones join in their place, and batch composition changes every
+    ~20 ms. Typically a <strong>5–20× throughput improvement</strong> at the same latency, and the single
+    highest-leverage thing in the serving stack.</p>
+
+    <h3>5.2 Chunked prefill — the interference problem</h3>
+    <p>Prefill and decode compete. A newly arrived 32k-token prompt occupies the GPU for hundreds
+    of milliseconds; every decoding sequence stalls for that window and its ITL spikes. Users see
+    the stream stutter whenever someone else asks a long question.</p>
+    <p><strong>Chunked prefill</strong> splits the prompt into fixed chunks (512–2048 tokens) and co-schedules
+    one chunk alongside the decode batch each iteration, under a global per-step token budget:</p>
+    <div class="codewrap"><pre><code>tokens_this_step = decode_tokens (1 per running seq) + prefill_chunk_tokens ≤ budget</code></pre></div>
+    <p>This is also what makes the batch <em>compute-efficient</em>: decode alone rarely reaches the
+    critical batch size, but decode + a prefill chunk does, so the free tensor-core capacity
+    during decode is spent on prefill instead of idled.</p>
+    <p>The trade-off is explicit and tunable: bigger chunks → better TTFT, worse ITL. Set the
+    budget from your SLO ratio, and consider different budgets for latency-sensitive and
+    throughput-sensitive tiers.</p>
+
+    <h3>5.3 Admission control and queueing</h3>
+    <ul>
+      <li><strong>Queue discipline</strong> — FCFS is predictable and starvation-free; priority classes (interactive &gt; agentic &gt; batch) with aging bound worst-case wait. Shortest-job-first is tempting, but output length is unknown in advance and estimating it invites starvation of long generations.</li>
+      <li><strong>Admission</strong> — reject or queue when projected TTFT already exceeds SLO. Failing fast at the door beats admitting a request that will miss its target <em>and</em> degrade everyone else's.</li>
+      <li><strong>KV reservation</strong> — admit only if the expected KV footprint fits with headroom. Optimistic admission plus preemption works, but only with a preemption budget; unbounded optimism produces thrash.</li>
+      <li><strong>Per-tenant token buckets</strong> — rate-limit on tokens per second, not requests per second. A request is not a unit of cost.</li>
+    </ul>
+
+    <h3>5.4 Prefill/decode disaggregation</h3>
+    <p>At scale, run prefill and decode on <strong>separate pools</strong> and ship KV blocks between them over
+    NVLink/RDMA. They have different optimal parallelism (prefill likes TP for latency; decode
+    likes DP replicas with big batches), different SLOs, and different scaling curves. It
+    eliminates interference structurally rather than papering over it with chunk-size tuning.</p>
+    <div class="note">
+      <p>The OTA workload is exactly that prefill-heavy case — 20k prompt tokens against 150
+      output tokens is a ~130:1 ratio — and so the strongest realistic argument for
+      disaggregation. But a high prefix-cache hit rate <em>removes</em> most of that prefill work.
+      Measure the post-caching ratio, not the raw one, and exhaust cheap prompt discipline before
+      buying a second pool and a second autoscaler.</p>
+    </div>
+
+    <h3>5.5 Speculative decoding</h3>
+    <p>A small draft model (or n-gram lookup, or EAGLE/Medusa heads) proposes <em>k</em> tokens; the
+    target model verifies them in one forward pass and accepts the longest correct prefix. Since
+    verification is one pass over the weights, accepting 3 tokens costs about what generating 1
+    did — a 2–3× single-stream latency win at 70–80% acceptance.</p>
+    <p>The caveat, and a good interview discriminator: <strong>speculation spends spare compute.</strong> It
+    helps exactly when you are memory-bound — low batch, latency-critical, off-peak. At high
+    batch you are already compute-bound, and the wasted verification FLOPs on rejected tokens
+    make throughput <em>worse</em>. Gate it dynamically on current batch size rather than enabling it
+    globally.</p>
+  </div>
+</section>
+
+<section id="s6">
+  <h2><span class="n">06</span><span>Quantization</span></h2>
+  <div class="body">
+    <h3>6.1 Match the format to the bottleneck</h3>
+    <p>The mistake is treating quantization as one dial. Three distinct things can be quantized,
+    and they buy different things:</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>What</th><th>Saves</th><th>Helps which phase</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Weights</strong></td><td>HBM capacity + per-step read volume</td><td>decode (bandwidth-bound)</td></tr>
+          <tr><td><strong>Activations</strong></td><td>enables low-precision tensor cores</td><td>prefill (compute-bound)</td></tr>
+          <tr><td><strong>KV cache</strong></td><td>HBM capacity</td><td>concurrency — i.e. everything</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Hence <strong>W4A16</strong> (INT4 weights, BF16 activations — AWQ/GPTQ) shrinks weights 4× and is
+    excellent for low-batch decode and for fitting a big model on fewer GPUs. But it dequantizes
+    to BF16 inside the kernel, so at high batch — where you are compute-bound — it can be
+    <em>slower</em> than FP8. It is a latency and capacity optimization, not a throughput one.</p>
+    <p><strong>W8A8 FP8</strong> (E4M3) is the current production default on Hopper: 2× on both weight bytes
+    and tensor-core throughput, near-lossless with light calibration, natively supported so there
+    is no dequant tax. On Blackwell, block-scaled 4-bit (NVFP4/MXFP4) extends the “helps both
+    phases” property down to 4 bits.</p>
+    <p>Default policy: <strong>FP8 weights + FP8 activations + FP8 KV</strong> for interactive serving; INT4
+    weight-only when the goal is fitting a larger model on cheaper GPUs or serving at low
+    concurrency.</p>
+
+    <h3>6.2 Getting it right</h3>
+    <ul>
+      <li><strong>Granularity</strong> — per-tensor is fastest; per-channel (weights) / per-token (activations) is more accurate; group-wise (g=128) for INT4. Finer granularity costs scale-lookup overhead in the kernel.</li>
+      <li><strong>Outliers</strong> — a handful of activation channels have huge dynamic range and dominate the error. AWQ keeps the most salient ~1% of weight channels in higher precision; SmoothQuant migrates activation scale into weights. This is why naive round-to-nearest INT4 falls apart and the published methods don't.</li>
+      <li><strong>Calibration</strong> — a few hundred samples from <em>your</em> traffic, not WikiText. A model calibrated on generic English and served on 30 languages of hotel policy text, date arithmetic, and price formatting will quantize badly in exactly the places you care about. Weight the calibration set by real language mix.</li>
+    </ul>
+
+    <h3>6.3 Validating it — where teams get burned</h3>
+    <p>Perplexity is a <strong>necessary but wildly insufficient</strong> check. Quantization damage
+    concentrates in the tails: long-context retrieval, multi-step reasoning, structured output
+    adherence, and non-English performance all degrade well before perplexity moves.</p>
+    <ol>
+      <li>Task evals relevant to production (not just MMLU) with confidence intervals — a 0.5 point move on 1000 items is noise.</li>
+      <li>Long-context probes at max supported length, framed as the real failure mode: <em>given 20k tokens of reviews, does it still find the line saying the pool is closed for renovation?</em></li>
+      <li>Format and tool-call adherence on real request shapes — a malformed <code>search_flights</code> call is a broken product.</li>
+      <li>A <strong>paired A/B against the BF16 baseline on replayed production traffic</strong>, greedy decoding, judge-scored. Catches “subtly worse at the thing our users actually do”, which no public benchmark will.</li>
+      <li>Cheap non-negotiable domain assertions: prices and dates in the response must match the injected tool output exactly. Numeric drift shows up long before bad prose, and on a booking funnel a hallucinated price is the most expensive possible failure.</li>
+      <li>Sign-off that a quantized checkpoint is a <strong>distinct model version</strong> in the registry, shipping through the same canary process as a new checkpoint — because it is one.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="s7">
+  <h2><span class="n">07</span><span>Parallelism and placement</span></h2>
+  <div class="body">
+    <ul>
+      <li><strong>Tensor parallelism (TP)</strong> — splits every layer; an all-reduce per layer means it wants NVLink. Use it to fit the model and cut single-stream latency. Beyond one NVLink domain (typically 8 GPUs), communication dominates.</li>
+      <li><strong>Pipeline parallelism (PP)</strong> — splits layers across stages, tolerates slower interconnect, introduces bubbles and hurts latency. Use it to cross node boundaries when TP alone can't fit the model.</li>
+      <li><strong>Data parallelism (DP)</strong> — independent replicas. Best throughput-per-dollar whenever the model fits, and the unit the autoscaler manipulates.</li>
+      <li><strong>Expert parallelism (EP)</strong> — for MoE, distributes experts across GPUs, and introduces expert load imbalance as a new failure mode needing a rebalancing story.</li>
+    </ul>
+    <div class="thesis">
+      <p>Rule of thumb: the smallest TP that fits the model with room for a healthy KV cache,
+      then scale out with DP replicas. Reaching for TP=8 on a model that fits in TP=2 buys latency
+      you may not need, and costs throughput and blast radius.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s8">
+  <h2><span class="n">08</span><span>Autoscaling</span></h2>
+  <div class="body">
+    <h3>8.1 Scale on the right signal</h3>
+    <p>GPU utilization is a <strong>bad</strong> autoscaling signal for LLM serving. Decode keeps the GPU
+    nominally busy at low arithmetic efficiency, so utilization sits high and flat while headroom
+    varies enormously. Scaling on it produces both under- and over-provisioning.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>#</th><th>Signal</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td><strong>Queue wait time</strong> (p95 arrival → first step)</td><td>the leading indicator; rises before latency does</td></tr>
+          <tr><td class="num">2</td><td><strong>KV cache utilization %</strong></td><td>at ~85–90%, preemption and admission rejection are imminent</td></tr>
+          <tr><td class="num">3</td><td><strong>Running batch vs max concurrency</strong></td><td>how much replica capacity is committed</td></tr>
+          <tr><td class="num">4</td><td><strong>SLO burn rate</strong></td><td>lagging ground truth — for alerting and as a scaling backstop</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.2 Capacity model</h3>
+    <p>Derive <code>concurrency_per_replica</code> empirically: load-test until p95 TTFT or ITL hits the
+    SLO and record the concurrency at that knee. It's a function of model, quantization, context
+    length, and chunk budget — re-derive it whenever any of those change, and store it alongside
+    the engine config. Then it's Little's Law:</p>
+    <div class="codewrap"><pre><code>required_replicas = ceil( (λ_peak × avg_service_time) / (concurrency_per_replica × target_util) )
+
+$/M_tokens        = (GPUs × $/GPU-hour) / (aggregate_output_tok/s × 3600) × 10^6</code></pre></div>
+    <p>Use <code>target_util ≈ 0.7</code> to absorb burst and rolling deploys. Measure λ in <em>tokens</em>, not
+    requests — mixing a 200-token and a 100k-token workload under one request-rate number will
+    mis-size the fleet by an order of magnitude.</p>
+
+    <h4>Worked example — sizing the OTA assistant</h4>
+    <p>Peak of <strong>2,000 conversations/minute</strong>, 4 turns each, 20k prompt tokens and 150 output
+    tokens per turn:</p>
+    <div class="codewrap"><pre><code>turns/s        = 2000 × 4 / 60                   ≈ 133/s
+raw prefill    = 133 × 20,000                    ≈ 2.7M prompt tok/s
+after caching  = 2.7M × (1 − 0.9 hit rate)       ≈ 270k prompt tok/s
+output         = 133 × 150                       ≈  20k output tok/s</code></pre></div>
+    <p>The 90% prefix-cache hit rate is the whole ballgame: it turns 2.7M into 270k prompt
+    tokens/s — a <strong>10× reduction in fleet size</strong> — and it comes from prompt layout and cache-aware
+    routing rather than from buying anything. No other lever here is worth as much on this
+    workload, which is why §11 puts caching in phase 1 and disaggregation in phase 3.</p>
+    <p>Against a measured ~50k prefill tok/s and ~3k output tok/s per 8×H100 replica: prefill
+    needs ~6 replicas, decode ~7, so ~8 replicas (64 H100s) at 70% target utilization. At
+    $2.50/GPU-h that's ~$160/h at peak; with the 5× diurnal swing and autoscaling, the daily
+    average lands nearer $60–70/h. Against booking volume, that arithmetic is the difference
+    between a feature that pays for itself and one that doesn't.</p>
+
+    <h3>8.3 Cold start is the hard part</h3>
+    <p>A new replica is not useful for <strong>2–5 minutes</strong>: pull the image, load 70–140 GB of weights,
+    allocate and warm the KV pool, capture CUDA graphs, compile kernels. Traffic spikes arrive in
+    seconds. No amount of HPA tuning closes that gap. What does:</p>
+    <ul>
+      <li><strong>Weights on node-local NVMe</strong>, pre-warmed by a DaemonSet, not pulled from object storage per pod (10 GB/s vs 1–5 GB/s, and no cross-AZ egress).</li>
+      <li><strong>Weights out of the container image</strong> — a 140 GB image is an unpullable image.</li>
+      <li><strong>Warm pool / headroom</strong> — spare replicas, or low-priority placeholder pods evicted instantly to make room. You trade ~10–20% idle GPU for spike absorption; on interactive traffic that trade is almost always correct.</li>
+      <li><strong>Predictive scaling</strong> on the daily and weekly curve, reactive only for the residual. Travel is the best case for this: the ~5× daily swing is smooth and regular, booking-season peaks are known months ahead, and the genuinely spiky events — a fare drop, a destination going viral, weather stranding travellers — are exactly the residual a warm pool should cover. Don't react your way through a curve you can already see coming.</li>
+      <li><strong>Asymmetric thresholds</strong> — scale up fast, scale down slowly (10–15 min stabilization). Flapping is expensive when each start costs minutes of GPU time.</li>
+      <li><strong>Queue-based backpressure</strong> as the shock absorber covering scale-up latency: a bounded queue with fast rejection converts an overload into a few explicit 429s instead of a fleet-wide latency collapse.</li>
+    </ul>
+
+    <h3>8.4 Scaling the tiers</h3>
+    <ul>
+      <li><strong>Prefill and decode scale independently</strong> when disaggregated — prefill on queue depth and prompt-token rate, decode on KV utilization and running batch.</li>
+      <li><strong>Batch tier on spot</strong> with checkpointing and drain-on-preemption; interactive on on-demand. Often the largest single cost lever available, ahead of any kernel work — and it composes with the diurnal curve: review summarization is perfectly happy to run at 04:00 on capacity the interactive tier just gave back.</li>
+      <li><strong>Follow the sun</strong> — booking traffic peaks in local evening, so regional peaks are staggered by hours. Let each region scale on its own curve, or route overflow across regions where data residency permits; the second is cheaper but adds latency, so keep it a spillover path, not the default.</li>
+      <li><strong>Scale-to-zero</strong> only for cold, non-interactive models. Never for interactive traffic.</li>
+      <li><strong>LoRA multiplexing</strong> over a replica per fine-tune — the difference between N GPUs and N×adapters GPUs.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="s9">
+  <h2><span class="n">09</span><span>Observability</span></h2>
+  <div class="body">
+    <p>Instrument per-phase, not per-request-total, or you can't tell which mechanism regressed:</p>
+    <ul>
+      <li><strong>Latency split</strong> — queue wait, prefill, per-token decode, detokenize, network as separate histograms. A TTFT regression is one of these, and the split tells you which.</li>
+      <li><strong>Goodput</strong> — requests/s meeting both SLOs, sliced by tenant and prompt-length bucket.</li>
+      <li><strong>KV</strong> — utilization, prefix-cache hit rate, preemptions/s, swap bytes/s.</li>
+      <li><strong>Batch</strong> — running batch size histogram and per-step token budget occupancy. If the histogram sits below the critical batch size, you are paying for idle tensor cores.</li>
+      <li><strong>Cost</strong> — $/M tokens, tokens/GPU-hour, idle GPU fraction.</li>
+      <li><strong>Quality</strong> — sampled output logging with an offline judge, so a bad quantization or checkpoint rollout is caught by data rather than by users.</li>
+    </ul>
+    <div class="note">
+      <p>Load test with realistic prompt and output length distributions replayed from
+      production. Benchmarks with fixed 128-in/128-out tell you nothing about a system whose
+      behavior is dominated by length variance.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s10">
+  <h2><span class="n">10</span><span>Failure modes and runbook</span></h2>
+  <div class="body">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Symptom</th><th>Likely cause</th><th>Response</th></tr></thead>
+        <tbody>
+          <tr><td>ITL spikes, TTFT fine</td><td>long prefills interfering with the decode batch</td><td>reduce prefill chunk size; cap per-step prefill tokens</td></tr>
+          <tr><td>TTFT climbing, ITL fine</td><td>queue backlog, under-provisioned</td><td>scale out; tighten admission; check for a cache-routing hotspot</td></tr>
+          <tr><td>Throughput collapses under load</td><td>KV thrash, preemption loop</td><td>lower max concurrency; enforce KV reservation at admission</td></tr>
+          <tr><td>OOM at high concurrency</td><td>optimistic KV admission + long outputs</td><td>cap <code>max_tokens</code>, reserve headroom, set a preemption budget</td></tr>
+          <tr><td>One replica hot, others idle</td><td>degenerate prefix-cache routing</td><td>enable bounded-load fallback; look for one dominant prefix</td></tr>
+          <tr><td>Autoscaler flapping</td><td>symmetric thresholds, short windows</td><td>asymmetric up/down; longer scale-down stabilization</td></tr>
+          <tr><td>Quality regression after deploy</td><td>quantization or checkpoint change</td><td>roll back on the registry version — the quantized build is a distinct version for exactly this reason</td></tr>
+          <tr><td>Cost per token creeping up</td><td>batch sizes falling as traffic shape shifts</td><td>inspect batch histogram; retune chunk budget; consolidate replicas</td></tr>
+          <tr><td><strong>Fleet-wide TTFT doubles after an unrelated prompt edit</strong></td><td>someone put a timestamp, user ID, or A/B flag near the <em>front</em> of the prompt, invalidating every cached prefix</td><td>version prompt templates as cache-affecting artifacts; make prefix-cache hit rate a release gate, not just a dashboard</td></tr>
+          <tr><td>Fine in staging, bad at peak in one region</td><td>regional diurnal peak, not global</td><td>scale per region on the local curve; check cross-region spillover isn't adding TTFT</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="s11">
+  <h2><span class="n">11</span><span>Rollout plan</span></h2>
+  <div class="body">
+    <h3>Phase 1 — get the fundamentals right (weeks)</h3>
+    <p>Single pool per model on a mature engine. Continuous batching + PagedAttention + prefix
+    caching + chunked prefill. FP8 weights, activations, and KV. Least-outstanding-tokens
+    routing. Autoscaling on queue depth and KV utilization with a warm pool. <em>This configuration
+    captures the large majority of the available performance.</em></p>
+    <p>Also in phase 1, and cheaper than any of it: fix the prompt layout — stable prefix first,
+    volatile suffix last — and put prefix-cache hit rate on the release gate. On a prefix-heavy
+    workload that single change outweighs everything else on this list.</p>
+
+    <h3>Phase 2 — routing and tiering</h3>
+    <p>Prefix-cache-aware routing with bounded load. Priority classes and per-tenant token
+    buckets. Batch tier on spot, scheduled into the overnight trough. Speculative decoding gated
+    on batch size. LoRA multiplexing for fine-tunes.</p>
+
+    <h3>Phase 3 — specialize, if the numbers justify it</h3>
+    <p>Prefill/decode disaggregation. Tiered KV offload to DRAM/NVMe for long-context reuse.
+    Predictive autoscaling. Per-workload engine tuning.</p>
+
+    <div class="thesis">
+      <p>The ordering is deliberate: every phase-3 item adds a moving part and an on-call
+      burden, and none of them beat getting phase 1 right. The most common expensive mistake in
+      this space is building the disaggregated, tiered, speculatively-decoded architecture before
+      measuring that the simple one was insufficient.</p>
+    </div>
+  </div>
+</section>
+
+<section id="s12">
+  <h2><span class="n">12</span><span>Quick reference</span></h2>
+  <div class="body">
+    <h4>Formulas</h4>
+    <div class="codewrap"><pre><code>kv_bytes_per_token   = 2 × layers × kv_heads × head_dim × dtype_bytes
+decode_step_floor    = (model_bytes + kv_read_bytes) / HBM_bandwidth
+critical_batch       ≈ peak_FLOPS / HBM_bandwidth          (H100 ≈ 295)
+replicas             = ceil(λ × service_time / (concurrency × 0.7))
+$/M_tokens           = (GPUs × $/GPU-h) / (tok/s × 3600) × 1e6</code></pre></div>
+
+    <h4>Talking points</h4>
+    <ul class="points">
+      <li>Prefill is compute-bound, decode is memory-bound — every design choice follows from this.</li>
+      <li>Batching is free for decode until the critical batch size (~256–512 tokens in flight).</li>
+      <li>PagedAttention cut KV fragmentation from 60–80% to under 4% and made prefix sharing possible.</li>
+      <li>Continuous batching is a 5–20× win over static batching; the highest-leverage change in the stack.</li>
+      <li>GQA/MLA is a 5–10× KV reduction — the biggest lever on concurrency.</li>
+      <li>W4A16 helps decode, not prefill; FP8 helps both. Match the format to the bottleneck.</li>
+      <li>Speculative decoding helps at <em>low</em> batch and can hurt at high batch.</li>
+      <li>Never autoscale on GPU utilization; use queue wait and KV utilization.</li>
+      <li>Cold start is minutes — warm pools and node-local weights, not clever HPA tuning.</li>
+      <li>Optimize for goodput and $/M tokens, not raw throughput.</li>
+      <li>On a prefix-heavy workload, cache hit rate is worth more than every kernel optimization combined: a 90% hit rate is a 10× fleet-size reduction, bought with prompt layout.</li>
+      <li>Put the stable part of the prompt first and the volatile part last — a timestamp in the header invalidates the entire cache behind it.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <p>All figures are illustrative order-of-magnitude estimates for an H100-class fleet, chosen
+  to show the shape of the arithmetic. Measure your own hardware, model, and traffic before
+  committing to any of them.</p>
+</footer>
+
+</div>

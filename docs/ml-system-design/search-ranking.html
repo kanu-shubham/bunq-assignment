@@ -1,0 +1,865 @@
+<title>The Search Ranking Interview</title>
+<style>
+  :root {
+    --ground:#E7E9EC;
+    --surface:#FFFFFF;
+    --surface-2:#F0F2F5;
+    --line:#D2D7DE;
+    --line-2:#B7BFC9;
+    --ink:#161A1F;
+    --ink-2:#3F4854;
+    --ink-3:#69737F;
+    --accent:#8E2C3B;
+    --accent-2:#A93F4F;
+    --accent-soft:rgba(142,44,59,.09);
+    --slate:#3C526B;
+    --gold:#7E6413;
+    --bar:#8E2C3B;
+    --bar-quiet:#AAB2BC;
+    --shadow:0 1px 0 rgba(22,26,31,.04);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:#121418;
+      --surface:#1A1D22;
+      --surface-2:#212529;
+      --line:#2C3138;
+      --line-2:#3D444D;
+      --ink:#E5E8EC;
+      --ink-2:#B2BAC4;
+      --ink-3:#88919C;
+      --accent:#D9788A;
+      --accent-2:#E9909F;
+      --accent-soft:rgba(217,120,138,.13);
+      --slate:#93A9C1;
+      --gold:#C3A544;
+      --bar:#B2596B;
+      --bar-quiet:#464E58;
+      --shadow:none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground:#121418;
+    --surface:#1A1D22;
+    --surface-2:#212529;
+    --line:#2C3138;
+    --line-2:#3D444D;
+    --ink:#E5E8EC;
+    --ink-2:#B2BAC4;
+    --ink-3:#88919C;
+    --accent:#D9788A;
+    --accent-2:#E9909F;
+    --accent-soft:rgba(217,120,138,.13);
+    --slate:#93A9C1;
+    --gold:#C3A544;
+    --bar:#B2596B;
+    --bar-quiet:#464E58;
+    --shadow:none;
+  }
+
+  :root {
+    --sans:"Helvetica Neue",Helvetica,Arial,sans-serif;
+    --serif:Charter,"Bitstream Charter","Iowan Old Style","Sitka Text",Georgia,serif;
+    --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  }
+
+  * { box-sizing:border-box; }
+
+  body {
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--serif);
+    font-size:17px;
+    line-height:1.62;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ---------- shell ---------- */
+  .shell { max-width:1180px; margin:0 auto; padding:0 24px 96px; }
+  .cols { display:grid; grid-template-columns:1fr; gap:0; }
+  @media (min-width:1020px) {
+    .cols { grid-template-columns:212px minmax(0,1fr); gap:56px; align-items:start; }
+  }
+  main { min-width:0; display:flex; flex-direction:column; gap:0; }
+
+  /* ---------- masthead ---------- */
+  header.masthead { padding:56px 0 30px; border-bottom:2px solid var(--ink); margin-bottom:0; }
+  .eyebrow {
+    font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--ink-3); margin:0 0 18px;
+  }
+  .eyebrow b { color:var(--accent); font-weight:400; }
+  h1 {
+    font-family:var(--sans); font-weight:700; letter-spacing:-.033em; line-height:.98;
+    font-size:clamp(2.7rem,7.5vw,4.6rem); margin:0 0 20px; text-wrap:balance; color:var(--ink);
+  }
+  .dek { font-size:19px; line-height:1.5; color:var(--ink-2); max-width:60ch; margin:0; }
+  .dek em { color:var(--ink); font-style:italic; }
+
+  .premise {
+    margin:28px 0 0; padding:16px 20px; background:var(--surface); border:1px solid var(--line);
+    font-size:15.5px; line-height:1.55; color:var(--ink-2); box-shadow:var(--shadow);
+  }
+  .premise strong { font-family:var(--sans); font-size:11px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--accent); display:block; margin-bottom:6px; font-weight:700; }
+
+  /* ---------- budget strip ---------- */
+  .budget { margin:34px 0 0; }
+  .budget-head {
+    display:flex; justify-content:space-between; align-items:baseline; gap:16px;
+    font-family:var(--mono); font-size:11px; letter-spacing:.11em; text-transform:uppercase;
+    color:var(--ink-3); margin-bottom:10px;
+  }
+  .budget-bar { display:flex; gap:2px; height:34px; }
+  .budget-seg {
+    background:var(--bar); position:relative; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-family:var(--mono); font-size:11px; letter-spacing:.02em;
+    transition:opacity .15s ease;
+  }
+  .budget-seg:hover { opacity:.78; }
+  .budget-labels {
+    display:flex; gap:2px; margin-top:7px;
+    font-family:var(--mono); font-size:10px; letter-spacing:.04em; color:var(--ink-3);
+  }
+  .budget-labels span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  @media (max-width:700px) { .budget-labels { display:none; } }
+
+  /* ---------- rail ---------- */
+  .rail { display:none; }
+  @media (min-width:1020px) {
+    .rail {
+      display:block; position:sticky; top:0; padding-top:56px; align-self:start;
+      max-height:100vh; overflow-y:auto;
+    }
+  }
+  .rail-title {
+    font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--ink-3); padding-bottom:10px; border-bottom:1px solid var(--line-2); margin-bottom:4px;
+  }
+  .rail a {
+    display:grid; grid-template-columns:22px 1fr 26px; gap:8px; align-items:baseline;
+    padding:7px 0; text-decoration:none; border-bottom:1px solid var(--line);
+    color:var(--ink-2); font-family:var(--sans); font-size:13px; line-height:1.3;
+  }
+  .rail a .n { font-family:var(--mono); font-size:10.5px; color:var(--ink-3); }
+  .rail a .m { font-family:var(--mono); font-size:10.5px; color:var(--ink-3); text-align:right;
+    font-variant-numeric:tabular-nums; }
+  .rail a:hover { color:var(--ink); }
+  .rail a.is-active { color:var(--accent); }
+  .rail a.is-active .n, .rail a.is-active .m { color:var(--accent); }
+  .rail a:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* ---------- sections ---------- */
+  section { padding:44px 0 8px; border-top:1px solid var(--line-2); }
+  section:first-of-type { border-top:none; }
+  .sec-head { display:flex; align-items:baseline; gap:14px; margin:0 0 6px; }
+  .sec-num {
+    font-family:var(--mono); font-size:12px; color:var(--accent); letter-spacing:.06em;
+    padding-top:4px; flex:none;
+  }
+  h2 {
+    font-family:var(--sans); font-weight:700; letter-spacing:-.025em; line-height:1.05;
+    font-size:clamp(1.6rem,3.4vw,2.15rem); margin:0; text-wrap:balance; color:var(--ink);
+  }
+  .sec-sub { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); margin:0 0 24px 0; }
+  @media (min-width:1020px) { .sec-sub { margin-left:34px; } }
+  h3 {
+    font-family:var(--sans); font-weight:700; font-size:1.02rem; letter-spacing:-.005em;
+    margin:34px 0 10px; color:var(--ink);
+  }
+  h3::before { content:"› "; color:var(--accent); }
+  p { margin:0 0 16px; max-width:68ch; }
+  section > p, section > ul, section > ol, section > .note { max-width:68ch; }
+  strong { font-weight:700; color:var(--ink); }
+  em { font-style:italic; }
+  a { color:var(--accent); }
+  ul, ol { margin:0 0 18px; padding-left:22px; }
+  li { margin-bottom:9px; }
+  li::marker { color:var(--ink-3); }
+  code {
+    font-family:var(--mono); font-size:.84em; background:var(--surface-2);
+    border:1px solid var(--line); padding:.08em .34em; border-radius:2px; color:var(--ink);
+  }
+  pre {
+    font-family:var(--mono); font-size:12.5px; line-height:1.6; background:var(--surface);
+    border:1px solid var(--line); padding:16px 18px; overflow-x:auto; margin:0 0 20px;
+    color:var(--ink-2); box-shadow:var(--shadow);
+  }
+  pre code { background:none; border:none; padding:0; font-size:inherit; }
+
+  /* pull quote / "say this" */
+  .say {
+    margin:22px 0; padding:18px 22px; border-left:3px solid var(--accent);
+    background:var(--accent-soft); max-width:68ch;
+  }
+  .say .lbl { font-family:var(--mono); font-size:10px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); display:block; margin-bottom:8px; }
+  .say p { margin:0; font-size:17.5px; line-height:1.55; }
+
+  .note {
+    margin:20px 0; padding:14px 18px; background:var(--surface); border:1px solid var(--line);
+    font-size:15.5px; line-height:1.55; color:var(--ink-2); box-shadow:var(--shadow);
+  }
+  .note .lbl { font-family:var(--mono); font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+    color:var(--ink-3); display:block; margin-bottom:6px; }
+  .budget .note { max-width:none; }
+  .note.warn { border-left:3px solid var(--gold); }
+  .note.warn .lbl { color:var(--gold); }
+
+  /* formula */
+  .formula {
+    font-family:var(--mono); font-size:14px; line-height:1.9; background:var(--surface);
+    border:1px solid var(--line); border-left:3px solid var(--slate);
+    padding:16px 20px; margin:0 0 20px; overflow-x:auto; color:var(--ink);
+    box-shadow:var(--shadow);
+  }
+  .formula .cap { display:block; font-family:var(--sans); font-size:12px; letter-spacing:.02em;
+    color:var(--ink-3); margin-top:10px; line-height:1.5; }
+
+  /* ---------- tables ---------- */
+  .tw { overflow-x:auto; margin:0 0 24px; border:1px solid var(--line); background:var(--surface);
+    box-shadow:var(--shadow); }
+  table { border-collapse:collapse; width:100%; font-size:14.5px; line-height:1.45; min-width:520px; }
+  thead th {
+    font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-3); text-align:left; padding:11px 14px; border-bottom:1px solid var(--line-2);
+    background:var(--surface-2); font-weight:400; white-space:nowrap;
+  }
+  tbody td { padding:11px 14px; border-bottom:1px solid var(--line); vertical-align:top; color:var(--ink-2); }
+  tbody tr:last-child td { border-bottom:none; }
+  tbody td:first-child { color:var(--ink); }
+  td.num, th.num { font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap; }
+  .grade { font-family:var(--mono); font-weight:700; color:var(--accent); }
+
+  /* ---------- figures ---------- */
+  figure { margin:0 0 28px; }
+  figcaption {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink-3); margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--line-2);
+  }
+  .fignote { font-family:var(--sans); font-size:12.5px; line-height:1.5; color:var(--ink-3);
+    margin-top:10px; text-transform:none; letter-spacing:0; }
+
+  /* funnel */
+  .funnel { display:flex; flex-direction:column; gap:2px; }
+  .stage {
+    display:grid; grid-template-columns:minmax(0,1fr); background:var(--surface);
+    border:1px solid var(--line); padding:12px 16px; box-shadow:var(--shadow);
+  }
+  @media (min-width:640px) {
+    .stage { grid-template-columns:118px minmax(0,1fr) 92px; gap:16px; align-items:center; }
+  }
+  .stage .st-name { font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); }
+  .stage .st-body { font-size:14.5px; line-height:1.45; color:var(--ink-2); }
+  .stage .st-body b { color:var(--ink); font-family:var(--sans); font-size:13px; }
+  .stage .st-meta { font-family:var(--mono); font-size:11px; color:var(--ink-3); text-align:left;
+    font-variant-numeric:tabular-nums; }
+  @media (min-width:640px) { .stage .st-meta { text-align:right; } }
+  .stage.policy .st-name { color:var(--slate); }
+  .funnel-arrow { font-family:var(--mono); font-size:11px; color:var(--ink-3); padding-left:16px; }
+
+  /* horizontal bar chart */
+  .bars { display:flex; flex-direction:column; gap:2px; }
+  .brow { display:grid; grid-template-columns:132px minmax(0,1fr) 52px; gap:12px; align-items:center; }
+  @media (max-width:560px) { .brow { grid-template-columns:104px minmax(0,1fr) 46px; gap:8px; } }
+  .brow .bl { font-family:var(--sans); font-size:12.5px; color:var(--ink-2); line-height:1.25; }
+  .brow .bt { height:20px; background:var(--surface-2); border:1px solid var(--line); }
+  .brow .bf { height:100%; background:var(--bar); }
+  .brow.quiet .bf { background:var(--bar-quiet); }
+  .brow .bv { font-family:var(--mono); font-size:11.5px; color:var(--ink-3); text-align:right;
+    font-variant-numeric:tabular-nums; }
+  .brow:hover .bf { opacity:.8; }
+  .btotal { display:grid; grid-template-columns:132px minmax(0,1fr) 52px; gap:12px;
+    margin-top:8px; padding-top:8px; border-top:1px solid var(--line-2);
+    font-family:var(--mono); font-size:11.5px; color:var(--ink); }
+  @media (max-width:560px) { .btotal { grid-template-columns:104px minmax(0,1fr) 46px; gap:8px; } }
+  .btotal .bv { text-align:right; font-variant-numeric:tabular-nums; }
+
+  /* discount curve */
+  .discount { display:flex; align-items:flex-end; gap:3px; }
+  .dcol { flex:1; display:flex; flex-direction:column; justify-content:flex-end; align-items:center; gap:5px; }
+  .dcol .dbar { width:100%; background:var(--bar); flex:none; }
+  .dcol .dv { font-family:var(--mono); font-size:9.5px; color:var(--ink-3); font-variant-numeric:tabular-nums; }
+  .dcol .dp { font-family:var(--mono); font-size:10px; color:var(--ink-3); }
+  .dcol:first-child .dbar { background:var(--accent); }
+  .dcol:first-child .dv, .dcol:first-child .dp { color:var(--accent); }
+  .daxis { display:flex; gap:3px; margin-top:6px; }
+  .daxis span { flex:1; text-align:center; font-family:var(--mono); font-size:10px; color:var(--ink-3); }
+
+  /* gates */
+  .gates { display:grid; gap:2px; }
+  @media (min-width:760px) { .gates { grid-template-columns:repeat(4,1fr); } }
+  .gate { background:var(--surface); border:1px solid var(--line); padding:16px; box-shadow:var(--shadow); }
+  .gate .g-n { font-family:var(--mono); font-size:10px; letter-spacing:.12em; color:var(--accent); }
+  .gate h4 { font-family:var(--sans); font-size:14px; margin:6px 0 8px; letter-spacing:-.01em; color:var(--ink); }
+  .gate p { font-size:13.5px; line-height:1.5; margin:0; color:var(--ink-2); }
+  .gate .g-q { display:block; font-family:var(--mono); font-size:10.5px; color:var(--ink-3);
+    margin-top:10px; padding-top:8px; border-top:1px solid var(--line); line-height:1.45; }
+
+  /* closing lists */
+  .checks { list-style:none; padding:0; margin:0 0 24px; max-width:68ch; }
+  .checks li {
+    padding:12px 0 12px 30px; border-bottom:1px solid var(--line); position:relative;
+    font-size:15.5px; line-height:1.5; color:var(--ink-2); margin:0;
+  }
+  .checks li::before {
+    content:"✓"; position:absolute; left:4px; top:12px; color:var(--accent);
+    font-family:var(--mono); font-size:13px;
+  }
+
+  footer {
+    margin-top:56px; padding-top:24px; border-top:2px solid var(--ink);
+    font-family:var(--mono); font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+    color:var(--ink-3); display:flex; flex-wrap:wrap; gap:8px 20px; justify-content:space-between;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition:none !important; animation:none !important; }
+  }
+</style>
+
+<div class="shell">
+  <header class="masthead">
+    <p class="eyebrow">ML system design &nbsp;/&nbsp; <b>learning to rank</b> &nbsp;/&nbsp; 45 minutes</p>
+    <h1>The Search<br>Ranking Interview</h1>
+    <p class="dek">Nine moves, in order, from a vague business goal to a two-stage retrieval-and-ranking system that fits a 200&nbsp;ms budget — and the handful of things that separate <em>a design</em> from <em>a designed system</em>.</p>
+
+    <div class="premise">
+      <strong>The premise you'll design against</strong>
+      Search inside a large marketplace: 100M items, 2k QPS average and 10k at peak, 50M searches a day, a 200&nbsp;ms p99 budget for the whole response, an existing Elasticsearch cluster, and no vector index yet. The last section swaps the domain without rewriting the answer.
+    </div>
+
+    <div class="budget">
+      <div class="budget-head"><span>Time budget</span><span>45 min total</span></div>
+      <div class="budget-bar" role="img" aria-label="Time budget across nine phases: clarify 5 minutes, framing 4, metrics 5, data 6, features 5, model 8, serving 6, rollout 4, monitoring 2.">
+        <div class="budget-seg" style="flex:5" title="Clarify &amp; scope — 5 min">5</div>
+        <div class="budget-seg" style="flex:4" title="Frame as ML — 4 min">4</div>
+        <div class="budget-seg" style="flex:5" title="Metrics — 5 min">5</div>
+        <div class="budget-seg" style="flex:6" title="Data — 6 min">6</div>
+        <div class="budget-seg" style="flex:5" title="Features — 5 min">5</div>
+        <div class="budget-seg" style="flex:8" title="Model — 8 min">8</div>
+        <div class="budget-seg" style="flex:6" title="Serving — 6 min">6</div>
+        <div class="budget-seg" style="flex:4" title="Eval &amp; rollout — 4 min">4</div>
+        <div class="budget-seg" style="flex:2" title="Monitoring — 2 min">2</div>
+      </div>
+      <div class="budget-labels" aria-hidden="true">
+        <span style="flex:5">Clarify</span><span style="flex:4">Frame</span><span style="flex:5">Metrics</span>
+        <span style="flex:6">Data</span><span style="flex:5">Features</span><span style="flex:8">Model</span>
+        <span style="flex:6">Serving</span><span style="flex:4">Rollout</span><span style="flex:2">Monitor</span>
+      </div>
+      <p class="note" style="margin-top:20px;"><span class="lbl">The clock is the exam</span>The common failure is 20 minutes on model architecture and never reaching serving or evaluation. Interviewers score breadth across the whole system first, then depth in two or three places you choose. Announce the plan at minute one and hold yourself to it.</p>
+    </div>
+  </header>
+
+  <div class="cols">
+    <nav class="rail" aria-label="Sections">
+      <div class="rail-title">Phases</div>
+      <a href="#s1"><span class="n">01</span><span>Clarify &amp; scope</span><span class="m">5′</span></a>
+      <a href="#s2"><span class="n">02</span><span>Frame as ML</span><span class="m">4′</span></a>
+      <a href="#s3"><span class="n">03</span><span>Metrics</span><span class="m">5′</span></a>
+      <a href="#s4"><span class="n">04</span><span>Data</span><span class="m">6′</span></a>
+      <a href="#s5"><span class="n">05</span><span>Features</span><span class="m">5′</span></a>
+      <a href="#s6"><span class="n">06</span><span>Model</span><span class="m">8′</span></a>
+      <a href="#s7"><span class="n">07</span><span>Serving</span><span class="m">6′</span></a>
+      <a href="#s8"><span class="n">08</span><span>Eval &amp; rollout</span><span class="m">4′</span></a>
+      <a href="#s9"><span class="n">09</span><span>Monitoring</span><span class="m">2′</span></a>
+      <a href="#s10"><span class="n">—</span><span>Other domains</span><span class="m"></span></a>
+      <a href="#s11"><span class="n">—</span><span>Signals &amp; traps</span><span class="m"></span></a>
+    </nav>
+
+    <main>
+
+      <!-- 1 -->
+      <section id="s1">
+        <div class="sec-head"><span class="sec-num">01</span><h2>Clarify &amp; scope</h2></div>
+        <p class="sec-sub">Five minutes · one objective, one metric</p>
+
+        <p>Do not start designing. Ask five questions, and say out loud what each answer changes — that second half is what makes it look like experience rather than a memorized checklist.</p>
+
+        <h3>What is search <em>for</em> here?</h3>
+        <p>"Relevance" is not a business objective. Marketplaces want conversion per session. Content platforms want session depth and retention. Support search wants deflection — the user finds the answer instead of filing a ticket. Enterprise search wants time-to-first-useful-result.</p>
+        <p>Pick one and commit:</p>
+        <div class="say">
+          <span class="lbl">Commit to this sentence</span>
+          <p>Maximize the probability that a search session ends in a purchase, without regressing p99 latency or seller diversity.</p>
+        </div>
+        <p>Everything downstream — the label, the loss, the guardrails — is derived from that sentence. If the interviewer won't pick, state your assumption and move; blocking here burns the clock.</p>
+
+        <h3>Translate it into an ML metric</h3>
+        <p>Session conversion isn't optimizable per request, so decompose it: <strong>session conversion</strong> → <strong>the user finds a relevant item high in the list</strong> → <strong>NDCG@10 on graded engagement labels</strong>, with purchase-weighted gains.</p>
+        <p>Then name the gap out loud: NDCG going up does not guarantee GMV goes up. That gap is precisely what the A/B test exists to measure. Saying it in minute four buys you credit for the rest of the hour.</p>
+
+        <h3>The four scale questions — load-bearing, not trivia</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Question</th><th>Typical answer</th><th>What it changes</th></tr></thead>
+          <tbody>
+            <tr><td>QPS</td><td>2k avg, 10k peak, spiky on promotions</td><td>Whether a cross-encoder is affordable at all; cache design; index replica count</td></tr>
+            <tr><td>Latency SLA</td><td>200 ms p99, server side</td><td>The entire model choice. 200 ms → GBDT ranker; 500 ms → cross-encoder over the top 50</td></tr>
+            <tr><td>Corpus size &amp; volatility</td><td>100M items, ~5% change daily, prices hourly</td><td>Two-stage becomes mandatory; index refresh cadence; what can be precomputed</td></tr>
+            <tr><td>Traffic volume</td><td>50M searches/day, ~30% with a click</td><td>Enough clicks for a neural ranker; <em>not</em> enough purchases per (query, item) pair — which drives label design</td></tr>
+            <tr><td>Existing infra</td><td>Elasticsearch, Spark, a feature store, no vector DB</td><td>Ship BM25 + GBDT first. Introducing a vector index is a project, not a line in a design</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="note"><span class="lbl">Scope cuts, stated explicitly</span>English only for v1. Web and mobile share one ranker with a surface feature. No personalization for logged-out users beyond session context. Ads and organic are ranked separately and blended by a downstream policy layer — mixing them into one model is a different and harder problem.</p>
+      </section>
+
+      <!-- 2 -->
+      <section id="s2">
+        <div class="sec-head"><span class="sec-num">02</span><h2>Frame as ML</h2></div>
+        <p class="sec-sub">Four minutes · label, granularity, loss</p>
+
+        <p>Three questions, in this order. This is the part beginners skip and senior candidates dwell on.</p>
+
+        <h3>What is the label?</h3>
+        <p>You do not have relevance labels. You have logs. Construct graded relevance from engagement:</p>
+        <div class="tw"><table>
+          <thead><tr><th>Signal</th><th class="num">Grade</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Purchase / booking</td><td class="num"><span class="grade">4</span></td><td>Sparse, but closest to the objective</td></tr>
+            <tr><td>Add to cart / save</td><td class="num"><span class="grade">3</span></td><td>Roughly 10× denser than purchase</td></tr>
+            <tr><td>Click, dwell ≥ 30 s</td><td class="num"><span class="grade">2</span></td><td>Dwell threshold tuned per vertical</td></tr>
+            <tr><td>Click, bounce &lt; 10 s</td><td class="num"><span class="grade">0–1</span></td><td>A <em>bad click</em> — the title worked, the item didn't. Score it as positive and you have trained a clickbait engine</td></tr>
+            <tr><td>Impression, no click</td><td class="num"><span class="grade">0</span></td><td>Only if the item was actually <strong>viewed</strong></td></tr>
+          </tbody>
+        </table></div>
+
+        <p>Two rules separate a real label design from a toy one:</p>
+        <ol>
+          <li><strong>Only viewed impressions are negatives.</strong> An item rendered at position 30 that the user never scrolled to is not a negative — it is missing data. Log a viewport signal and drop everything below the deepest viewed position.</li>
+          <li><strong>Bad clicks must be distinguishable from no clicks.</strong> Dwell-gating is the cheapest defense against optimizing for the thumbnail instead of the item.</li>
+        </ol>
+
+        <p>Add a <strong>human-rated golden set</strong>: a few thousand (query, item) pairs graded 0–4 by trained raters against a written guideline, refreshed quarterly. Too small to train on, essential to evaluate on — it is the only label source not contaminated by what your current ranker chose to show. An LLM judge can extend it cheaply for pre-launch checks; calibrate it against human raters first, and never let it be the only ground truth.</p>
+
+        <h3>What is one training example?</h3>
+        <p><strong>Not</strong> one (query, item) row. One example is one <strong>slate</strong> — a query-session plus the full list of viewed candidates with their labels:</p>
+<pre><code>example = {
+  qid:  (query_text, user_id, timestamp, surface),
+  docs: [(features₁, grade₁, position₁),
+         (features₂, grade₂, position₂), … ],
+}</code></pre>
+        <p>Granularity matters three times over: listwise losses need the group; the train/test split must be <strong>by query group and by time</strong> or the same slate leaks across the boundary; and NDCG is computed per group and averaged, so grouping is what makes the loss and the metric agree.</p>
+
+        <h3>What is the loss?</h3>
+        <p>Ranking is not classification. Three families, and you should be able to say why you'd move between them:</p>
+        <ul>
+          <li><strong>Pointwise</strong> — predict a grade per item, MSE or cross-entropy. Works with any classifier, but optimizes absolute score rather than order, and lets easy high-candidate queries dominate the gradient. Fine as a baseline; <em>required</em> if you also need a calibrated probability for an auction or a blend.</li>
+          <li><strong>Pairwise</strong> — for each pair where grade<sub>i</sub> &gt; grade<sub>j</sub> in a group, learn P(i above j) = σ(s<sub>i</sub> − s<sub>j</sub>) and optimize cross-entropy (RankNet). Models order directly. Weakness: every pair counts equally, so fixing ranks 30 vs 40 gets the same gradient as 1 vs 2 — which the metric does not care about.</li>
+          <li><strong>Listwise</strong> — optimize a list-level objective. <strong>LambdaRank</strong> is the practical answer: take the RankNet gradient and scale it by the NDCG change from swapping that pair.</li>
+        </ul>
+
+        <div class="formula">
+          λ<sub>ij</sub> &nbsp;=&nbsp; −σ / (1 + e<sup>&thinsp;σ(s<sub>i</sub> − s<sub>j</sub>)</sup>) &nbsp;·&nbsp; |ΔNDCG<sub>ij</sub>|
+          <span class="cap">The |ΔNDCG| factor is the whole trick — it concentrates the gradient on the swaps that move the metric, which are the ones near the top of the list.</span>
+        </div>
+
+        <p>Feed those gradients into gradient-boosted trees and you have <strong>LambdaMART</strong> — still the default production ranker for tabular ranking features, and the right name to say here. Softmax cross-entropy over the slate (ListNet / ListMLE) is the neural equivalent, and what you use once the features go dense.</p>
+
+        <div class="say">
+          <span class="lbl">Say this</span>
+          <p>"I'd start pointwise because it's the fastest path to a working end-to-end system, then move to LambdaMART — the metric I committed to is NDCG@10, and LambdaMART optimizes a smooth surrogate of exactly that."</p>
+        </div>
+      </section>
+
+      <!-- 3 -->
+      <section id="s3">
+        <div class="sec-head"><span class="sec-num">03</span><h2>Metrics</h2></div>
+        <p class="sec-sub">Five minutes · offline, online, guardrails</p>
+
+        <p>Three tiers. Naming all three — and knowing that they routinely disagree — is the whole point of this section.</p>
+
+        <h3>Offline</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Metric</th><th>Stage</th><th>Why it's there</th></tr></thead>
+          <tbody>
+            <tr><td>Recall@k <span style="font-family:var(--mono);font-size:11px;color:var(--ink-3)">(k=500–1000)</span></td><td>Retrieval</td><td>The ceiling on everything downstream. If the item isn't in the candidate set, no ranker can recover it. Measure per retrieval source</td></tr>
+            <tr><td>NDCG@10</td><td>Ranking</td><td>Primary. Position-discounted, handles graded labels. Report @1, @5, @10 — @1 moves differently and users feel it most</td></tr>
+            <tr><td>MRR</td><td>Ranking</td><td>For navigational queries where exactly one answer is right ("track my order"), NDCG is the wrong lens</td></tr>
+            <tr><td>Precision@1</td><td>Ranking</td><td>The single most user-visible number in the system</td></tr>
+            <tr><td>Calibration (ECE)</td><td>Pointwise only</td><td>Matters only when the score is <em>used</em> as a probability — auctions, organic/sponsored blending, "no good results" thresholds. A pure ranker doesn't need it, and knowing why is the point</td></tr>
+            <tr><td>AUC</td><td>Diagnostic</td><td>Pooled AUC over all rows misleads — it rewards separating easy queries from hard ones. Use per-query grouped AUC, or skip it</td></tr>
+          </tbody>
+        </table></div>
+
+        <figure>
+          <figcaption>Why the discount is the metric — DCG gain weight 1 / log2(i+1), by position</figcaption>
+          <div class="discount" role="img" aria-label="Position discount weights: rank 1 is 1.00, rank 2 is 0.63, rank 3 0.50, rank 4 0.43, rank 5 0.39, rank 6 0.36, rank 7 0.33, rank 8 0.32, rank 9 0.30, rank 10 0.29.">
+            <div class="dcol"><span class="dv">1.00</span><div class="dbar" style="height:130px"></div></div>
+            <div class="dcol"><span class="dv">.63</span><div class="dbar" style="height:82px"></div></div>
+            <div class="dcol"><span class="dv">.50</span><div class="dbar" style="height:65px"></div></div>
+            <div class="dcol"><span class="dv">.43</span><div class="dbar" style="height:56px"></div></div>
+            <div class="dcol"><span class="dv">.39</span><div class="dbar" style="height:50px"></div></div>
+            <div class="dcol"><span class="dv">.36</span><div class="dbar" style="height:46px"></div></div>
+            <div class="dcol"><span class="dv">.33</span><div class="dbar" style="height:43px"></div></div>
+            <div class="dcol"><span class="dv">.32</span><div class="dbar" style="height:41px"></div></div>
+            <div class="dcol"><span class="dv">.30</span><div class="dbar" style="height:39px"></div></div>
+            <div class="dcol"><span class="dv">.29</span><div class="dbar" style="height:38px"></div></div>
+          </div>
+          <div class="daxis" aria-hidden="true">
+            <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+          </div>
+          <p class="fignote">Moving an item from rank 4 to rank 1 is worth more than everything ranks 6–10 contribute combined. That is the shape LambdaRank's |ΔNDCG| term is chasing, and the reason "we improved the ordering of the bottom half" is not a result.</p>
+        </figure>
+
+        <p class="note warn"><span class="lbl">Always slice</span>Report every offline metric by head / torso / tail query, new vs returning user, mobile vs web, and intent class. A +2% aggregate NDCG that comes entirely from head queries while tail regresses is a bad launch — slicing is how you find that before the A/B does.</p>
+
+        <h3>Online</h3>
+        <ul>
+          <li><strong>Primary:</strong> purchases per search session.</li>
+          <li><strong>Engagement:</strong> CTR@top-3, mean reciprocal click position, click depth.</li>
+          <li><strong>Failure proxies:</strong> query reformulation rate ↓ (a reformulation means you failed), zero-click session rate ↓, time-to-first-click ↓.</li>
+          <li><strong>Long-horizon:</strong> searches per user per week, 7- and 28-day retention. Badly underpowered in a two-week test — say so, and read them from a holdback instead.</li>
+        </ul>
+
+        <h3>Guardrails — any one of these blocks the launch</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Guardrail</th><th>Protects</th></tr></thead>
+          <tbody>
+            <tr><td>p99 latency, error rate, index freshness lag</td><td>The service</td></tr>
+            <tr><td>Zero-result rate</td><td>Query understanding — semantic retrieval should improve this; a regression means something broke</td></tr>
+            <tr><td>Seller concentration (Gini, top-k share)</td><td>Supply. Pure relevance optimization concentrates traffic and slowly kills the marketplace's supply side</td></tr>
+            <tr><td>Catalog coverage — % of inventory with any impression per week</td><td>The feedback loop (§09)</td></tr>
+            <tr><td>Fairness / compliance slices</td><td>Whatever your regulator says it protects</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- 4 -->
+      <section id="s4">
+        <div class="sec-head"><span class="sec-num">04</span><h2>Data</h2></div>
+        <p class="sec-sub">Six minutes · logging, sampling, bias, leakage</p>
+
+        <h3>Sources</h3>
+        <p>Search logs are the training set — query, user, timestamp, the full ranked slate with positions, viewport events, clicks, downstream conversions. They are also <em>produced by the ranker you're replacing</em>, which is the central problem of the entire field. Add the catalog (text, attributes, price, stock, seller), query logs (reformulation chains, spelling corrections, autocomplete acceptances), and the human-rated golden set.</p>
+
+        <h3>Log the features, not just the IDs</h3>
+        <p><strong>Log-and-serve</strong> is the single most effective defense against train/serve skew: write out the feature vector exactly as it was computed at request time. Recompute it later from warehouse tables and you will silently train on a price that has since changed, a CTR that includes the future, or a user profile that already saw the result. Logging feature vectors costs storage and saves months.</p>
+
+        <h3>Sampling</h3>
+        <ul>
+          <li><strong>Negatives come from the same slate</strong>, never from random catalog items. A random negative is trivially separable and teaches nothing about the decisions the ranker actually faces. (The exception is the retrieval two-tower model, which <em>does</em> want easy in-batch negatives plus mined hard ones — different stage, different distribution.)</li>
+          <li><strong>Downsample zero-engagement slates.</strong> They're ~70% of traffic and mostly carry no ranking signal. Keep a sample; reweight if you need calibrated outputs.</li>
+          <li><strong>Cap per-query contribution</strong> so one head query can't dominate — weight by log(frequency) or cap slates per query per day.</li>
+          <li><strong>Window:</strong> 3–6 months with recency weighting. Longer captures seasonality; too long encodes a catalog that no longer exists.</li>
+        </ul>
+
+        <h3>Position bias — raise this before you're asked</h3>
+        <p>Users click position 1 because it is position 1. Under the examination hypothesis:</p>
+        <div class="formula">
+          P(click | q, d, k) &nbsp;=&nbsp; P(examine | k) &nbsp;·&nbsp; P(relevant | q, d)
+          <span class="cap">The first term is the propensity p<sub>k</sub> — a property of the position, not the item. The second is the only thing you want to learn.</span>
+        </div>
+        <p>Train naively and you learn "whatever the old ranker put on top is good" — a self-fulfilling loop that freezes the system in place. Three fixes, increasing in cost:</p>
+        <ol>
+          <li><strong>Position as a feature, zeroed at inference.</strong> Cheap, partially effective, standard practice. The model attributes the position effect to the position feature, and you hold it constant when serving.</li>
+          <li><strong>Inverse propensity scoring.</strong> Weight each example by 1/p<sub>k</sub>. Estimate p<sub>k</sub> by swapping adjacent pairs on 1% of traffic (cheap, unbiased), or by regression-EM over the natural rank variation across sessions. Clip the weights — the variance will bite.</li>
+          <li><strong>Two-tower debiasing.</strong> One tower learns bias from position and context, one learns relevance; keep only the relevance tower at serving time.</li>
+        </ol>
+        <p>Name the siblings too: <strong>trust bias</strong> (users believe top results, so clicks there are inflated even when the item is wrong) and <strong>selection bias</strong> (you only ever observe what the old retrieval stage surfaced — which is why a new retrieval stage is nearly impossible to evaluate offline).</p>
+
+        <h3>Leakage</h3>
+        <p class="note warn"><span class="lbl">The one that quietly kills projects</span><strong>Point-in-time correctness.</strong> <code>item_ctr_7d</code> must be computed as of the request timestamp. Build it from a current snapshot and the feature includes clicks caused by the very impression you're predicting — offline NDCG looks spectacular and the A/B is flat. Split by time, too: train on weeks 1–8, validate on 9, test on 10. A random row split leaks the future into the past through every aggregate feature you have.</p>
+
+        <h3>Imbalance and delayed feedback</h3>
+        <p>Purchases are ~1% of clicks. Handle it with graded labels — a purchase is grade 4, not a separate binary task — rather than resampling, which distorts calibration. And conversions arrive late: a purchase can land days after the search. Choose an attribution window (24h same-session, 7d for the tail), accept that the freshest data is incomplete, and either wait out the window before training or model the delay explicitly. At minimum, never train on a partially-attributed final day and then wonder why the conversion features look depressed.</p>
+      </section>
+
+      <!-- 5 -->
+      <section id="s5">
+        <div class="sec-head"><span class="sec-num">05</span><h2>Features</h2></div>
+        <p class="sec-sub">Five minutes · four families, one correctness rule</p>
+
+        <p>Four families. Interviewers are listening for whether you reach the interaction family, because that is where the signal actually lives.</p>
+
+        <div class="tw"><table>
+          <thead><tr><th>Family</th><th>Examples</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Query</strong></td><td>Length, language, detected intent (navigational / informational / transactional), spell-corrected form, extracted entities (brand, category, size, color, price constraint), frequency bucket, historical query-level CTR, embedding</td></tr>
+            <tr><td><strong>Item</strong></td><td>Price, discount, rating count and mean, age, stock, seller tier, image quality, category, text embedding, historical CTR and conversion — <em>smoothed toward a category prior</em>, or a one-impression-one-click item scores 100%</td></tr>
+            <tr><td><strong>User &amp; context</strong></td><td>Device, surface, time of day, locale, queries so far this session, recently viewed categories, long-term affinity embedding, logged-in state, price-tier affinity. Cold users back off to segment averages — never to NaN</td></tr>
+            <tr><td><strong>Interaction<br><span style="font-family:var(--mono);font-size:11px;color:var(--accent)">query × item</span></strong></td><td><strong>Lexical:</strong> BM25 score, exact title match, query-term coverage, match field (title vs description vs reviews). <strong>Semantic:</strong> query–item embedding cosine, cross-encoder score if the budget allows. <strong>Behavioral:</strong> historical CTR for <em>this</em> (query, item) pair and for (query-cluster, item) — usually the strongest single feature in the model, and also the most exposed to feedback loops and point-in-time leakage. <strong>Personal:</strong> user-affinity–item similarity, distance from the user's usual price tier</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="note"><span class="lbl">The rule that governs all of them</span>Every aggregate above needs point-in-time correctness. The clean implementation is a feature store with as-of joins for training and a low-latency online store serving <em>the same transformation code</em>. If training and serving compute a feature through two different code paths, they will diverge — and the divergence surfaces as "great offline, flat in the A/B," the most expensive failure mode in this entire design.</p>
+      </section>
+
+      <!-- 6 -->
+      <section id="s6">
+        <div class="sec-head"><span class="sec-num">06</span><h2>Model</h2></div>
+        <p class="sec-sub">Eight minutes · baseline, then two stages, then depth</p>
+
+        <p>100M items, 200 ms. You cannot score 100M items — nobody can. So the architecture is decided before the model is:</p>
+
+        <figure>
+          <figcaption>The pipeline — candidate count collapses, cost per candidate rises</figcaption>
+          <div class="funnel">
+            <div class="stage">
+              <span class="st-name">Understand</span>
+              <span class="st-body"><b>Query understanding.</b> Spell correction, tokenization, intent classification, entity extraction, expansion</span>
+              <span class="st-meta">~15 ms</span>
+            </div>
+            <div class="funnel-arrow" aria-hidden="true">↓</div>
+            <div class="stage">
+              <span class="st-name">Retrieve</span>
+              <span class="st-body"><b>100M → ~1 000.</b> Lexical BM25 over the inverted index (exact tokens, SKUs, filters) <em>in parallel with</em> two-tower embeddings over an ANN index (paraphrase, intent, zero-result rescue), fused by reciprocal rank fusion. Metric: Recall@1000</span>
+              <span class="st-meta">~40 ms</span>
+            </div>
+            <div class="funnel-arrow" aria-hidden="true">↓</div>
+            <div class="stage">
+              <span class="st-name">Pre-rank</span>
+              <span class="st-body"><b>1 000 → ~100.</b> A cheap GBDT on ~30 features. Add this stage only when the ranker's throughput can't absorb the candidate set</span>
+              <span class="st-meta">~10 ms</span>
+            </div>
+            <div class="funnel-arrow" aria-hidden="true">↓</div>
+            <div class="stage">
+              <span class="st-name">Rank</span>
+              <span class="st-body"><b>100 → ordered.</b> LambdaMART, or a neural listwise ranker, on the full feature set. Metric: NDCG@10</span>
+              <span class="st-meta">~40 ms</span>
+            </div>
+            <div class="funnel-arrow" aria-hidden="true">↓</div>
+            <div class="stage policy">
+              <span class="st-name">Policy</span>
+              <span class="st-body"><b>Business rules.</b> Filters, dedup, diversity, freshness boosts, promotions, ads blending — outside the model, auditable, instantly reversible</span>
+              <span class="st-meta">~10 ms</span>
+            </div>
+          </div>
+          <p class="fignote">The policy layer earns its own box on purpose. Promotions and banned-item rules change weekly and must be reversible without a retrain — the model produces a score, the policy layer produces the list.</p>
+        </figure>
+
+        <h3>Retrieval, in detail</h3>
+        <p><strong>BM25</strong> is the lexical backbone — free, interpretable, and unbeatable on rare exact tokens like "iPhone 14 Pro 256GB":</p>
+        <div class="formula">
+          score(q,d) &nbsp;=&nbsp; Σ<sub>t∈q</sub> &nbsp; IDF(t) &nbsp;·&nbsp; f(t,d)(k₁+1) &nbsp;/&nbsp; [ f(t,d) + k₁(1 − b + b·|d|/avgdl) ]
+          <span class="cap">k₁ ≈ 1.2 controls term-frequency saturation, b ≈ 0.75 the length normalization. It fails on vocabulary mismatch: "laptop for kids" never matches "children's notebook computer."</span>
+        </div>
+        <p><strong>Semantic retrieval</strong> exists to fix exactly that failure. A two-tower dual encoder trains a query tower and an item tower to place engaged pairs close together, with in-batch negatives and a sampled-softmax loss. Two details worth naming, because they're where it goes wrong:</p>
+        <ul>
+          <li><strong>logQ correction.</strong> In-batch negatives oversample popular items, so subtract log(sampling probability) from the logits — otherwise the model learns popularity, not relevance.</li>
+          <li><strong>Hard negative mining.</strong> Retrieve top-k with the current model, take the non-engaged results as negatives, retrain. This is what moves Recall@k; random negatives alone plateau early.</li>
+        </ul>
+        <p>Item embeddings are precomputed offline — nightly full rebuild plus streaming updates for new items — and loaded into the ANN index. The query tower runs per request, so it has to be small: a distilled 4–6 layer transformer, or a bag-of-embeddings model on the tightest budgets.</p>
+        <p>Ship <strong>hybrid, not either/or</strong>: BM25 first, semantic added as a second source. Reciprocal rank fusion — <code>Σ 1/(60 + rank_i)</code> — is a strong, tuning-free way to combine the two lists.</p>
+
+        <h3>The ranker, justified one step at a time</h3>
+        <div class="tw"><table>
+          <thead><tr><th class="num">#</th><th>Model</th><th>What it buys — the only valid reason to move on</th></tr></thead>
+          <tbody>
+            <tr><td class="num">1</td><td><strong>BM25 + hand-tuned boosts</strong></td><td>Ships in a week; establishes the A/B floor every later model is measured against</td></tr>
+            <tr><td class="num">2</td><td><strong>Logistic regression</strong>, ~20 features</td><td>Proves the pipeline, logging, and serving path end to end. The value is the infrastructure, not the model</td></tr>
+            <tr><td class="num">3</td><td><strong>LambdaMART</strong> (LightGBM <code>lambdarank</code>)</td><td>The workhorse. Heterogeneous tabular features with no scaling, native missing values, trains in minutes, debuggable by feature importance, ~500 trees at depth 6–8 scoring 100 docs in single-digit ms. Typically +5–15% NDCG over the linear baseline — <strong>and the right production answer for a 200 ms budget</strong></td></tr>
+            <tr><td class="num">4</td><td><strong>Neural / cross-encoder</strong></td><td>Only when a specific limitation bites: rich text or image semantics trees can't consume → neural ranker with embeddings (GBDT score as an input feature); sequential session intent → transformer over the event sequence; fine-grained token interaction → cross-encoder, which is a real quality jump at ~100× the cost, so run it over the top 20–50 only and distill it into a student or into the GBDT as a feature</td></tr>
+            <tr><td class="num">5</td><td><strong>Multi-objective</strong></td><td>When the business wants relevance <em>and</em> revenue <em>and</em> diversity: multi-task heads on a shared trunk — P(click), P(purchase), margin — combined at serving as score = P(click)<sup>α</sup> · P(purchase)<sup>β</sup> · value<sup>γ</sup>. Tune the exponents by A/B, not offline: the tradeoff is a business decision, not an optimization one</td></tr>
+          </tbody>
+        </table></div>
+
+        <p class="note"><span class="lbl">Cold start</span>New items have no engagement features. Back off to content features and category priors, and reserve a small exploration budget — ε-greedy slots or Thompson sampling over a score-uncertainty estimate — so new inventory can earn its first impressions. Without it, the ranker structurally cannot discover anything it hasn't already shown.</p>
+      </section>
+
+      <!-- 7 -->
+      <section id="s7">
+        <div class="sec-head"><span class="sec-num">07</span><h2>Serving</h2></div>
+        <p class="sec-sub">Six minutes · a budget that adds up</p>
+
+        <figure>
+          <figcaption>Latency budget — 200 ms p99, server side</figcaption>
+          <div class="bars">
+            <div class="brow" title="Gateway, auth, parse — 10 ms"><span class="bl">Gateway &amp; parse</span><div class="bt"><div class="bf" style="width:25%"></div></div><span class="bv">10 ms</span></div>
+            <div class="brow" title="Query understanding — 15 ms"><span class="bl">Query understanding</span><div class="bt"><div class="bf" style="width:37.5%"></div></div><span class="bv">15 ms</span></div>
+            <div class="brow" title="Retrieval, lexical and semantic in parallel — 40 ms"><span class="bl">Retrieval</span><div class="bt"><div class="bf" style="width:100%"></div></div><span class="bv">40 ms</span></div>
+            <div class="brow" title="Feature fetch — 30 ms"><span class="bl">Feature fetch</span><div class="bt"><div class="bf" style="width:75%"></div></div><span class="bv">30 ms</span></div>
+            <div class="brow" title="Pre-rank — 10 ms"><span class="bl">Pre-rank</span><div class="bt"><div class="bf" style="width:25%"></div></div><span class="bv">10 ms</span></div>
+            <div class="brow" title="Ranking — 40 ms"><span class="bl">Ranking</span><div class="bt"><div class="bf" style="width:100%"></div></div><span class="bv">40 ms</span></div>
+            <div class="brow" title="Policy, dedup, diversity — 10 ms"><span class="bl">Policy &amp; dedup</span><div class="bt"><div class="bf" style="width:25%"></div></div><span class="bv">10 ms</span></div>
+            <div class="brow" title="Serialization and network — 25 ms"><span class="bl">Serialize &amp; network</span><div class="bt"><div class="bf" style="width:62.5%"></div></div><span class="bv">25 ms</span></div>
+            <div class="brow quiet" title="Reserved slack — 20 ms"><span class="bl">Reserved slack</span><div class="bt"><div class="bf" style="width:50%"></div></div><span class="bv">20 ms</span></div>
+          </div>
+          <div class="btotal"><span>Total</span><span></span><span class="bv">200 ms</span></div>
+          <p class="fignote">Feature fetch is the usual bottleneck — one batched multi-get for all candidates, never N calls. Reserve the slack explicitly: a budget that sums exactly to the SLA fails at p99, which is the only percentile anyone is measuring.</p>
+        </figure>
+
+        <p><strong>When it doesn't fit</strong>, cut candidates before you cut model quality — going 1 000 → 500 costs less NDCG than dropping the ranker. Then add the pre-rank stage, then distill. And give every stage a timeout with a defined fallback: on ranker timeout, return the retrieval-order list. A search box that returns something imperfect beats one that returns an error.</p>
+
+        <h3>Precompute vs. real-time</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Precomputed offline</th><th>Computed per request</th></tr></thead>
+          <tbody>
+            <tr><td>Item embeddings, ANN index</td><td>Query embedding &amp; query understanding</td></tr>
+            <tr><td>Item aggregates — CTR, conversion, quality</td><td>Session-context features</td></tr>
+            <tr><td>User long-term affinity embeddings</td><td>Price, stock, eligibility — <strong>must</strong> be fresh; never serve an out-of-stock item because the index was stale</td></tr>
+            <tr><td>Head-query result lists</td><td>Ranking scores</td></tr>
+          </tbody>
+        </table></div>
+
+        <h3>Caching</h3>
+        <p>The query distribution is Zipfian, so caching pays extraordinarily well. Cache query understanding (Redis, ~1h TTL) for a near-total hit rate on head queries. Cache full results keyed by (normalized query, filters, user segment) with a 5–15 minute TTL — <em>never</em> key by raw user ID, which collapses the hit rate and risks leaking personalization across users. Cache query embeddings within a session. Invalidate on price and stock change, or accept staleness and re-verify availability at render time.</p>
+
+        <h3>The ANN index</h3>
+        <p><strong>HNSW</strong> hits the quality/latency sweet spot — M=32, efConstruction=200, efSearch tuned until recall against exact search is ≥0.95 (measure it, don't assume it). Memory is the real constraint: 100M × 768 float32 ≈ 300 GB. So project down to 128–256 dimensions, quantize to int8 for ~4× with negligible recall loss, or move to IVF-PQ / ScaNN if memory dominates. Shard by item ID across replicas, rebuild nightly with incremental updates for new items, and blue/green swap so a bad rebuild never takes serving down.</p>
+
+        <p class="note"><span class="lbl">Version the pair</span>Pin the model and index versions together in one deployable. They co-evolve — an embedding model rollback with a stale index gives you a system that is quietly scoring in two different vector spaces.</p>
+      </section>
+
+      <!-- 8 -->
+      <section id="s8">
+        <div class="sec-head"><span class="sec-num">08</span><h2>Evaluation &amp; rollout</h2></div>
+        <p class="sec-sub">Four minutes · four gates, four questions</p>
+
+        <p>Four gates. Each answers a different question, and each can stop the launch on its own.</p>
+
+        <div class="gates">
+          <div class="gate">
+            <span class="g-n">GATE 1</span>
+            <h4>Offline replay</h4>
+            <p>Score held-out logged slates; NDCG@10 and Recall@1000, sliced. Fast, cheap, and <em>biased</em> — it can only tell you how well you reorder what the old system retrieved. For a new retrieval stage it's nearly blind. Use IPS/SNIPS with clipped weights when the new policy reorders heavily.</p>
+            <span class="g-q">Does it rank better on yesterday's traffic?</span>
+          </div>
+          <div class="gate">
+            <span class="g-n">GATE 2</span>
+            <h4>Shadow traffic</h4>
+            <p>Run the new pipeline on live traffic, serve the old results, log both for a few days. This validates infrastructure, not quality: peak latency, error rates, feature availability — and train/serve skew, by comparing shadow feature distributions against training data.</p>
+            <span class="g-q">Does it survive production?</span>
+          </div>
+          <div class="gate">
+            <span class="g-n">GATE 3</span>
+            <h4>Interleaving</h4>
+            <p>Blend both rankings into one list (team-draft) and attribute clicks to the source ranker. Roughly 10–100× more sensitive than an A/B because it controls for user variance — a directional read in hours, not weeks. It measures preference, not business impact, so it triages candidates rather than deciding them.</p>
+            <span class="g-q">Which ranker do users prefer?</span>
+          </div>
+          <div class="gate">
+            <span class="g-n">GATE 4</span>
+            <h4>A/B test</h4>
+            <p>The only gate that measures the business objective. At 3% baseline conversion, a 2% relative lift at 80% power needs ≈1.5M sessions per arm — two weeks at 1% traffic, two days at 10%. Randomize <strong>by user</strong>, never by request. Read guardrails before the primary metric.</p>
+            <span class="g-q">Does it make money without breaking anything?</span>
+          </div>
+        </div>
+
+        <p style="margin-top:24px;"><strong>Ramp:</strong> 1% → 5% → 25% → 50% → 100%, holding at each step long enough to read guardrails, with a 1–5% holdback kept for a month to measure retention and catch slow feedback-loop damage. Automate rollback on guardrail breach, and keep a kill switch that reverts model and index together in one action.</p>
+
+        <p class="note warn"><span class="lbl">Novelty effect</span>Engagement often spikes for a few days on any visible change. Discount the first 3–7 days. If the lift is gone by week two, it was novelty, not quality — and a launch decision made on day three is a coin flip.</p>
+      </section>
+
+      <!-- 9 -->
+      <section id="s9">
+        <div class="sec-head"><span class="sec-num">09</span><h2>Monitoring &amp; iteration</h2></div>
+        <p class="sec-sub">Two minutes · drift, loops, triggers</p>
+
+        <div class="tw"><table>
+          <thead><tr><th>Signal</th><th>Alert on</th><th>What it means</th></tr></thead>
+          <tbody>
+            <tr><td>Feature drift (PSI, null rate)</td><td>PSI &gt; 0.2, daily, per feature</td><td>An upstream pipeline broke — the most common real outage, and it degrades quality silently</td></tr>
+            <tr><td>Score distribution</td><td>Mean / percentile shift</td><td>Model or feature regression</td></tr>
+            <tr><td>Golden-set NDCG</td><td>Weekly, &gt;2% drop</td><td>Genuine quality decay — the only unbiased tracker you have</td></tr>
+            <tr><td>CTR@1, reformulation, zero-result rate</td><td>Hourly</td><td>Quality as users are experiencing it right now</td></tr>
+            <tr><td>p99 latency, ANN recall vs. exact</td><td>Continuous</td><td>Index degradation, usually after a rebuild</td></tr>
+            <tr><td>Seller concentration, catalog coverage</td><td>Weekly</td><td>The feedback loop tightening</td></tr>
+          </tbody>
+        </table></div>
+
+        <p><strong>Position bias is not solved once.</strong> Re-estimate propensities periodically — the examination curve is a property of the UI, so a layout redesign silently invalidates every propensity you trained on.</p>
+
+        <p class="note warn"><span class="lbl">The feedback loop</span>The ranker chooses what is shown; what is shown becomes tomorrow's training data. Left alone, this concentrates traffic on already-popular items, starves new inventory, and slowly narrows the catalog — while every offline metric looks fine. Counter it with a permanent exploration budget (a randomized slot, or Thompson sampling on score uncertainty), the coverage guardrail from §03, and periodic randomized-traffic collection that yields genuinely unbiased evaluation data. Roughly 1% of traffic, and you defend it in every planning meeting, because it is the price of being able to learn anything new.</p>
+
+        <h3>Retraining triggers — cadence <em>and</em> condition</h3>
+        <ul>
+          <li><strong>Scheduled:</strong> GBDT weekly; two-tower monthly, with a nightly index refresh.</li>
+          <li><strong>Triggered:</strong> golden-set NDCG drops &gt;2%, PSI breaches on a top-10 feature, or a catalog/UI change big enough to shift the feature distribution.</li>
+          <li><strong>Always gated:</strong> every retrain goes through offline → shadow → A/B. A retrain is a new model, not a config change — auto-retrain wired to auto-deploy with no quality gate is how one bad data day reaches production.</li>
+        </ul>
+
+        <h3>Roadmap — stating priorities is part of the answer</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Quarter</th><th>Work</th><th>Expected</th></tr></thead>
+          <tbody>
+            <tr><td>Q1</td><td>BM25 + LambdaMART, logging, feature store, A/B infrastructure</td><td>+8–15% NDCG over baseline</td></tr>
+            <tr><td>Q2</td><td>Semantic retrieval, hybrid fusion</td><td>Zero-result rate ↓, tail recall ↑</td></tr>
+            <tr><td>Q3</td><td>Position-bias correction, exploration budget</td><td>Healthier data; better long-term learning</td></tr>
+            <tr><td>Q4</td><td>Cross-encoder over the top 50, personalization</td><td>+3–5% NDCG, latency-gated</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- 10 -->
+      <section id="s10">
+        <div class="sec-head"><span class="sec-num">—</span><h2>Same skeleton, other domains</h2></div>
+        <p class="sec-sub">Objective → label → two stages → LTR → latency budget → A/B</p>
+
+        <p>The skeleton never changes. What changes is the label, the retrieval twist, and which constraint dominates:</p>
+
+        <div class="tw"><table>
+          <thead><tr><th>Domain</th><th>Label</th><th>Retrieval twist</th><th>Dominant constraint</th></tr></thead>
+          <tbody>
+            <tr><td>E-commerce</td><td>Purchase-weighted grades</td><td>Filters and facets are first-class</td><td>Freshness — price, stock</td></tr>
+            <tr><td>Docs / enterprise</td><td>Click + dwell, low volume</td><td>Semantic matters more: small corpus, sparse clicks</td><td>Little training data — lean on pretrained embeddings and rules</td></tr>
+            <tr><td>Feed / recommendations</td><td>No query — the user <em>is</em> the query</td><td>Candidate generation from the user embedding</td><td>Diversity and fatigue</td></tr>
+            <tr><td>Jobs / matching</td><td>Two-sided: both parties respond</td><td>Reciprocal ranking</td><td>Fairness constraints are legal, not optional</td></tr>
+            <tr><td>In-app search (banking, SaaS)</td><td>Task completion / deflection</td><td>Small corpus, heavy intent classification</td><td>Precision@1 — a wrong top result is expensive</td></tr>
+            <tr><td>Ads</td><td>Click, with a price attached</td><td>An auction sits downstream of the model</td><td><strong>Calibration is mandatory</strong> — the score is a bid input, not a rank</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <!-- 11 -->
+      <section id="s11">
+        <div class="sec-head"><span class="sec-num">—</span><h2>Signals &amp; traps</h2></div>
+        <p class="sec-sub">What earns the level, and what loses it</p>
+
+        <h3>Reads as senior</h3>
+        <ul class="checks">
+          <li>Naming the objective→metric gap before designing anything, and treating the A/B as the arbiter of it.</li>
+          <li>Choosing the <em>simplest</em> model that meets the constraint and defending it — LambdaMART over a transformer, with the latency budget as the argument.</li>
+          <li>Raising position bias and feedback loops unprompted.</li>
+          <li>Point-in-time correctness and log-and-serve, with the failure mode named: "great offline, flat online."</li>
+          <li>A latency budget with slack in it and a defined fallback per stage.</li>
+          <li>Guardrails that can block a launch — including one that protects the ecosystem rather than the user.</li>
+          <li>Sequencing: what ships this quarter versus what is a dedicated project.</li>
+        </ul>
+
+        <h3>Loses it</h3>
+        <div class="tw"><table>
+          <thead><tr><th>Trap</th><th>Fix</th></tr></thead>
+          <tbody>
+            <tr><td>Reaching for a neural ranker in minute three</td><td>Baseline first; justify depth by a named limitation</td></tr>
+            <tr><td>Random train/test split</td><td>Split by time <em>and</em> by query group</td></tr>
+            <tr><td>Random negatives for the ranker</td><td>Negatives from the same slate; random negatives belong to retrieval</td></tr>
+            <tr><td>Recomputing features from current snapshots</td><td>Point-in-time joins; log-and-serve</td></tr>
+            <tr><td>Treating every click as positive</td><td>Dwell-gate — raw clicks train clickbait</td></tr>
+            <tr><td>Counting never-viewed items as negatives</td><td>Log viewport; unviewed ≠ negative</td></tr>
+            <tr><td>A latency budget that sums exactly to the SLA</td><td>Reserve 10% slack</td></tr>
+            <tr><td>"We'll A/B it" as the entire eval plan</td><td>Replay → shadow → interleave → A/B → ramp with holdback</td></tr>
+            <tr><td>Business rules baked into the model</td><td>A policy layer — auditable and reversible</td></tr>
+            <tr><td>Optimizing NDCG and declaring victory</td><td>NDCG is the proxy; conversion is the objective</td></tr>
+          </tbody>
+        </table></div>
+      </section>
+
+      <footer>
+        <span>ML system design · search ranking</span>
+        <span>BM25 → two-tower → LambdaMART → NDCG@10</span>
+      </footer>
+    </main>
+  </div>
+</div>
+
+<script>
+  (function () {
+    var links = Array.prototype.slice.call(document.querySelectorAll('.rail a'));
+    var map = {};
+    links.forEach(function (a) { map[a.getAttribute('href').slice(1)] = a; });
+    var sections = Array.prototype.slice.call(document.querySelectorAll('main section'));
+    if (!('IntersectionObserver' in window) || !sections.length) return;
+    var visible = {};
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { visible[e.target.id] = e.isIntersecting; });
+      var current = null;
+      for (var i = 0; i < sections.length; i++) {
+        if (visible[sections[i].id]) { current = sections[i].id; break; }
+      }
+      links.forEach(function (a) { a.classList.remove('is-active'); });
+      if (current && map[current]) map[current].classList.add('is-active');
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+    sections.forEach(function (s) { io.observe(s); });
+  })();
+</script>

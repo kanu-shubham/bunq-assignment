@@ -1,0 +1,871 @@
+<title>The Two-Stage Recommender</title>
+<style>
+  :root {
+    --paper:   #EDEEF0;
+    --surface: #F8F8F9;
+    --sunk:    #E3E5E8;
+    --ink:     #11151A;
+    --ink-2:   #5B6470;
+    --ink-3:   #858D97;
+    --rule:    #D3D7DC;
+    --rule-2:  #BFC4CB;
+    --accent:  #993229;
+    --accent-soft: rgba(153, 50, 41, 0.09);
+    --accent-2: #3D6079;
+    --accent-2-soft: rgba(61, 96, 121, 0.10);
+
+    --serif: "Iowan Old Style", "Charter", "Bitstream Charter", Georgia, ui-serif, serif;
+    --grot: "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 40rem;
+    --wide: 58rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:   #0E1115;
+      --surface: #161A1F;
+      --sunk:    #12161B;
+      --ink:     #E4E7EA;
+      --ink-2:   #98A1AC;
+      --ink-3:   #6E7783;
+      --rule:    #262C34;
+      --rule-2:  #343B44;
+      --accent:  #E07A6C;
+      --accent-soft: rgba(224, 122, 108, 0.13);
+      --accent-2: #85AECB;
+      --accent-2-soft: rgba(133, 174, 203, 0.13);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:   #0E1115;
+    --surface: #161A1F;
+    --sunk:    #12161B;
+    --ink:     #E4E7EA;
+    --ink-2:   #98A1AC;
+    --ink-3:   #6E7783;
+    --rule:    #262C34;
+    --rule-2:  #343B44;
+    --accent:  #E07A6C;
+    --accent-soft: rgba(224, 122, 108, 0.13);
+    --accent-2: #85AECB;
+    --accent-2-soft: rgba(133, 174, 203, 0.13);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 1.06rem;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 1.5rem 6rem;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: var(--wide);
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3.25rem;
+  }
+
+  .col { max-width: var(--measure); }
+
+  p { margin: 0 0 0.95rem; }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--accent); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, .navlink:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  code, .mono { font-family: var(--mono); }
+  code {
+    font-size: 0.86em;
+    background: var(--sunk);
+    padding: 0.1em 0.34em;
+    border: 1px solid var(--rule);
+  }
+
+  strong { font-weight: 700; color: var(--ink); }
+  em { font-style: italic; }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    padding: 4rem 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1.4rem;
+    border-bottom: 3px solid var(--ink);
+    padding-bottom: 2.25rem;
+  }
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0;
+  }
+  h1 {
+    font-family: var(--grot);
+    font-weight: 800;
+    font-size: clamp(2.4rem, 7vw, 4rem);
+    line-height: 0.98;
+    letter-spacing: -0.035em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-size: 1.2rem;
+    color: var(--ink-2);
+    max-width: var(--measure);
+    line-height: 1.5;
+  }
+  .thesis {
+    margin: 0;
+    padding: 1.4rem 1.5rem;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-top: 3px solid var(--accent);
+    max-width: var(--wide);
+    font-size: 1.05rem;
+  }
+  .thesis .mono-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin-bottom: 0.6rem;
+  }
+
+  /* ---------- step nav ---------- */
+  .stepnav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.15rem 1.1rem;
+    padding: 0.7rem 0;
+    margin: 0;
+    list-style: none;
+    font-family: var(--mono);
+    font-size: 0.71rem;
+    letter-spacing: 0.04em;
+  }
+  .navlink {
+    color: var(--ink-2);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .navlink b { color: var(--accent); font-weight: 700; margin-right: 0.35em; }
+  .navlink:hover { color: var(--ink); }
+
+  /* ---------- sections ---------- */
+  section { display: flex; flex-direction: column; gap: 1.1rem; scroll-margin-top: 3.5rem; }
+
+  .shead { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.2rem; }
+  .snum {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.18em;
+    color: var(--accent);
+  }
+  h2 {
+    font-family: var(--grot);
+    font-weight: 700;
+    font-size: clamp(1.5rem, 3.4vw, 2rem);
+    letter-spacing: -0.028em;
+    line-height: 1.1;
+    margin: 0;
+    text-wrap: balance;
+  }
+  h3 {
+    font-family: var(--grot);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    margin: 0.7rem 0 -0.3rem;
+  }
+  h4 {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    margin: 0.5rem 0 -0.4rem;
+  }
+
+  ul, ol { margin: 0 0 0.4rem; padding-left: 1.2rem; }
+  li { margin-bottom: 0.45rem; }
+  li::marker { color: var(--ink-3); }
+  ol li::marker { font-family: var(--mono); font-size: 0.85em; }
+
+  /* ---------- callout ---------- */
+  .callout {
+    background: var(--accent-soft);
+    border: 1px solid var(--rule);
+    padding: 1.05rem 1.2rem;
+    max-width: var(--measure);
+  }
+  .callout .tag {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-right: 0.55em;
+  }
+  .note {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 1.05rem 1.2rem;
+    max-width: var(--measure);
+    font-size: 0.98rem;
+  }
+
+  /* ---------- tables ---------- */
+  .tscroll { overflow-x: auto; max-width: var(--wide); border-bottom: 1px solid var(--rule); }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 34rem;
+    font-size: 0.9rem;
+    font-variant-numeric: tabular-nums;
+  }
+  thead th {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+    text-align: left;
+    font-weight: 600;
+    padding: 0 0.85rem 0.5rem 0;
+    border-bottom: 1.5px solid var(--rule-2);
+    vertical-align: bottom;
+  }
+  tbody td {
+    padding: 0.6rem 0.85rem 0.6rem 0;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    line-height: 1.45;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num, th.num { font-family: var(--mono); font-size: 0.83rem; white-space: nowrap; }
+  .tsum td { border-top: 1.5px solid var(--rule-2); border-bottom: none; font-weight: 700; }
+
+  /* ---------- funnel ---------- */
+  .funnel {
+    max-width: var(--wide);
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    padding: 1.4rem 1.3rem 1.1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+  .funnel-cap {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0.9rem;
+  }
+  .frow {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr 6.5rem;
+    align-items: center;
+    gap: 0.9rem;
+    padding: 0.42rem 0;
+  }
+  .fname {
+    font-family: var(--grot);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  .fbar {
+    height: 1.35rem;
+    background: var(--accent);
+    width: var(--w);
+    opacity: var(--o, 1);
+  }
+  .fbar.alt { background: var(--accent-2); }
+  .fcount {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    color: var(--ink);
+  }
+  .fop {
+    display: grid;
+    grid-template-columns: 9.5rem 1fr 6.5rem;
+    gap: 0.9rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--ink-2);
+    padding: 0.2rem 0;
+  }
+  .fop span:first-child { text-align: right; color: var(--ink-3); }
+  .fop .fms { text-align: right; color: var(--accent-2); }
+
+  /* ---------- code block ---------- */
+  pre {
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    line-height: 1.55;
+    background: var(--sunk);
+    border: 1px solid var(--rule);
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    max-width: var(--wide);
+    margin: 0;
+    color: var(--ink);
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 1em; }
+
+  /* ---------- q&a ---------- */
+  .qa { display: flex; flex-direction: column; gap: 1.5rem; max-width: var(--measure); }
+  .q {
+    font-family: var(--grot);
+    font-weight: 700;
+    font-size: 1rem;
+    letter-spacing: -0.012em;
+    margin: 0 0 0.4rem;
+    color: var(--ink);
+  }
+  .q::before { content: "Q "; font-family: var(--mono); color: var(--accent); font-size: 0.85em; }
+
+  .closer {
+    border-top: 3px solid var(--ink);
+    padding-top: 2rem;
+  }
+  .script {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 1.5rem 1.6rem;
+    max-width: var(--wide);
+    font-size: 1.02rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  @media (max-width: 620px) {
+    body { padding: 0 1.1rem 4rem; font-size: 1rem; }
+    .frow, .fop { grid-template-columns: 7rem 1fr 5rem; gap: 0.6rem; }
+    .fname { font-size: 0.75rem; }
+    .stepnav { gap: 0.1rem 0.8rem; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="mast">
+    <p class="eyebrow">ML System Design · Staff Level</p>
+    <h1>The Two-Stage Recommender</h1>
+    <p class="standfirst">A Netflix / YouTube / Spotify class problem, worked end to end: retrieval and ranking, cold start, and the feedback loop the system creates in its own training data. Structured as the nine moves of the interview, in the order you should speak them.</p>
+    <blockquote class="thesis">
+      <span class="mono-label">Open with this</span>
+      The catalog is too big to score, so I'll build a funnel: cheap recall first, expensive precision second, and a policy layer last. The hard parts aren't the models — they're the label definition, the feedback loop the system creates in its own training data, and the latency budget that decides how much model I can afford.
+    </blockquote>
+  </header>
+
+  <nav aria-label="Interview steps">
+    <ul class="stepnav">
+      <li><a class="navlink" href="#s00"><b>00</b>Assumptions</a></li>
+      <li><a class="navlink" href="#s01"><b>01</b>Scope</a></li>
+      <li><a class="navlink" href="#s02"><b>02</b>Framing</a></li>
+      <li><a class="navlink" href="#s03"><b>03</b>Metrics</a></li>
+      <li><a class="navlink" href="#s04"><b>04</b>Data</a></li>
+      <li><a class="navlink" href="#s05"><b>05</b>Features</a></li>
+      <li><a class="navlink" href="#s06"><b>06</b>Model</a></li>
+      <li><a class="navlink" href="#s07"><b>07</b>Serving</a></li>
+      <li><a class="navlink" href="#s08"><b>08</b>Rollout</a></li>
+      <li><a class="navlink" href="#s09"><b>09</b>Monitoring</a></li>
+      <li><a class="navlink" href="#variants"><b>··</b>Variants</a></li>
+      <li><a class="navlink" href="#followups"><b>··</b>Follow-ups</a></li>
+    </ul>
+  </nav>
+
+  <section id="s00">
+    <div class="shead">
+      <span class="snum">STEP 00</span>
+      <h2>Assumption set</h2>
+    </div>
+    <div class="col">
+      <p>Interviewers grade the arithmetic, not the guess. Fix numbers early so every later claim is checkable, state them as assumptions, and invite correction.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Quantity</th><th>Assumption</th><th>What it decides</th></tr></thead>
+        <tbody>
+          <tr><td>MAU / DAU</td><td class="num">200M / 70M</td><td>Sharding, A/B power</td></tr>
+          <tr><td>Feed requests</td><td class="num">~25 per DAU/day → 1.75B/day</td><td>20k QPS avg, <strong>60k QPS peak</strong></td></tr>
+          <tr><td>Catalog</td><td class="num">800M items, ~80M eligible</td><td>Retrieval is mandatory</td></tr>
+          <tr><td>New items</td><td class="num">~50k / hour</td><td>Index must be incremental, not nightly-only</td></tr>
+          <tr><td>Logged impressions</td><td class="num">~30B / day</td><td>Training volume, storage cost</td></tr>
+          <tr><td>Latency SLA</td><td class="num">p99 300 ms</td><td>Model capacity budget</td></tr>
+          <tr><td>Base rates</td><td class="num">~4% CTR, ~55% click → valid watch</td><td>Class imbalance, sampling</td></tr>
+          <tr><td>Existing infra</td><td class="num">feature store, streaming bus, GPU inference, experimentation platform</td><td>Build vs. borrow</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p><strong>Also ask:</strong> which surface (home feed, "more like this", and autoplay-next have different objectives); two-sided marketplace or licensed catalog; regulatory constraints (GDPR deletion propagating into embeddings, the EU DSA requirement to offer a non-profiling feed, minors' accounts); and whether a random-traffic holdout already exists. That last one matters more than it sounds — see step 06.</p>
+    </div>
+  </section>
+
+  <section id="s01">
+    <div class="shead">
+      <span class="snum">STEP 01</span>
+      <h2>Clarify &amp; scope: business objective → ML metric</h2>
+    </div>
+    <div class="col">
+      <p><strong>Business objective.</strong> For a subscription product the objective is <em>retention</em> — the probability the member renews next month. For an ad-supported product it is <em>long-term satisfied engagement</em>, where the "long-term" qualifier does all the real work.</p>
+      <p><strong>The translation problem.</strong> Retention is not a trainable label. It is delayed by weeks, near-constant per user (most users renew), confounded by everything outside the product, and impossible to credit-assign to a single impression. So I don't train on it — I decompose:</p>
+    </div>
+    <pre><code>value(u, i, ctx) = Σ_k  w_k · P(event_k | u, i, ctx)</code></pre>
+    <div class="col">
+      <p>where the events are things observable per impression — click, valid watch, completion, like, subscribe, share — minus penalty terms for observed dissatisfaction: skip-in-5s, hide, "not interested", report.</p>
+      <p>The <code>w_k</code> weights are the <strong>value model</strong>. They are not learned from impression data (nothing in that data says what a "share" is worth); they're set by product judgment and then <em>tuned by A/B against the north-star metric</em>.</p>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Say out loud</span>Retention is the <em>arbiter of the weights</em>, not the training target. Getting that backwards means optimizing the metric you can measure and shipping regressions in the one you care about.</p>
+    </div>
+  </section>
+
+  <section id="s02">
+    <div class="shead">
+      <span class="snum">STEP 02</span>
+      <h2>Frame as ML: label, granularity, loss</h2>
+    </div>
+    <div class="col">
+      <p>Two models, two different framings. This is the core of the answer.</p>
+      <h3>Retrieval (candidate generation)</h3>
+      <ul>
+        <li><strong>Granularity:</strong> one <em>positive interaction</em> — (user state at time t, item engaged with). Not one impression.</li>
+        <li><strong>Task:</strong> given user state, produce a distribution over the entire catalog — <code>P(next positive item | user context)</code>.</li>
+        <li><strong>Loss:</strong> sampled softmax over the catalog with a <strong>logQ correction</strong>. In-batch negatives are sampled proportional to popularity, which systematically penalizes popular items; correcting the logit by the log sampling probability fixes it.</li>
+      </ul>
+    </div>
+    <pre><code>s'(u, i) = s(u, i) − log Q(i | u)
+L        = −log softmax over batch of s'(u, ·)</code></pre>
+    <div class="col">
+      <p>Without it, retrieval quietly over-suppresses head content and the offline/online gap becomes unexplainable. Two lines of code, and a reliable staff-level tell.</p>
+      <p><strong>The constraint that defines the architecture:</strong> the item side must be computable <em>without the user</em>, because item embeddings are precomputed and indexed. That forbids user×item cross features — and that limitation is precisely why a second stage exists.</p>
+      <h3>Ranking</h3>
+      <ul>
+        <li><strong>Granularity:</strong> one <strong>impression</strong> — <code>(request_id, user, item, position, surface, timestamp, model_version)</code>, logged at serve time with the features actually used.</li>
+        <li><strong>Labels:</strong> a vector, not a scalar — <code>{clicked, valid_watch, completed, watch_seconds, liked, subscribed, hidden, reported}</code>.</li>
+        <li><strong>Loss:</strong> multi-task. Binary heads with weighted cross-entropy; watch time as <strong>bucketed cross-entropy over duration bins</strong> rather than regression on a heavy tail — it gives a distribution to integrate instead of a conditional mean dominated by outliers.</li>
+        <li><strong>Negatives:</strong> impressed-not-engaged. These are <em>hard</em> negatives and exactly the right ones — the ranker's job is separating items retrieval already thinks are plausible.</li>
+      </ul>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Say out loud</span>Retrieval and ranking are trained on different data distributions <em>on purpose</em>. Ranking sees only what was shown. Retrieval must see the whole catalog via random negatives, or it never learns that 99.99% of the catalog is irrelevant — and it inherits the previous ranker's blind spots forever.</p>
+    </div>
+  </section>
+
+  <section id="s03">
+    <div class="shead">
+      <span class="snum">STEP 03</span>
+      <h2>Metrics</h2>
+    </div>
+    <h4>Offline</h4>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Stage</th><th>Metric</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td class="num">retrieval</td><td><strong>Recall@k</strong> (500 / 1000 / 4000) vs. next-day positives</td><td>Retrieval's only job is not to lose the good item</td></tr>
+          <tr><td class="num">retrieval</td><td>Catalog coverage@k, fresh-item recall (&lt;24h)</td><td>Detects head-collapse and cold-start failure</td></tr>
+          <tr><td class="num">ranking</td><td><strong>User-grouped AUC</strong> (within request, averaged)</td><td>Global AUC is dominated by between-user variance and can rise while per-request ordering degrades</td></tr>
+          <tr><td class="num">ranking</td><td><strong>NDCG@10</strong> with graded gains</td><td>Position-weighted ordering quality</td></tr>
+          <tr><td class="num">ranking</td><td><strong>Log-loss + ECE / calibration ratio</strong> (Σp ÷ Σy)</td><td>Heads are linearly combined; a miscalibrated head silently reweights the value model</td></tr>
+          <tr><td class="num">both</td><td>Every metric sliced: new users, new items, market, device, popularity decile</td><td>Aggregates hide the regressions that generate complaints</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p>Calibration deserves emphasis: the moment several heads are combined by weights, <em>relative</em> ordering isn't enough — they must sit on a common probability scale or the weights mean nothing.</p>
+      <h4>Online</h4>
+      <ul>
+        <li><strong>Primary:</strong> a retention proxy that moves inside an experiment window — weekly active days, or DAU/MAU stickiness. Not raw watch time.</li>
+        <li><strong>Secondary:</strong> valid watches per DAU, session count, session depth, CTR.</li>
+        <li><strong>Guardrails:</strong> hide / "not interested" / report / unsubscribe rates; <strong>sessions vs. dwell-per-session moving in opposite directions</strong> — the signature of a rabbit-hole regression, where people watch longer per visit but return less; impression Gini across items and creators; share of DAU seeing a new-to-them creator; share of impressions to items under 7 days old; p99 latency, error rate, fallback-serving rate.</li>
+      </ul>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Name the trap first</span>CTR alone produces clickbait; watch time alone produces long, autoplay-y, low-quality content and rabbit holes. The industry answer is a <em>satisfaction</em> signal — an in-product survey on a small random sample, used to train a satisfaction head that is then distilled to full traffic, plus explicit negative feedback as a penalty term.</p>
+    </div>
+  </section>
+
+  <section id="s04">
+    <div class="shead">
+      <span class="snum">STEP 04</span>
+      <h2>Data</h2>
+    </div>
+    <div class="col">
+      <p><strong>Sources.</strong> Impression/serving logs, playback events, explicit feedback, catalog metadata, content-derived embeddings (text, audio, video frames), user profile, follow graph, search queries.</p>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Non-negotiable</span>Log, at serve time: the full candidate list, positions, per-stage scores, model versions, the <strong>feature values actually used</strong>, and the <strong>propensity</strong> for exploration-served slots. None of it is reconstructable later. A recsys with bad serving logs cannot be improved, only replaced.</p>
+    </div>
+    <div class="col">
+      <h4>Labeling — implicit feedback</h4>
+      <p>Label definitions are product decisions with large consequences:</p>
+      <ul>
+        <li><strong>Video:</strong> valid watch = ≥30s <em>or</em> ≥50% of duration, whichever is shorter — protects short-form from a fixed threshold.</li>
+        <li><strong>Music:</strong> a stream at ≥30s, and <strong>skip within 30s as an explicit negative</strong> — the highest-value label in music recsys.</li>
+        <li><strong>Long-form subscription:</strong> title start + ≥70% completion; "started and abandoned within 5 minutes" is a strong negative, not a neutral.</li>
+      </ul>
+      <h4>Sampling</h4>
+      <p>Keep all positives, downsample negatives (e.g. 1 in 10) to control cost — then <strong>recalibrate</strong>. With negative keep-rate <code>r</code>, true odds = sampled odds × <code>r</code>:</p>
+    </div>
+    <pre><code>p_true = p_s · r / (1 − p_s + p_s · r)</code></pre>
+    <div class="col">
+      <p>Skipping this is the most common source of "great offline, and the downstream value/ads system behaves insanely in production."</p>
+      <h4>Leakage</h4>
+      <ul>
+        <li>Split by <strong>time</strong>, never randomly — train on <code>t &lt; T</code>, evaluate on <code>t ∈ [T, T+1d]</code>. Random splits let the model see the future of the same session and inflate offline metrics by amounts that never materialize.</li>
+        <li>All aggregates must be <strong>point-in-time</strong>: "user's watch count in this genre" as of the impression, not over the full window.</li>
+        <li>Watch for label-adjacent features — a "recently played" counter updated before the log row is written.</li>
+      </ul>
+      <h4>Imbalance</h4>
+      <p>~4% CTR; rare positives (subscribe, share) under 0.1%. Per-head loss weights, and PR-AUC rather than ROC-AUC for the rare heads.</p>
+      <h4>Delayed feedback</h4>
+      <p>Click is instant, valid watch arrives in minutes, subscribe and return-visit in hours or days. For hourly incremental training that creates <em>fake negatives</em> — rows labeled 0 that will become 1. Options: an attribution window (wait 4h, accept staleness); a <strong>delayed-feedback model</strong> that jointly models <code>P(convert eventually)</code> and <code>P(delay ≤ t)</code> and importance-weights the not-yet-converted rows; or fast heads trained online with slow heads on the daily batch. Most candidates never raise this.</p>
+      <h4>Presentation bias</h4>
+      <p>Position, slot size, thumbnail treatment, and the fact the item was shown <em>at all</em> confound every label. Two mitigations, used together:</p>
+      <ul>
+        <li><strong>Shallow position tower</strong> — position and device feed a small separate tower whose output is added to the logit; at serving, position is pinned to a constant. The main network is forced to learn position-independent relevance.</li>
+        <li><strong>IPS weighting</strong> on logged propensities for the exploration-served fraction.</li>
+      </ul>
+      <h4>Privacy &amp; compliance</h4>
+      <p>Retention windows on raw events; deletion must propagate into training sets <em>and</em> learned user embeddings — which is a practical argument for deriving user vectors at request time from recent events rather than storing long-lived learned parameters; separate handling for minors; a non-personalized feed option.</p>
+    </div>
+  </section>
+
+  <section id="s05">
+    <div class="shead">
+      <span class="snum">STEP 05</span>
+      <h2>Features</h2>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Family</th><th>Examples</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr><td class="num">user · long-term</td><td>genre &amp; creator affinity vectors, historical valid-watch rate, tenure, tier, language</td><td>Shrink toward segment priors for low-activity users</td></tr>
+          <tr><td class="num">user · short-term</td><td>last 50–200 interacted item IDs with dwell and timestamps, current session events</td><td>The single biggest source of lift, and the mechanism that makes cold-start users work</td></tr>
+          <tr><td class="num">item</td><td>content embeddings (text / audio / frame), duration, language, category, age, popularity priors</td><td>Popularity features are the main feedback-loop vector — see step 06</td></tr>
+          <tr><td class="num">context</td><td>device, hour &amp; weekday, network quality, surface, slot index, session depth, autoplay vs. explicit</td><td>Time-of-day is decisive for music, moderate for video</td></tr>
+          <tr><td class="num">cross · ranking only</td><td>retrieval dot-product score, plays in this item's cluster, co-visitation counts, days since last interaction with the creator</td><td>Exactly what the two-tower cannot express</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p><strong>Representation.</strong> Learned ID embeddings for users, items and creators, with hashing for the tail (accept collisions, monitor the rate); multimodal content encoders frozen or fine-tuned; continuous features quantile-normalized and expanded as <code>x</code>, <code>x²</code>, <code>√x</code> — cheap, and consistently helps in these architectures.</p>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Point-in-time, practically</span>Don't reconstruct training features from the warehouse — <strong>log the served feature vector and train on that</strong>, which makes training/serving skew structurally impossible for logged features. For the rest, one shared transformation library compiled into both paths, plus a skew detector that recomputes offline features for 0.1% of logged requests and alerts on divergence. Skew is the number-one cause of "great offline, flat online".</p>
+    </div>
+  </section>
+
+  <section id="s06">
+    <div class="shead">
+      <span class="snum">STEP 06</span>
+      <h2>Model</h2>
+    </div>
+    <h4>Baseline ladder — earn the complexity</h4>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th class="num">#</th><th>Model</th><th>Ships in</th><th>Why you'd stop here</th></tr></thead>
+        <tbody>
+          <tr><td class="num">0</td><td>Popularity by (country, language, device), time-decayed</td><td class="num">days</td><td>Astonishingly strong; the honest A/B control</td></tr>
+          <tr><td class="num">1</td><td>Item–item co-visitation ("because you watched X")</td><td class="num">1–2 wks</td><td>Explainable, near-zero latency, big win over #0</td></tr>
+          <tr><td class="num">2</td><td>Implicit MF — ALS / BPR</td><td class="num">2–4 wks</td><td>Good when the catalog is small and stable</td></tr>
+          <tr><td class="num">3</td><td><strong>GBDT ranker (LambdaMART) on tabular features</strong></td><td class="num">4–6 wks</td><td>Often beats a DNN until sequence features exist. The baseline to beat — and the one candidates skip</td></tr>
+          <tr><td class="num">4</td><td><strong>Two-tower retrieval + multi-task DNN ranker</strong></td><td class="num">a quarter</td><td>Needed at 80M eligible items, multi-objective, content-based cold start</td></tr>
+          <tr><td class="num">5</td><td>Sequence model — transformer over user history</td><td class="num">quarter+</td><td>Justified when session intent dominates (music, short-form)</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p><strong>Justify depth explicitly:</strong> a DNN earns its keep when you need content embeddings for cold start, multi-task heads over a shared representation, or sequence modelling. If none apply — a 20k-title licensed catalog, mostly stable — GBDT plus a good candidate set is the right architecture, and going further is résumé-driven engineering.</p>
+      <h3>Why two stages — do the arithmetic</h3>
+      <p>Scoring 80M items at 60k QPS with a ranker costing 1ms per 1,000 items is 4.8×10¹² item-scorings per second. That's not a budget question, it's a physics question.</p>
+    </div>
+
+    <div class="funnel">
+      <div class="funnel-cap"><span>Candidate funnel</span><span>items · latency</span></div>
+
+      <div class="frow">
+        <span class="fname">eligible catalog</span>
+        <span class="fbar" style="--w:100%"></span>
+        <span class="fcount">80,000,000</span>
+      </div>
+      <div class="fop"><span>↓</span><span>retrieval — 8 parallel sources, ANN + rules</span><span class="fms">~20 ms</span></div>
+
+      <div class="frow">
+        <span class="fname">candidate union</span>
+        <span class="fbar" style="--w:63%"></span>
+        <span class="fcount">4,000</span>
+      </div>
+      <div class="fop"><span>↓</span><span>pre-rank — tiny MLP on cached embeddings</span><span class="fms">~15 ms</span></div>
+
+      <div class="frow">
+        <span class="fname">ranking set</span>
+        <span class="fbar" style="--w:48%"></span>
+        <span class="fcount">600</span>
+      </div>
+      <div class="fop"><span>↓</span><span>rank — multi-task DNN, full cross features</span><span class="fms">~70 ms</span></div>
+
+      <div class="frow">
+        <span class="fname">scored set</span>
+        <span class="fbar alt" style="--w:48%"></span>
+        <span class="fcount">600</span>
+      </div>
+      <div class="fop"><span>↓</span><span>policy — diversity, licensing, dedupe, caps</span><span class="fms">~20 ms</span></div>
+
+      <div class="frow">
+        <span class="fname">returned feed</span>
+        <span class="fbar alt" style="--w:26%"></span>
+        <span class="fcount">30</span>
+      </div>
+    </div>
+
+    <div class="col">
+      <p>Each stage is roughly 100× cheaper per item and 10–100× less accurate than the next. The funnel buys accuracy exactly where the candidate set is small enough to afford it.</p>
+
+      <h3>Retrieval is an ensemble, not one model</h3>
+      <p>A single ANN index is a common wrong answer. Production retrieval is a <strong>union of sources with per-source quotas</strong>:</p>
+      <ol>
+        <li><strong>Two-tower ANN</strong> — user tower computed online from live session state, item tower precomputed and indexed.</li>
+        <li><strong>Item–item co-visitation</strong> seeded from the last few interactions — catches short-term intent the tower smooths away.</li>
+        <li><strong>Follows / subscriptions</strong> — deterministic, high precision.</li>
+        <li><strong>Continue watching</strong> — rule-based, highest precision of all.</li>
+        <li><strong>Fresh &amp; trending per locale</strong> — the <em>only</em> source that can surface items with no interaction history.</li>
+        <li><strong>Search / intent-derived</strong> from recent queries.</li>
+        <li><strong>Exploration</strong> — sampled with logged propensities.</li>
+      </ol>
+      <p>Quotas stop one source starving the others, and per-source recall is monitored independently — when quality drops you need to know <em>which</em> source degraded.</p>
+      <p><strong>Two-tower specifics worth naming:</strong> a shared item encoder over content + ID; L2-normalized embeddings with a learned temperature; sampled softmax with logQ; item embeddings refreshed nightly with incremental updates every few minutes for new items; and <strong>the user tower runs at request time</strong>, not precomputed — a user's last three actions are the most predictive features available, and a nightly user vector throws them away.</p>
+
+      <h3>Ranking</h3>
+      <p>Multi-task DNN: a shared bottom (embeddings plus a sequence encoder over the last N items) feeding <strong>MMoE</strong>-style experts with per-task gates, one head per label, plus the shallow position tower added to the logits and disabled at serving. Per-head isotonic or Platt calibration fitted on held-out recent data and refreshed daily. Final score = value model over calibrated probabilities.</p>
+
+      <h3>The policy layer people forget</h3>
+      <p>Runs on the top ~600 and is mostly <em>not</em> ML: hard eligibility (licensing, region, age rating, already-watched, policy), near-duplicate collapse, creator and topic caps per page, <strong>diversity via MMR or a DPP</strong> over item embeddings, freshness boosts, exploration-slot injection, business overrides. Being explicit that hard constraints live here — not in the loss — is a maturity signal: you cannot guarantee a licensing constraint with a soft penalty term.</p>
+
+      <h3>Cold start</h3>
+      <h4>New item — the harder one</h4>
+      <ul>
+        <li>Day 0, the content tower gives a usable embedding from title, description, audio and frames — the item is retrievable before its first interaction. This is the main reason to pay for a DNN retrieval model at all.</li>
+        <li>Reserve an <strong>exploration budget</strong> (~3–5% of slots), allocated by Thompson sampling over each item's engagement posterior, with the Beta prior <em>seeded from content-nearest neighbours</em> rather than uniform — that alone cuts exploration cost by an order of magnitude.</li>
+        <li>Graduate at ~1k impressions to a learned ID embedding <strong>initialized from the content vector</strong>, so there's no quality dip at handover.</li>
+        <li>Incremental ANN inserts every few minutes. A nightly rebuild means news, live and new-release music are structurally broken.</li>
+      </ul>
+      <h4>New user</h4>
+      <ul>
+        <li>Onboarding preference selection where the product allows it; otherwise a prior from locale, language, device and referrer.</li>
+        <li>Because the user tower is computed online, the model conditions on interaction #1 within seconds — the strongest cold-start mechanism, and it falls out of the serving design for free.</li>
+        <li>Shrink personalized estimates toward segment priors, with weight rising in interaction count.</li>
+        <li>Deliberate early diversity — an exploitative feed for a brand-new user learns nothing about them.</li>
+      </ul>
+      <h4>New market</h4>
+      <p>Transfer the content encoder, retrain ID embeddings, lean on locale popularity priors, and expect the value-model weights to need re-tuning per market.</p>
+
+      <h3>Feedback loops</h3>
+      <p>The system trains on data it generated. Untreated, that produces rich-get-richer popularity collapse, a filter bubble per user, and <em>offline metrics that improve while the product gets worse</em> — because the eval set is drawn from the model's own choices.</p>
+      <ol>
+        <li><strong>A random-traffic holdout</strong> — 0.5–1% of requests served by a fixed, non-personalized or uniformly-sampled policy. It is the only unbiased evaluation set you will ever have, and the only training data containing items your ranker refuses to show. If the org has one, protect it; if not, buying it is the highest-leverage item on the roadmap.</li>
+        <li><strong>Logged propensities and off-policy evaluation</strong> — IPS, self-normalized IPS, doubly-robust estimators with clipping, so an offline replay of a new policy means something.</li>
+        <li><strong>logQ and popularity-debiased sampling</strong> in retrieval training.</li>
+        <li><strong>Diversity constraints in the policy layer</strong>, which bound bubble formation regardless of what the model wants.</li>
+        <li><strong>Monitor the loop directly</strong> — impression Gini, catalog coverage, share of impressions to items under 7 days old, share of users seeing new creators. These trend badly for months before engagement metrics notice.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="s07">
+    <div class="shead">
+      <span class="snum">STEP 07</span>
+      <h2>Serving</h2>
+    </div>
+    <div class="col"><p>State the latency as a <em>budget</em>, not a hope. p99 = 300 ms:</p></div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Stage</th><th class="num">ms</th></tr></thead>
+        <tbody>
+          <tr><td>Request parse, auth, eligibility context</td><td class="num">10</td></tr>
+          <tr><td>User + context feature fetch (parallel)</td><td class="num">25</td></tr>
+          <tr><td>User tower forward pass</td><td class="num">8</td></tr>
+          <tr><td>Retrieval — ANN shards + other sources, parallel</td><td class="num">25</td></tr>
+          <tr><td>Merge, dedupe, hard filters</td><td class="num">10</td></tr>
+          <tr><td>Pre-rank 4,000 → 600</td><td class="num">15</td></tr>
+          <tr><td>Item + cross feature hydration for 600</td><td class="num">45</td></tr>
+          <tr><td>Ranker — batched, multi-task</td><td class="num">70</td></tr>
+          <tr><td>Policy / diversity re-rank</td><td class="num">20</td></tr>
+          <tr><td>Assembly + logging</td><td class="num">12</td></tr>
+          <tr class="tsum"><td>Subtotal · headroom</td><td class="num">240 · 60</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p>The two expensive lines are feature hydration and the ranker — which is exactly why a pre-ranker exists, and the first place to attack if the budget tightens.</p>
+      <h4>Precompute vs. real-time</h4>
+      <ul>
+        <li><strong>Precompute:</strong> item embeddings, item features, ANN index, co-visitation tables, segment popularity lists.</li>
+        <li><strong>Real-time:</strong> user tower, cross features, ranking, policy.</li>
+        <li>Fully precomputed feeds are right for <em>push notifications and email</em> — no latency constraint, huge batch efficiency — and as a warm fallback. A hybrid (nightly precomputed feed, patched with real-time results for active sessions) is a legitimate cost lever at very high QPS.</li>
+      </ul>
+      <h4>Caching</h4>
+      <p>Session-scoped candidate cache with a ~1 min TTL invalidated on new interaction — cheap, because consecutive requests in a session share most of the funnel. Plus an item feature cache (near-100% hit), an embedding cache, and negative caching for ineligible items.</p>
+      <h4>ANN index</h4>
+      <p>80M × 128-dim fp32 = 41 GB, too much per replica — product-quantize (m=32 subquantizers → 32 B/vector ≈ 2.6 GB plus graph) and shard. HNSW where recall and latency dominate, IVF-PQ where memory does. Rebuild nightly, insert continuously. <strong>Measure ANN recall against exact search on a sample</strong> — an index silently degrades as it's mutated, and nothing else in the funnel will tell you.</p>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Degrade, never empty</span><code>ranker times out → serve pre-rank order</code> · <code>retrieval fails → cached session candidates</code> · <code>cache miss → precomputed nightly feed</code> · <code>total failure → popularity by locale</code>. Track the fallback rate as a first-class metric — a silently rising one looks exactly like a model regression.</p>
+    </div>
+    <div class="col">
+      <p><strong>Cost check.</strong> 60k QPS × 600 ranked items = 36M scorings per second. At a few hundred FLOPs per item per layer, that sets the ranker's parameter budget directly: model capacity is a function of the latency and cost budget, not of what's fashionable.</p>
+    </div>
+  </section>
+
+  <section id="s08">
+    <div class="shead">
+      <span class="snum">STEP 08</span>
+      <h2>Evaluation &amp; rollout</h2>
+    </div>
+    <div class="col">
+      <p>The full ladder, cheapest and least trustworthy first:</p>
+      <ol>
+        <li><strong>Offline replay</strong> on logged data with propensity correction (IPS / SNIPS / DR, clipped). Good for eliminating bad ideas; never trust the magnitude.</li>
+        <li><strong>Interleaving</strong> (team-draft) — mix two rankers' results into one list and attribute engagement per source. 10–100× more sample-efficient than an A/B and it controls user-level variance completely. The right intermediate step for ranker comparisons; it cannot measure whole-experience effects like session count.</li>
+        <li><strong>Shadow deployment</strong> — score live traffic, serve nothing. Validates latency, feature coverage, score distribution and calibration under real load.</li>
+        <li><strong>A/B test.</strong> Randomization unit is the <strong>user</strong>, not the request — request-level randomization contaminates through session state and user learning. Power: with per-user daily watch minutes at cv ≈ 2, detecting a 0.5% relative lift at 80% power needs roughly <code>16·cv²/δ² ≈ 2.5M users per arm</code>. Worth computing out loud, because it explains why small teams cannot detect the effects they claim. Run ≥2 weeks for novelty decay and weekly seasonality; use sequential or always-valid tests if you need to peek.</li>
+        <li><strong>Ramp</strong> 1% → 5% → 20% → 50% → 100%, with automated rollback on guardrail breach.</li>
+        <li><strong>Long-term holdback</strong> — keep 0.5–1% on the previous system for months. Recsys changes compound, and a year of individually-positive two-week experiments can sum to a negative annual effect.</li>
+      </ol>
+    </div>
+    <div class="note">
+      <p><strong>Two-sided caveat.</strong> For changes affecting supply — creator exposure, new-item boosts — user-level randomization leaks through the shared item pool: treatment users' engagement changes the item's popularity features, which affects control users. Use cluster, market or creator-level randomization, and accept the much larger variance.</p>
+    </div>
+  </section>
+
+  <section id="s09">
+    <div class="shead">
+      <span class="snum">STEP 09</span>
+      <h2>Monitoring &amp; iteration</h2>
+    </div>
+    <div class="col">
+      <p><strong>Data health.</strong> Feature freshness and null rates per feature, schema validation, distribution drift (PSI / KL against the training window), the training-serving skew detector from step 05, and <em>logging completeness</em> — a silently dropped propensity field kills off-policy evaluation a month before anyone notices.</p>
+      <p><strong>Model health.</strong> Daily calibration by slice, score-distribution drift, per-slice user-AUC (new users, new items, market, device), ANN recall vs. exact, and a <strong>staleness curve</strong> — plot the online metric against days-since-training to derive the retraining cadence empirically instead of guessing it.</p>
+      <p><strong>Ecosystem health.</strong> Impression Gini, catalog coverage, fresh-item impression share, creator concentration, and the exploration budget actually spent — it silently drifts to zero whenever someone "optimizes" the policy layer.</p>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th>Component</th><th>Retraining cadence</th><th>Justified by</th></tr></thead>
+        <tbody>
+          <tr><td>ANN index</td><td class="num">incremental, every few minutes</td><td>50k new items/hour</td></tr>
+          <tr><td>Ranker</td><td class="num">incremental hourly, full daily</td><td>Staleness curve</td></tr>
+          <tr><td>Retrieval towers</td><td class="num">daily</td><td>Embedding drift</td></tr>
+          <tr><td>Value-model weights</td><td class="num">quarterly</td><td>Requires an experiment, not a fit</td></tr>
+          <tr><td>Content encoders</td><td class="num">monthly or on catalog shift</td><td>Expensive, slow-moving</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col">
+      <p><strong>Operational.</strong> Model version is a config flip with the last N versions kept warm — rollback in seconds, not a redeploy. Every serving log row carries the model version, or you cannot attribute a regression to anything.</p>
+    </div>
+  </section>
+
+  <section id="variants">
+    <div class="shead">
+      <span class="snum">CONTRAST</span>
+      <h2>What actually changes per product</h2>
+    </div>
+    <div class="tscroll">
+      <table>
+        <thead><tr><th></th><th>Netflix</th><th>YouTube</th><th>Spotify</th></tr></thead>
+        <tbody>
+          <tr><td class="num">catalog</td><td class="num">~10⁴ titles</td><td class="num">~10⁹ videos</td><td class="num">~10⁸ tracks</td></tr>
+          <tr><td class="num">retrieval stage?</td><td><strong>No</strong> — score everything; spend the compute on 2-D page and row layout, and on artwork selection</td><td>Yes, aggressively</td><td>Yes, plus strong sequence and session modelling</td></tr>
+          <tr><td class="num">dominant signal</td><td>completion, abandonment</td><td>valid watch, satisfaction survey</td><td><strong>skip within 30s</strong>, repeat listens</td></tr>
+          <tr><td class="num">hard part</td><td>page composition, per-title artwork, cold start for new releases in a small catalog</td><td>scale, freshness, clickbait and rabbit-hole control</td><td>sequence + context (time of day, activity), playlist coherence, repeat vs. discovery</td></tr>
+          <tr><td class="num">cold start</td><td>licensed metadata is rich, exploration is cheap</td><td>50k new items/hour; content embeddings mandatory</td><td>audio embeddings are unusually informative</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout">
+      <p><span class="tag">Stronger than the recital</span>Saying "at Netflix scale I would <em>not</em> build a retrieval stage" beats reciting two-stage architecture universally. Two stages are a response to catalog size, not a law.</p>
+    </div>
+  </section>
+
+  <section id="followups">
+    <div class="shead">
+      <span class="snum">PROBES</span>
+      <h2>Likely follow-ups, with short answers</h2>
+    </div>
+    <div class="qa">
+      <div>
+        <p class="q">A user watches one video about X and the feed floods with X.</p>
+        <p>Three fixes at three layers: topic caps in the policy layer (bounded regardless of scores); time-decay on short-term affinity features so one session can't dominate; and an explicit intent-vs-taste split where short-term intent gets a slot quota rather than the whole page. Measure it with intra-session topic entropy, not engagement.</p>
+      </div>
+      <div>
+        <p class="q">How would you add ads or sponsored content?</p>
+        <p>Separate the auction from relevance: the ranker produces a calibrated <code>P(engagement)</code>, the ads system produces <code>eCPM = bid × P(click)</code>, and a blending policy trades user value against revenue at a tunable exchange rate. This makes calibration a hard requirement — an uncalibrated organic score corrupts the auction.</p>
+      </div>
+      <div>
+        <p class="q">Offline metrics improved, online is flat. What do you check?</p>
+        <p>In order: training/serving skew (recompute serving features offline and diff), calibration drift, whether the offline eval set was drawn from the current policy's own impressions, negative-sampling recalibration, position-bias handling, and whether the winning offline slice is a segment with little traffic.</p>
+      </div>
+      <div>
+        <p class="q">How do you know retrieval, not ranking, is the bottleneck?</p>
+        <p>Ceiling analysis: replace the ranker with an oracle that reorders the candidate set by observed labels. If oracle ranking of the current candidates barely moves the metric, the good items aren't in the candidate set and retrieval is the bottleneck. Corollary: track the retrieval union's Recall@k against items the ranker puts top-10 in an unconstrained offline run.</p>
+      </div>
+      <div>
+        <p class="q">Why not one big model?</p>
+        <p>Because the item tower must be precomputable to build an index. The moment you add user×item cross features you have to evaluate per (user, item) pair, and 80M forward passes per request isn't available. One model is right only when the catalog is small enough to score exhaustively.</p>
+      </div>
+      <div>
+        <p class="q">Ranking looks great, but engagement dropped for new users.</p>
+        <p>Expected — the model is trained on data dominated by heavy users, so the loss barely notices new ones. Fix with per-slice evaluation as a ship gate, loss reweighting or a segment-specific model, more exploration for low-history users, and heavier reliance on the session-based path.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="closer">
+    <div class="shead">
+      <span class="snum">IF YOU GET ONE SHOT</span>
+      <h2>The 90-second opening</h2>
+    </div>
+    <div class="script">
+      <p>"I'll assume a video home feed: 70M DAU, ~60k peak QPS, 80M eligible items, 300 ms p99. The business objective is retention, which isn't trainable, so I'll optimize a per-impression surrogate — a weighted combination of calibrated engagement and satisfaction probabilities — and tune those weights by A/B against retention.</p>
+      <p>Scoring 80M items per request is impossible, so it's a funnel: an ensemble of retrieval sources cuts 80M to about 4,000, a pre-ranker to 600, a multi-task DNN ranks those, and a policy layer applies diversity and hard constraints to produce 30. Baseline is popularity plus co-visitation, then a GBDT ranker; I'd only go to DNNs for content-based cold start, multi-task heads, and sequence features.</p>
+      <p>The three things I'd expect to actually go wrong: training/serving skew; position and popularity bias feeding back into the training data, which is why I want a random-traffic holdout; and cold start for new items, which I'd handle with a content tower plus a Thompson-sampled exploration budget. Where should I go deep?"</p>
+    </div>
+  </section>
+
+</div>

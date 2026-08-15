@@ -10,7 +10,13 @@ Feature-rating popup for the bunq frontend assignment.
 
 **Accessibility** — portal-mounted modal with focus trap + restoration, ESC, backdrop dismiss, `aria-modal` + labelled title; thank-you toast is `role="status" aria-live="polite"`; the NEGATIVE form has a `role="status"` live region that announces "Submitting your feedback…" while pending; `prefers-reduced-motion` honoured.
 
-**Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 28 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot).
+**Run** — `npm install && npm start` opens the demo (click the button). `npm test` runs all 120 tests (FSM transitions, service contract, integration flow incl. ESC / failure / STELLAR → Trustpilot, plus the experimentation framework below).
+
+## Experimentation
+
+[`src/features/experiments/`](./src/features/experiments) is a dependency-free A/B testing framework — deterministic bucketing (FNV-1a + murmur3 avalanche, salted per experiment), React bindings whose exposure logging fires only when the user can actually see the treatment, and the statistics to size and read a test (sample size, two-proportion z-test, SRM, Benjamini–Hochberg, CUPED). [`examples/feedbackExperiments.tsx`](./src/features/experiments/examples/feedbackExperiments.tsx) runs a real experiment on this widget's thank-you toast.
+
+[**docs/ab-testing.md**](./docs/ab-testing.md) is the accompanying guide: A/B testing from first principles to staff level — hypothesis and metric design, sizing with worked numbers, frontend implementation concerns (bucketing, dilution, flicker, QA overrides), trustworthiness (SRM, peeking, interference, novelty), and platform/organisational design, with interview drills and a cheat sheet.
 
 ## Repository layout
 
@@ -27,5 +33,12 @@ src/
     │                      useAutoDismiss, useStableId)
     ├── services/         (feedbackService + test)
     ├── state/            (feedbackMachine + test)
+    └── index.ts
+└── features/experiments/ ← A/B testing framework (see docs/ab-testing.md)
+    ├── core/             (hash, assign, overrides + tests)
+    ├── analysis/         (stats, cuped + tests)
+    ├── examples/         (feedbackExperiments + test)
+    ├── ExperimentProvider.tsx + test
+    ├── types.ts
     └── index.ts
 ```

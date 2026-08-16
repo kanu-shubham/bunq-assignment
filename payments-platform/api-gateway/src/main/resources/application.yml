@@ -1,0 +1,135 @@
+server:
+  port: ${SERVER_PORT:8080}
+  # Behind nginx, the socket address is nginx's. Trusting X-Forwarded-* headers is what
+  # lets rate limiting and logging see the real client IP. Only ever enable this when the
+  # gateway is genuinely behind a proxy you control, otherwise clients can forge their own IP.
+  forward-headers-strategy: framework
+  netty:
+    connection-timeout: 5s
+
+spring:
+  application:
+    name: api-gateway
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  cloud:
+    loadbalancer:
+      health-check:
+        # Ask the load balancer to skip instances Eureka has not yet marked UP.
+        initial-delay: 5s
+      retry:
+        enabled: true
+
+paykit:
+  gateway:
+    # Everything else requires a credential.
+    public-paths:
+      - /actuator/**
+      - /v1/auth/**
+      - /__fallback/**
+      - /swagger-ui/**
+      - /v3/api-docs/**
+    # DEV ONLY. In production this comes from a secret manager, is at least 32 bytes of
+    # real entropy, and is rotated. A JWT signing key in a config file is a breach waiting
+    # to happen — the whole point of the signature is that only the issuer can produce it.
+    jwt-secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-min-32-bytes}
+    api-key-cache-ttl: ${API_KEY_CACHE_TTL:60s}
+    default-requests-per-second: ${RATE_LIMIT_RPS:50}
+    default-burst-capacity: ${RATE_LIMIT_BURST:100}
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        # Look at the last 20 calls; if more than half failed, open the circuit.
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10          # never judge a service on 2 requests
+        failure-rate-threshold: 50
+        # Anything slower than 2s counts as a failure even if it eventually succeeds:
+        # a service that is merely very slow will exhaust the caller just as effectively
+        # as one that is down.
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 60
+        wait-duration-in-open-state: 10s     # then probe again
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+    instances:
+      paymentService:
+        base-config: default
+      authService:
+        base-config: default
+        wait-duration-in-open-state: 5s
+      ledgerService:
+        base-config: default
+      webhookService:
+        base-config: default
+
+  timelimiter:
+    configs:
+      default:
+        # An unbounded wait is not a timeout. Every remote call needs a deadline.
+        timeout-duration: 4s
+        cancel-running-future: true
+    instances:
+      paymentService:
+        base-config: default
+      authService:
+        timeout-duration: 2s
+      ledgerService:
+        base-config: default
+      webhookService:
+        base-config: default
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+    registry-fetch-interval-seconds: 10
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 10
+    lease-expiration-duration-in-seconds: 30
+    # Distinct id per container so two replicas of the gateway do not overwrite each other.
+    instance-id: ${spring.application.name}:${random.uuid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,gateway
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+  level:
+    com.paykit: ${LOG_LEVEL:INFO}
+    org.springframework.cloud.gateway: ${GATEWAY_LOG_LEVEL:INFO}

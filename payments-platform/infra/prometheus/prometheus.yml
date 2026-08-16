@@ -1,0 +1,32 @@
+# Prometheus scrapes each service's /actuator/prometheus endpoint.
+#
+# PULL, NOT PUSH — Prometheus asks the services for metrics rather than being sent them.
+# That means a service that stops responding is *itself* an alertable signal (the `up`
+# metric goes to 0), and a service under load cannot make the monitoring system worse by
+# pushing harder.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    platform: paykit
+
+scrape_configs:
+  - job_name: 'paykit-services'
+    metrics_path: '/actuator/prometheus'
+    # Static targets are fine for a fixed compose stack. In Kubernetes you would use
+    # service discovery so scraping follows pods as they come and go.
+    static_configs:
+      - targets: ['api-gateway:8080']
+        labels: { service: 'api-gateway' }
+      - targets: ['auth-service:8081']
+        labels: { service: 'auth-service' }
+      - targets: ['payment-service:8082']
+        labels: { service: 'payment-service' }
+      - targets: ['ledger-service:8083']
+        labels: { service: 'ledger-service' }
+      - targets: ['webhook-service:8084']
+        labels: { service: 'webhook-service' }
+      - targets: ['acquirer-simulator:8085']
+        labels: { service: 'acquirer-simulator' }
+      - targets: ['discovery-server:8761']
+        labels: { service: 'discovery-server' }

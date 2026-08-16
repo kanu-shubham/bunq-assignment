@@ -29,3 +29,14 @@ src/
     ├── state/            (feedbackMachine + test)
     └── index.ts
 ```
+
+---
+
+## Also in this repository
+
+[`payments-platform/`](./payments-platform) — a separate, self-contained learning project:
+a Stripe-shaped payments platform in **Java 21 + Spring Boot**, built as eight microservices
+(API gateway, service discovery, auth, payments, ledger, webhooks, a card-network simulator)
+with Kafka, Redis, PostgreSQL and nginx. Every non-obvious decision is commented with the
+failure it prevents. Start at [`payments-platform/README.md`](./payments-platform/README.md)
+or [`payments-platform/docs/LEARNING-GUIDE.md`](./payments-platform/docs/LEARNING-GUIDE.md).

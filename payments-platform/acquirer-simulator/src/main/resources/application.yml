@@ -1,0 +1,33 @@
+server:
+  port: ${SERVER_PORT:8085}
+  shutdown: graceful
+
+spring:
+  application:
+    name: acquirer-simulator
+  threads:
+    virtual:
+      # The simulator deliberately sleeps for tens of seconds. On platform threads that would
+      # exhaust the pool almost immediately; virtual threads make a blocked request nearly free.
+      enabled: true
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+
+logging:
+  level:
+    com.paykit: INFO

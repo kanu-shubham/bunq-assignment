@@ -1,0 +1,79 @@
+server:
+  port: ${SERVER_PORT:8081}
+  shutdown: graceful   # finish in-flight requests before the JVM exits
+
+spring:
+  application:
+    name: auth-service
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:paykit_auth}
+    username: ${DB_USER:paykit}
+    password: ${DB_PASSWORD:paykit}
+    hikari:
+      # Connection pool sizing is not "bigger is better". Each connection is a Postgres
+      # backend process; a pool larger than the database can serve just moves the queue
+      # from your app to the database, where it is harder to see. Start small, measure.
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: 2
+      connection-timeout: 3000     # fail fast rather than pile threads up on a dead DB
+      leak-detection-threshold: 20000
+
+  jpa:
+    hibernate:
+      # NEVER 'update' outside a toy project. Flyway owns the schema; Hibernate validates
+      # that the mapping matches it and refuses to start if it does not.
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+paykit:
+  auth:
+    jwt-secret: ${JWT_SECRET:dev-only-secret-change-me-in-production-min-32-bytes}
+    token-ttl: ${TOKEN_TTL:30m}
+    issuer: paykit-auth
+    bcrypt-strength: ${BCRYPT_STRENGTH:10}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+  level:
+    com.paykit: ${LOG_LEVEL:INFO}

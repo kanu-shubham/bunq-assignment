@@ -1,0 +1,202 @@
+server:
+  port: ${SERVER_PORT:8082}
+  shutdown: graceful
+  tomcat:
+    threads:
+      max: ${TOMCAT_MAX_THREADS:100}
+
+spring:
+  application:
+    name: payment-service
+
+  lifecycle:
+    # Give in-flight payments time to finish before the JVM exits. A pod killed mid-confirm
+    # is exactly how a payment gets stranded in PROCESSING.
+    timeout-per-shutdown-phase: 25s
+
+  threads:
+    virtual:
+      # Java 21 virtual threads. A request thread that spends 200ms blocked on the acquirer no
+      # longer pins an OS thread, so concurrency is bounded by the downstream service rather
+      # than by the size of the Tomcat pool. Note that synchronized blocks can still pin a
+      # carrier thread — prefer ReentrantLock in hot paths.
+      enabled: ${VIRTUAL_THREADS:true}
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:paykit_payments}
+    username: ${DB_USER:paykit}
+    password: ${DB_PASSWORD:paykit}
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      minimum-idle: 5
+      connection-timeout: 3000
+      max-lifetime: 1800000
+      leak-detection-threshold: 20000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    # Off, deliberately. open-in-view keeps a database connection open for the whole request
+    # including view rendering, which hides N+1 queries and holds pool connections while
+    # serialising JSON. It is on by default and should almost always be turned off.
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 25
+          time_zone: UTC
+        order_inserts: true
+        order_updates: true
+        query:
+          fail_on_pagination_over_collection_fetch: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2s
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BROKERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+paykit:
+  payments:
+    fee-percentage: ${FEE_PERCENTAGE:0.029}
+    fee-fixed-minor: ${FEE_FIXED:30}
+    min-amount-minor: 50
+    max-amount-minor: 99999999
+
+  acquirer:
+    base-url: ${ACQUIRER_URL:http://localhost:8085}
+    connect-timeout: 2s
+    read-timeout: 5s
+
+  outbox:
+    poll-interval-ms: ${OUTBOX_POLL_MS:500}
+    batch-size: ${OUTBOX_BATCH:100}
+    cleanup-cron: "0 0 3 * * *"
+    poison-check-ms: 60000
+
+  idempotency:
+    retention: PT24H
+    cleanup-cron: "0 30 3 * * *"
+
+  reconciliation:
+    interval-ms: 60000
+    stuck-threshold: PT5M
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      acquirer:
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 20
+        minimum-number-of-calls: 10
+        failure-rate-threshold: 50
+        slow-call-duration-threshold: 3s
+        slow-call-rate-threshold: 60
+        wait-duration-in-open-state: 15s
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        register-health-indicator: true
+        # A decline is a *business* answer, not a failure of the acquirer. Counting it as one
+        # would trip the breaker during a wave of legitimate declines and take down payments
+        # for everyone. Only transport failures are recorded.
+        record-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException
+          - java.util.concurrent.TimeoutException
+        ignore-exceptions:
+          - com.paykit.common.error.Exceptions$CardDeclinedException
+          - org.springframework.web.client.HttpClientErrorException
+
+  retry:
+    instances:
+      acquirer:
+        max-attempts: 3
+        wait-duration: 200ms
+        # Exponential backoff with randomisation. The random factor is not decoration: without
+        # it, every client that failed at the same instant retries at the same instant, and the
+        # synchronised herd knocks over the service that was about to recover.
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        randomized-wait-factor: 0.5
+        retry-exceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+          - java.io.IOException
+        # A 4xx will be a 4xx again. Retrying it wastes time and hammers the acquirer.
+        ignore-exceptions:
+          - org.springframework.web.client.HttpClientErrorException
+          - com.paykit.common.error.Exceptions$CardDeclinedException
+
+  bulkhead:
+    instances:
+      acquirer:
+        # Caps concurrent acquirer calls. Without a bulkhead, a slow acquirer lets in-flight
+        # requests pile up until the thread pool is gone and *every* endpoint is down —
+        # including the ones that never touch the acquirer.
+        max-concurrent-calls: 50
+        max-wait-duration: 100ms
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka/}
+  instance:
+    prefer-ip-address: true
+    instance-id: ${spring.application.name}:${random.uuid}
+    metadata-map:
+      zone: ${DEPLOY_ZONE:default}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics,circuitbreakers
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss.SSS} %-5level [%X{correlationId:-}] %logger{36} - %msg%n"
+  level:
+    com.paykit: ${LOG_LEVEL:INFO}
+    org.hibernate.SQL: ${SQL_LOG_LEVEL:WARN}

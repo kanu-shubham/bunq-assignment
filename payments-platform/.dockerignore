@@ -1,0 +1,8 @@
+# Keep the build context small: without this, every target/ directory is uploaded to the
+# Docker daemon on each build, which is both slow and a source of stale-artifact bugs.
+**/target/
+.git/
+.idea/
+*.iml
+docs/
+*.md

@@ -1,0 +1,327 @@
+# =============================================================================
+# The whole platform, on one machine.
+#
+#   curl -> nginx :80 -> api-gateway (xN) -> Eureka -> payment-service (xN)
+#                                                   -> auth-service
+#                                                   -> ledger-service
+#                                                   -> webhook-service
+#
+#   payment-service -> Postgres, Redis, Kafka, acquirer-simulator
+#   Kafka -> ledger-service (double-entry postings)
+#         -> webhook-service (signed HTTP delivery)
+#
+# Start it:      docker compose up --build
+# Scale it:      docker compose up -d --scale payment-service=3 --scale api-gateway=2
+# Watch it:      http://localhost:8761 (Eureka)  http://localhost:9090 (Prometheus)
+# =============================================================================
+
+name: paykit
+
+x-service-defaults: &service-defaults
+  # YAML anchors keep the shared settings in one place. Change a restart policy once.
+  restart: unless-stopped
+  networks: [paykit]
+  environment: &common-env
+    EUREKA_URL: http://discovery-server:8761/eureka/
+    DB_HOST: postgres
+    DB_PORT: 5432
+    DB_USER: paykit
+    DB_PASSWORD: paykit
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    KAFKA_BROKERS: kafka:9092
+    JWT_SECRET: dev-only-secret-change-me-in-production-min-32-bytes
+    LOG_LEVEL: INFO
+
+services:
+
+  # ---------------------------------------------------------------- data stores
+
+  postgres:
+    image: postgres:16-alpine
+    networks: [paykit]
+    environment:
+      POSTGRES_USER: paykit
+      POSTGRES_PASSWORD: paykit
+      POSTGRES_DB: paykit
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      # Runs once, on an empty data directory only. Deleting the volume is what re-triggers it.
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      # A container being "started" is not the same as Postgres being ready to accept
+      # connections. Without this check, every service races the database on boot and
+      # crash-loops until it happens to win.
+      test: ["CMD-SHELL", "pg_isready -U paykit -d paykit"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"       # the services' pools add up; the default 100 is not enough
+      - "-c"
+      - "log_min_duration_statement=500"   # log anything slower than 500ms
+
+  redis:
+    image: redis:7-alpine
+    networks: [paykit]
+    ports:
+      - "6379:6379"
+    command:
+      - "redis-server"
+      - "--maxmemory"
+      - "256mb"
+      # Redis here holds rate-limit buckets and short-lived idempotency locks — all
+      # regenerable. allkeys-lru means a full instance evicts cold keys instead of
+      # refusing writes, which is what you want for a cache and emphatically not what
+      # you would want for a datastore of record.
+      - "--maxmemory-policy"
+      - "allkeys-lru"
+      - "--appendonly"
+      - "no"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:3.9.0
+    networks: [paykit]
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      # KRaft mode: Kafka 3.x runs its own consensus and no longer needs ZooKeeper.
+      # One node acts as both broker and controller, which is fine for development and
+      # would be at least three separate nodes in production.
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:29092
+      # Two listeners because "kafka:9092" resolves inside the Docker network and nowhere
+      # else. A client on the host connects on 29092 and is told to use localhost:29092.
+      # Getting advertised.listeners wrong is the single most common Kafka-in-Docker
+      # failure: the connection succeeds, then the client is redirected somewhere unreachable.
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,EXTERNAL://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_NUM_PARTITIONS: 3
+      CLUSTER_ID: paykit-local-cluster-001
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    networks: [paykit]
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: paykit
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # ---------------------------------------------------------------- platform
+
+  discovery-server:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: discovery-server
+    ports:
+      - "8761:8761"
+    environment:
+      <<: *common-env
+      EUREKA_HOSTNAME: discovery-server
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q UP"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  acquirer-simulator:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: acquirer-simulator
+    ports:
+      - "8085:8085"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+
+  auth-service:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *common-env
+      DB_NAME: paykit_auth
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  payment-service:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: payment-service
+    # No fixed host port: that is what allows `--scale payment-service=3`. The gateway
+    # reaches these through Eureka, not through a published port, so nothing on the host
+    # needs to know how many there are.
+    expose:
+      - "8082"
+    environment:
+      <<: *common-env
+      DB_NAME: paykit_payments
+      ACQUIRER_URL: http://acquirer-simulator:8085
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      acquirer-simulator:
+        condition: service_started
+
+  ledger-service:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: ledger-service
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *common-env
+      DB_NAME: paykit_ledger
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  webhook-service:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: webhook-service
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *common-env
+      DB_NAME: paykit_webhooks
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  api-gateway:
+    <<: *service-defaults
+    build:
+      context: .
+      args:
+        MODULE: api-gateway
+    # Also unpublished, so `--scale api-gateway=3` works and nginx balances across them.
+    expose:
+      - "8080"
+    environment:
+      <<: *common-env
+      RATE_LIMIT_RPS: "50"
+      RATE_LIMIT_BURST: "100"
+    depends_on:
+      redis:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    networks: [paykit]
+    ports:
+      # THE ONLY PORT THE OUTSIDE WORLD NEEDS. Everything else is published purely for
+      # local inspection; in production only this one would be exposed.
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - api-gateway
+
+  # ---------------------------------------------------------------- observability
+
+  prometheus:
+    image: prom/prometheus:latest
+    networks: [paykit]
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=24h"
+
+  grafana:
+    image: grafana/grafana:latest
+    networks: [paykit]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+    depends_on:
+      - prometheus
+
+  # A stand-in for a merchant's server, so webhook delivery can be watched end to end.
+  # `docker compose logs -f webhook-receiver` shows the signed payloads arriving.
+  webhook-receiver:
+    image: mendhak/http-https-echo:34
+    networks: [paykit]
+    environment:
+      HTTP_PORT: "8080"
+    ports:
+      - "8086:8080"
+
+networks:
+  paykit:
+    driver: bridge
+
+volumes:
+  postgres-data:

@@ -1,0 +1,42 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: discovery-server
+
+eureka:
+  instance:
+    hostname: ${EUREKA_HOSTNAME:localhost}
+  client:
+    # The registry does not register with itself, and has no peer to fetch from
+    # in this single-node setup. In production you would run 2-3 peer-aware nodes
+    # (register-with-eureka: true, and defaultZone listing the other peers) so the
+    # phone book itself is not a single point of failure.
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Self-preservation stops Eureka evicting instances when it suspects a network
+    # partition rather than genuinely dead services. Off in dev so that a stopped
+    # container disappears promptly; ON in production, where a flapping network is
+    # far more likely than every service dying at once.
+    enable-self-preservation: ${EUREKA_SELF_PRESERVATION:false}
+    eviction-interval-timer-in-ms: 10000
+    response-cache-update-interval-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus,metrics
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+logging:
+  level:
+    com.netflix.eureka: WARN
+    com.netflix.discovery: WARN

@@ -1,0 +1,25 @@
+# Test profile: everything that must be fast or deterministic gets turned down here,
+# without touching the production configuration.
+paykit:
+  auth:
+    jwt-secret: test-secret-that-is-at-least-32-bytes-long!
+    token-ttl: 30m
+    # BCrypt cost 4 instead of 10. Same code path, ~64x less CPU per hash.
+    bcrypt-strength: 4
+
+eureka:
+  client:
+    enabled: false          # no service registry in a test
+
+spring:
+  cloud:
+    discovery:
+      enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: validate    # prove the Flyway schema and the entity mapping agree
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN

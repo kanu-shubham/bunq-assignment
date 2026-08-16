@@ -1,0 +1,33 @@
+# Test profile. Containers supply the connection details via @ServiceConnection.
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate     # prove Flyway and the entity mappings agree
+  cloud:
+    discovery:
+      enabled: false
+  threads:
+    virtual:
+      enabled: false         # keep stack traces short and deterministic in tests
+
+eureka:
+  client:
+    enabled: false
+
+paykit:
+  outbox:
+    poll-interval-ms: 250
+  reconciliation:
+    interval-ms: 3600000     # do not let the sweeper run during tests
+
+resilience4j:
+  retry:
+    instances:
+      acquirer:
+        max-attempts: 1      # a failing stub should fail fast, not retry for 10 seconds
+
+logging:
+  level:
+    org.testcontainers: WARN
+    com.github.dockerjava: WARN
+    org.apache.kafka: ERROR

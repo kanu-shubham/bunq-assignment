@@ -10,12 +10,21 @@ for where that prompt comes from.
 
 | File | What it is |
 |---|---|
+| **`minimal.ts`** | **The ~90-line version to actually type in the interview.** Start here. |
 | `circuitBreaker.ts` | The state machine. Knows nothing about HTTP. |
+| `failurePolicy.ts` | *When* to open — consecutive count or sliding-window rate. Injected. |
 | `responseCache.ts` | Bounded TTL cache that keeps entries *past* their TTL. |
-| `webClient.ts` | `execute(request)` — the handler, with both retrofitted. |
+| `webClient.ts` | `execute(request)` — the handler, with everything retrofitted. |
+| `breakerRegistry.ts` | One breaker per downstream, not one per process. |
+| `bulkhead.ts` | Cap on concurrent calls, for a downstream that is slow rather than failing. |
+| `retry.ts` | Backoff with full jitter, composed *outside* the breaker. |
 
-`npm test` — 32 tests here, covering every transition, the concurrency edges,
-and the fail-static paths.
+`npm test` — 62 tests here, covering every transition, the concurrency edges,
+the composition order and the fail-static paths.
+
+For how to run the 40 minutes — the clarifying questions to ask first, the
+order to build in, and the escalation ladder — see
+[`docs/circuit-breaker-interview-playbook.md`](../../../docs/circuit-breaker-interview-playbook.md).
 
 ## The state machine
 
@@ -123,6 +132,16 @@ timing is exercised with `clock.advance(1_000)` instead of real waits or fake
 timers, so the suite runs in milliseconds and is not flaky. Concurrency edges
 use a deferred promise to hold a probe in flight while asserting that a second
 caller is refused.
+
+**"Where does retry go?"** Outside the breaker: `retry(breaker(bulkhead(call)))`.
+That way the breaker sees every attempt (so a retrying client fills the failure
+window rather than hiding the outage from it), and once it opens the retry loop
+gets a non-retryable `CircuitOpenError` and fails in microseconds instead of
+sleeping through three backoff delays. Retry *inside* the breaker turns one
+logical call into N requests against a struggling service — that's how a
+partial outage becomes a total one. Jitter is not decoration: plain exponential
+backoff synchronises every client that failed at the same instant onto the same
+retry moments.
 
 **"What would you add with more time?"**
 - A rolling-window or percentage-based failure threshold instead of a

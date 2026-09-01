@@ -1,9 +1,12 @@
+import { Bulkhead } from './bulkhead';
+import { CircuitBreakerRegistry } from './breakerRegistry';
 import { CIRCUIT, CircuitBreaker, CircuitOpenError } from './circuitBreaker';
 import { ResponseCache } from './responseCache';
 import {
   HttpError,
   SOURCE,
   WebClient,
+  defaultBreakerKey,
   isDownstreamFailure,
   type HttpResponse,
   type Transport,
@@ -232,6 +235,114 @@ describe('WebClient.execute', () => {
       // ...and only once it opens do we degrade to the cached copy.
       const result = await client.execute({ url: '/balances' });
       expect(result.source).toBe(SOURCE.CACHE_STALE);
+    });
+  });
+  describe('composition with retry, bulkhead and per-endpoint breakers', () => {
+    it('stops retrying the moment the circuit opens', async () => {
+      const transport = jest.fn<Promise<HttpResponse>, []>().mockRejectedValue(new HttpError(503));
+      const clock = makeClock();
+      const client = new WebClient({
+        transport,
+        retry: { maxAttempts: 5, sleep: () => Promise.resolve() },
+        breaker: new CircuitBreaker({
+          failureThreshold: 2,
+          callTimeoutMs: null,
+          isFailure: isDownstreamFailure,
+          now: clock.now,
+        }),
+        cache: new ResponseCache<HttpResponse>({ now: clock.now }),
+      });
+
+      await expect(client.execute({ url: '/balances' })).rejects.toBeInstanceOf(CircuitOpenError);
+
+      // Attempts 1 and 2 reach the transport and trip the breaker; attempt 3
+      // is refused by it, and CircuitOpenError is not retryable — so we stop
+      // rather than sleeping through attempts 4 and 5.
+      expect(transport).toHaveBeenCalledTimes(2);
+    });
+
+    it('retries a transient failure and still caches the eventual success', async () => {
+      const transport = jest
+        .fn<Promise<HttpResponse>, []>()
+        .mockRejectedValueOnce(new HttpError(503))
+        .mockResolvedValue(balance);
+      const clock = makeClock();
+      const client = new WebClient({
+        transport,
+        retry: { maxAttempts: 3, sleep: () => Promise.resolve() },
+        breaker: new CircuitBreaker({
+          failureThreshold: 5,
+          callTimeoutMs: null,
+          isFailure: isDownstreamFailure,
+          now: clock.now,
+        }),
+        cache: new ResponseCache<HttpResponse>({ ttlMs: 100, now: clock.now }),
+      });
+
+      const first = await client.execute({ url: '/balances' });
+      expect(first.source).toBe(SOURCE.NETWORK);
+      expect(transport).toHaveBeenCalledTimes(2);
+
+      const second = await client.execute({ url: '/balances' });
+      expect(second.source).toBe(SOURCE.CACHE_FRESH);
+    });
+
+    it('caps concurrent downstream calls with a bulkhead', async () => {
+      const gates = [deferred<HttpResponse>(), deferred<HttpResponse>()];
+      let call = 0;
+      const transport = jest.fn<Promise<HttpResponse>, []>().mockImplementation(() => {
+        const gate = gates[call];
+        call += 1;
+        return gate.promise;
+      });
+      const client = new WebClient({
+        transport,
+        bulkhead: new Bulkhead({ maxConcurrent: 1, maxQueued: 5 }),
+        breakerOptions: { callTimeoutMs: null },
+      });
+
+      // Two different URLs, so single-flight does not collapse them.
+      const both = Promise.all([client.execute({ url: '/a' }), client.execute({ url: '/b' })]);
+      await Promise.resolve();
+
+      // A slow dependency can only ever hold one connection here.
+      expect(transport).toHaveBeenCalledTimes(1);
+
+      gates[0].resolve(balance);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(transport).toHaveBeenCalledTimes(2);
+
+      gates[1].resolve(balance);
+      await both;
+    });
+
+    it('keeps a sick endpoint from opening the circuit on a healthy one', async () => {
+      const transport = jest.fn<Promise<HttpResponse>, [{ url: string }]>().mockImplementation((request) =>
+        request.url.startsWith('/quotes') ? Promise.reject(new HttpError(503)) : Promise.resolve(balance),
+      );
+      const client = new WebClient({
+        transport,
+        breakers: CircuitBreakerRegistry.withOptions({
+          failureThreshold: 1,
+          callTimeoutMs: null,
+          isFailure: isDownstreamFailure,
+        }),
+      });
+
+      await expect(client.execute({ url: '/quotes/EUR-GBP' })).rejects.toBeInstanceOf(HttpError);
+      expect(client.getCircuitState({ url: '/quotes/EUR-GBP' })).toBe(CIRCUIT.OPEN);
+
+      // Different downstream, its own breaker, unaffected.
+      const result = await client.execute({ url: '/balances' });
+      expect(result.source).toBe(SOURCE.NETWORK);
+      expect(client.getCircuitState({ url: '/balances' })).toBe(CIRCUIT.CLOSED);
+    });
+
+    it('groups concrete urls onto one breaker per route', () => {
+      expect(defaultBreakerKey({ url: '/transfers/123' })).toBe('/transfers');
+      expect(defaultBreakerKey({ url: '/transfers/456?expand=fees' })).toBe('/transfers');
+      expect(defaultBreakerKey({ url: 'https://api.wise.com/v1/rates' })).toBe('https://api.wise.com');
     });
   });
 });

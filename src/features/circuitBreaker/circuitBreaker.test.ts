@@ -56,7 +56,7 @@ describe('CircuitBreaker', () => {
       await expect(breaker.execute(boom)).rejects.toThrow();
 
       expect(breaker.getState()).toBe(CIRCUIT.CLOSED);
-      expect(breaker.snapshot().consecutiveFailures).toBe(2);
+      expect(breaker.snapshot().failure.consecutiveFailures).toBe(2);
     });
 
     it('does not trip on errors the policy excludes, e.g. a client error', async () => {
@@ -69,7 +69,7 @@ describe('CircuitBreaker', () => {
       await expect(breaker.execute(() => Promise.reject(new RangeError('bad input')))).rejects.toThrow('bad input');
 
       expect(breaker.getState()).toBe(CIRCUIT.CLOSED);
-      expect(breaker.snapshot().consecutiveFailures).toBe(0);
+      expect(breaker.snapshot().failure.consecutiveFailures).toBe(0);
     });
   });
 
@@ -173,7 +173,7 @@ describe('CircuitBreaker', () => {
       await expect(breaker.execute(ok)).resolves.toBe('ok');
 
       expect(breaker.getState()).toBe(CIRCUIT.CLOSED);
-      expect(breaker.snapshot().consecutiveFailures).toBe(0);
+      expect(breaker.snapshot().failure.consecutiveFailures).toBe(0);
       expect(breaker.snapshot().openedAt).toBeNull();
     });
 
@@ -248,7 +248,7 @@ describe('CircuitBreaker', () => {
       // The stale result belongs to a previous generation, so it must not
       // reopen the circuit the operator just closed.
       expect(breaker.getState()).toBe(CIRCUIT.CLOSED);
-      expect(breaker.snapshot().consecutiveFailures).toBe(0);
+      expect(breaker.snapshot().failure.consecutiveFailures).toBe(0);
     });
   });
 

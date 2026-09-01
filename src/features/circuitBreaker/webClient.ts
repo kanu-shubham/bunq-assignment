@@ -21,6 +21,8 @@
  * to opt into that explicitly and knowingly.
  */
 
+import { Bulkhead } from './bulkhead';
+import { CircuitBreakerRegistry } from './breakerRegistry';
 import {
   CircuitBreaker,
   CircuitOpenError,
@@ -28,6 +30,7 @@ import {
   type CircuitState,
 } from './circuitBreaker';
 import { ResponseCache, type ResponseCacheOptions } from './responseCache';
+import { retry, type RetryOptions } from './retry';
 
 export type HttpMethod = 'GET' | 'HEAD' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
 
@@ -43,6 +46,8 @@ export interface HttpRequest {
    * user/account id, or one customer is served another's balance.
    */
   cacheKey?: string;
+  /** Which breaker this call belongs to. See `defaultBreakerKey`. */
+  breakerKey?: string;
 }
 
 export interface HttpResponse<T = unknown> {
@@ -89,6 +94,23 @@ export function isDownstreamFailure(error: unknown): boolean {
   return true;
 }
 
+/**
+ * Group calls that fail together. Keying on a concrete URL like
+ * `/transfers/123` would give every transfer its own breaker with a sample
+ * size of one, which never opens — so relative URLs collapse to their first
+ * path segment, and absolute ones to their origin. Pass an explicit
+ * `breakerKey` (a route template) when the default is too coarse.
+ */
+export function defaultBreakerKey(request: HttpRequest): string {
+  const path = request.url.split('?')[0];
+  try {
+    return new URL(path).origin;
+  } catch {
+    const segment = path.split('/').filter(Boolean)[0];
+    return segment ? `/${segment}` : '/';
+  }
+}
+
 export interface WebClientOptions {
   transport: Transport;
   breaker?: CircuitBreaker;
@@ -97,24 +119,43 @@ export interface WebClientOptions {
   cacheOptions?: ResponseCacheOptions;
   /** Fail static: serve stale on failure, not only when the circuit is open. */
   serveStaleOnFailure?: boolean;
+  /** One breaker per downstream instead of one per client. */
+  breakers?: CircuitBreakerRegistry;
+  breakerKeyFor?: (request: HttpRequest) => string;
+  /** Caps concurrent downstream calls, so a *slow* dependency can't drain the pool. */
+  bulkhead?: Bulkhead;
+  /** Omit to disable retries. */
+  retry?: RetryOptions;
 }
 
 const SAFE_METHODS: ReadonlySet<HttpMethod> = new Set<HttpMethod>(['GET', 'HEAD']);
 
 export class WebClient {
   private readonly transport: Transport;
-  private readonly breaker: CircuitBreaker;
   private readonly cache: ResponseCache<HttpResponse>;
   private readonly serveStaleOnFailure: boolean;
+  private readonly resolveBreaker: (request: HttpRequest) => CircuitBreaker;
+  private readonly bulkhead?: Bulkhead;
+  private readonly retryOptions?: RetryOptions;
   private readonly inFlight = new Map<string, Promise<HttpResponse>>();
 
   constructor(options: WebClientOptions) {
     this.transport = options.transport;
-    this.breaker =
-      options.breaker ??
-      new CircuitBreaker({ isFailure: isDownstreamFailure, ...options.breakerOptions });
     this.cache = options.cache ?? new ResponseCache<HttpResponse>(options.cacheOptions);
     this.serveStaleOnFailure = options.serveStaleOnFailure ?? true;
+    this.bulkhead = options.bulkhead;
+    this.retryOptions = options.retry;
+
+    if (options.breakers) {
+      const registry = options.breakers;
+      const keyFor = options.breakerKeyFor ?? ((request) => request.breakerKey ?? defaultBreakerKey(request));
+      this.resolveBreaker = (request) => registry.get(keyFor(request));
+    } else {
+      const single =
+        options.breaker ??
+        new CircuitBreaker({ isFailure: isDownstreamFailure, ...options.breakerOptions });
+      this.resolveBreaker = () => single;
+    }
   }
 
   async execute<T = unknown>(request: HttpRequest): Promise<ExecuteResult<T>> {
@@ -146,8 +187,9 @@ export class WebClient {
     }
   }
 
-  getCircuitState(): CircuitState {
-    return this.breaker.getState();
+  /** Pass the request when the client is backed by a registry of breakers. */
+  getCircuitState(request: HttpRequest = { url: '' }): CircuitState {
+    return this.resolveBreaker(request).getState();
   }
 
   private dispatch(key: string, request: HttpRequest, cacheable: boolean): Promise<HttpResponse> {
@@ -159,8 +201,15 @@ export class WebClient {
       if (existing) return existing;
     }
 
-    const call = this.breaker
-      .execute(() => this.transport(request))
+    // Order matters, and it is the standard one:
+    //   retry( breaker( bulkhead( timeout( transport ) ) ) )
+    // Retry is outermost so the breaker sees every attempt and so an open
+    // circuit short-circuits the retry loop instead of sleeping through it.
+    // The bulkhead is innermost because it is capping real connections.
+    const breaker = this.resolveBreaker(request);
+    const attempt = () => breaker.execute(() => this.send(request));
+
+    const call = (this.retryOptions ? retry(attempt, this.retryOptions) : attempt())
       .then((response) => {
         if (cacheable) this.cache.set(key, response);
         return response;
@@ -171,5 +220,10 @@ export class WebClient {
 
     if (cacheable) this.inFlight.set(key, call);
     return call;
+  }
+
+  private send(request: HttpRequest): Promise<HttpResponse> {
+    if (!this.bulkhead) return this.transport(request);
+    return this.bulkhead.execute(() => this.transport(request));
   }
 }

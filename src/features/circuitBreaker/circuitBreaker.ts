@@ -19,8 +19,16 @@
  *   resolves after the breaker has already reopened must not be allowed to
  *   close it. Stale results are dropped instead.
  * - **The breaker only decides.** It knows nothing about HTTP; which errors
- *   count as downstream failures is the caller's policy (`isFailure`).
+ *   count as downstream failures is the caller's policy (`isFailure`), and
+ *   *when enough have failed* is an injected `FailurePolicy`. The breaker owns
+ *   transitions; it does not own the threshold arithmetic.
  */
+
+import {
+  ConsecutiveFailurePolicy,
+  type FailurePolicy,
+  type FailureSnapshot,
+} from './failurePolicy';
 
 export const CIRCUIT = {
   CLOSED: 'CLOSED',
@@ -62,8 +70,13 @@ export interface StateChange {
 }
 
 export interface CircuitBreakerOptions {
-  /** Consecutive failures in CLOSED before opening. */
+  /** Consecutive failures in CLOSED before opening. Sugar for the default policy. */
   failureThreshold?: number;
+  /**
+   * Overrides `failureThreshold` entirely. Inject a SlidingWindowFailurePolicy
+   * to open on error *rate* rather than on a run of failures.
+   */
+  failurePolicy?: FailurePolicy;
   /** Consecutive successful probes in HALF_OPEN before closing. */
   successThreshold?: number;
   /** How long OPEN lasts before a probe is admitted. */
@@ -80,7 +93,8 @@ export interface CircuitBreakerOptions {
 
 export interface CircuitSnapshot {
   state: CircuitState;
-  consecutiveFailures: number;
+  /** Whatever the injected failure policy tracks. */
+  failure: FailureSnapshot;
   consecutiveSuccesses: number;
   openedAt: number | null;
   halfOpenPermits: number;
@@ -103,13 +117,12 @@ const DEFAULTS = {
 
 export class CircuitBreaker {
   private state: CircuitState = CIRCUIT.CLOSED;
-  private consecutiveFailures = 0;
   private consecutiveSuccesses = 0;
   private openedAt: number | null = null;
   private halfOpenPermits = 0;
   private generation = 0;
 
-  private readonly failureThreshold: number;
+  private readonly failurePolicy: FailurePolicy;
   private readonly successThreshold: number;
   private readonly openDurationMs: number;
   private readonly halfOpenMaxConcurrent: number;
@@ -119,7 +132,9 @@ export class CircuitBreaker {
   private readonly onStateChange?: (change: StateChange) => void;
 
   constructor(options: CircuitBreakerOptions = {}) {
-    this.failureThreshold = options.failureThreshold ?? DEFAULTS.failureThreshold;
+    this.failurePolicy =
+      options.failurePolicy ??
+      new ConsecutiveFailurePolicy(options.failureThreshold ?? DEFAULTS.failureThreshold);
     this.successThreshold = options.successThreshold ?? DEFAULTS.successThreshold;
     this.openDurationMs = options.openDurationMs ?? DEFAULTS.openDurationMs;
     this.halfOpenMaxConcurrent = options.halfOpenMaxConcurrent ?? DEFAULTS.halfOpenMaxConcurrent;
@@ -164,7 +179,7 @@ export class CircuitBreaker {
   snapshot(): CircuitSnapshot {
     return {
       state: this.state,
-      consecutiveFailures: this.consecutiveFailures,
+      failure: this.failurePolicy.snapshot(),
       consecutiveSuccesses: this.consecutiveSuccesses,
       openedAt: this.openedAt,
       halfOpenPermits: this.halfOpenPermits,
@@ -175,7 +190,7 @@ export class CircuitBreaker {
   /** Force back to CLOSED — for tests and for a manual operator override. */
   reset(): void {
     this.transitionTo(CIRCUIT.CLOSED);
-    this.consecutiveFailures = 0;
+    this.failurePolicy.reset();
     this.consecutiveSuccesses = 0;
     this.openedAt = null;
   }
@@ -212,9 +227,7 @@ export class CircuitBreaker {
       return;
     }
 
-    // A success in CLOSED clears the run of failures: the threshold counts
-    // *consecutive* failures, not failures ever seen.
-    this.consecutiveFailures = 0;
+    this.failurePolicy.recordSuccess();
   }
 
   private recordFailure(permit: Permit): void {
@@ -228,9 +241,9 @@ export class CircuitBreaker {
       return;
     }
 
-    this.consecutiveFailures += 1;
+    this.failurePolicy.recordFailure();
     this.consecutiveSuccesses = 0;
-    if (this.consecutiveFailures >= this.failureThreshold) {
+    if (this.failurePolicy.shouldOpen()) {
       this.transitionTo(CIRCUIT.OPEN);
     }
   }
@@ -259,7 +272,7 @@ export class CircuitBreaker {
         this.halfOpenPermits = this.halfOpenMaxConcurrent;
         break;
       case CIRCUIT.CLOSED:
-        this.consecutiveFailures = 0;
+        this.failurePolicy.reset();
         this.consecutiveSuccesses = 0;
         this.openedAt = null;
         this.halfOpenPermits = 0;

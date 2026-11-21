@@ -1,0 +1,13 @@
+[
+  {"q": "I lost my card, what should I do?", "expected": "cards > Lost or stolen card"},
+  {"q": "How long does a bank transfer take to arrive?", "expected": "payments > SEPA transfers"},
+  {"q": "There's a charge on my account I don't recognise", "expected": "payments > Disputing a card payment"},
+  {"q": "Can I temporarily block my card?", "expected": "cards > Freezing a card"},
+  {"q": "What's the maximum I can withdraw from an ATM per day?", "expected": "cards > Card limits"},
+  {"q": "Someone called me asking for my PIN code", "expected": "security > Phishing"},
+  {"q": "Can I round up my payments to save money?", "expected": "budgeting > Savings goals"},
+  {"q": "When do my budgets reset?", "expected": "budgeting > Budgets"},
+  {"q": "How is interest on savings paid?", "expected": "budgeting > Interest"},
+  {"q": "I got a new phone, how do I confirm the login?", "expected": "security > Two-factor authentication"},
+  {"q": "My scheduled payment failed because my balance was too low", "expected": "payments > Scheduled payments"}
+]

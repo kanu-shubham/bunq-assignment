@@ -1,0 +1,26 @@
+{
+  "_note": "Hand-labelled ground truth. t01-t25 match data/transactions.csv; h* are harder, unseen merchants.",
+  "labels": {
+    "t01": "Groceries", "t02": "Income", "t03": "Transport", "t04": "Subscriptions",
+    "t05": "Eating out", "t06": "Groceries", "t07": "Housing", "t08": "Subscriptions",
+    "t09": "Transport", "t10": "Transfers", "t11": "Shopping", "t12": "Eating out",
+    "t13": "Utilities", "t14": "Utilities", "t15": "Groceries", "t16": "Eating out",
+    "t17": "Subscriptions", "t18": "Travel", "t19": "Shopping", "t20": "Transport",
+    "t21": "Health", "t22": "Health", "t23": "Groceries", "t24": "Eating out",
+    "t25": "Transfers"
+  },
+  "hard_cases": [
+    {"id": "h01", "date": "2026-11-02", "description": "PICNIC BV ALMERE", "amount": -66.10, "label": "Groceries"},
+    {"id": "h02", "date": "2026-11-02", "description": "DOMINOS PIZZA 233", "amount": -24.50, "label": "Eating out"},
+    {"id": "h03", "date": "2026-11-03", "description": "SWAPFIETS NOVEMBER", "amount": -19.90, "label": "Transport"},
+    {"id": "h04", "date": "2026-11-03", "description": "HEMA AMSTERDAM CS", "amount": -12.00, "label": "Shopping"},
+    {"id": "h05", "date": "2026-11-04", "description": "FEBO DAMSTRAAT", "amount": -6.40, "label": "Eating out"},
+    {"id": "h06", "date": "2026-11-05", "description": "GAMMA BOUWMARKT DIEMEN", "amount": -43.99, "label": "Shopping"},
+    {"id": "h07", "date": "2026-11-06", "description": "DEKAMARKT HAARLEM", "amount": -27.35, "label": "Groceries"},
+    {"id": "h08", "date": "2026-11-07", "description": "TRANSAVIA HV1234", "amount": -129.00, "label": "Travel"},
+    {"id": "h09", "date": "2026-11-08", "description": "APPLE.COM/BILL ICLOUD", "amount": -2.99, "label": "Subscriptions"},
+    {"id": "h10", "date": "2026-11-09", "description": "OV-CHIPKAART OPLADEN", "amount": -20.00, "label": "Transport"},
+    {"id": "h11", "date": "2026-11-10", "description": "DE ROOIJ TANDARTSEN", "amount": -85.00, "label": "Health"},
+    {"id": "h12", "date": "2026-11-11", "description": "PROVIDER BONUS ACME BV", "amount": 250.00, "label": "Income"}
+  ]
+}

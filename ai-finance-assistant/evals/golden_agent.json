@@ -1,0 +1,12 @@
+[
+  {"q": "How much did I spend on groceries in October 2026?",
+   "expect_tools": ["get_spending_summary"], "must_contain": ["183.85"]},
+  {"q": "How do I dispute a card payment, and is there a deadline?",
+   "expect_tools": ["search_help_docs"], "must_contain": ["120"]},
+  {"q": "Please set a monthly budget of 200 euros for eating out.",
+   "expect_tools": ["set_budget"], "expect_budgets": {"Eating out": 200}},
+  {"q": "What did I pay Netflix?",
+   "expect_tools": ["search_transactions"], "must_contain": ["13.99"]},
+  {"q": "What is the bank's current mortgage interest rate?",
+   "expect_tools": ["search_help_docs"], "must_not_match": "\\d+(\\.\\d+)?\\s?%"}
+]
